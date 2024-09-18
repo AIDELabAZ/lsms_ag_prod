@@ -31,7 +31,7 @@
 
 * open log	
 	cap log 				close
-	log using 				"$logout/2015_AGSEC5A", append
+	log using 				"$logout/2015_AGSEC5A_plt", append
 
 	
 ***********************************************************************
@@ -605,7 +605,7 @@
 	summarize
 
 * save file
-	save			"$export/2015_agsec5a.dta", replace	
+	save			"$export/2015_agsec5a_plt.dta", replace	
 
 * close the log
 	log	close

@@ -1,7 +1,7 @@
 * Project: WB Weather
 * Created on: Feb 2024
 * Created by: rg
-* Edited on: 22 Feb 24
+* Edited on: 18 Sep 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -30,7 +30,7 @@
 
 * open log	
 	cap 				log close
-	log using 			"$logout/2015_agsec2a", append
+	log using 			"$logout/2015_agsec2a_plt", append
 
 	
 ***********************************************************************
@@ -200,7 +200,7 @@
 	
 	keep 			hhid hh_agric prcid region district subcounty ///
 					parish  wgt15 hwgt_W4_W5 ///
-					plotsize irr_any ea rotate
+					plotsize irr_any ea tenure rotate
 					
 	isid			hhid prcid
 	compress
@@ -208,7 +208,7 @@
 	summarize
 
 * save file
-	save 			"$export/2015_agsec2a.dta", replace
+	save 			"$export/2015_agsec2a_plt.dta", replace
 
 * close the log
 	log	close

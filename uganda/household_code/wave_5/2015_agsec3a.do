@@ -30,7 +30,7 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2015_agsec3a", append
+	log using 		"$logout/2015_agsec3a_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
@@ -69,6 +69,8 @@
 * fertilizer use
 	rename 		a3bq13 fert_any
 	rename 		a3bq15 kilo_fert
+	rename		a3bq4  forg_any
+	rename 		
 
 		
 * replace the missing fert_any with 0
@@ -209,7 +211,7 @@
 	summarize
 
 * save file
-	save 			"$export/2015_agsec3a.dta", replace
+	save 			"$export/2015_agsec3a_plt.dta", replace
 
 * close the log
 	log	close

@@ -22,7 +22,7 @@
 * **********************************************************************
 
 * set $pack to 0 to skip package installation
-	global 			pack 	1
+	global 			pack 	0
 		
 * Specify Stata version in use
     global stataVersion 18.0    // set Stata version
@@ -43,7 +43,7 @@ if `"`c(username)'"' == "annal" {
 		global 		data	"C:/Users/aljosephson/OneDrive - University of Arizona/weather_and_agriculture"
     }	
 if `"`c(username)'"' == "rodrigoguerra" {
-        global 		code  	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/Documents/GitHub/weather_and_agriculture"
+        global 		code  	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/Documents/GitHub/lsms_ag_prod"
 		global 		data	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/weather_and_agriculture" 
     }
 if `"`c(username)'"' == "fvkrysbackpackpc" {
@@ -144,12 +144,4 @@ if $pack == 1 {
 * **********************************************************************
 * 2 - run analysis .do files
 * **********************************************************************
-/*
-	do			"$code/analysis/viz_code/sum_table.do"
-	do			"$code/analysis/viz_code/sum_vis.do"
-	do			"$code/analysis/viz_code/r2_vis.do"
-	do			"$code/analysis/viz_code/pval_vis.do"
-	do			"$code/analysis/viz_code/coeff_vis.do"
-	do			"$code/analysis/viz_code/coeff_lc_vis.do"
-	do			"$code/analysis/viz_code/coeff_mc_vis.do"
-*/
+

@@ -26,7 +26,7 @@
 	
 * open log
 	cap log 			close
-	log using 			"$logout/unps5_merge", append
+	log using 			"$logout/unps5_merge_plt", append
 
 	
 ************************************************************************
@@ -63,27 +63,9 @@
 	*** no observations dropped
 
 	drop			_sec2 _sec3a
-
-************************************************************************
-**# 1b - create total farm and maize variables
-************************************************************************
-
-* rename some variables
-	rename 			cropvalue vl_hrv
-	rename			kilo_fert fert
-	rename			labor_days labordays
-
-* generate mz_variables
-	gen				mz_lnd = plotsize	if cropid == 130
-	gen				mz_lab = labordays	if cropid == 130
-	gen				mz_frt = fert		if cropid == 130
-	gen				mz_pst = pest_any	if cropid == 130
-	gen				mz_hrb = herb_any	if cropid == 130
-	gen				mz_irr = irr_any	if cropid == 130
-	gen 			mz_hrv = vl_hrv	if cropid == 130
-	gen 			mz_damaged = 1 		if cropid == 130 & vl_hrv == 0
 	
 	isid 			hhid prcid pltid cropid
+
 
 * close the log
 	log	close
