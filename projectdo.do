@@ -1,7 +1,9 @@
-* Project: WB Weather - metric 
-* Created on: Jan 2024
-* Created by: cda
-* Stata v.18.0
+* Project: LSMS_ag_prod
+* Created on: Sep 2024
+* Created by: rg
+* Edited on: 20 Sep 2024
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* establishes an identical workspace between users

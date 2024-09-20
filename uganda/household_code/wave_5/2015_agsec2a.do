@@ -1,7 +1,7 @@
-* Project: WB Weather
-* Created on: Feb 2024
+* Project: LSMS_ag_prod
+* Created on: Sep 2024
 * Created by: rg
-* Edited on: 18 Sep 24
+* Edited on: 20 Sep 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -47,8 +47,8 @@
 	rename			a2aq7 tenure
 	
 	describe
-	sort hhid prcid
-	isid hhid prcid
+	sort 			hhid prcid
+	isid 			hhid prcid
 
 * make a variable that shows the irrigation
 	gen				irr_any = 1 if a2aq18 == 1

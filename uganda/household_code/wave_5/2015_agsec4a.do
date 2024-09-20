@@ -6,8 +6,8 @@
 * Stata v.18, mac
 
 * does
-	* fertilizer use
-	* reads Uganda wave 5 fertilizer and pest info (2015_AGSEC3B) for the 1st season
+	* seed use
+	* reads Uganda wave 5 crops grown and types of seeds info (AGSEC4B) for the 1st season
 	* 3A - 5A are questionaires for the second planting season
 	* 3B - 5B are questionaires for the first planting season
 
@@ -16,7 +16,8 @@
 	* mdesc.ado
 
 * TO DO:
-	* price fert
+	* seed quantity and seed price 
+	* dummy for intercropped 
 	
 
 ***********************************************************************
@@ -30,14 +31,14 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2015_agsec3a_plt", append
+	log using 		"$logout/2015_agsec4a_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
 
 * import wave 5 season A
-	use 			"$root/agric/AGSEC3B.dta", clear
+	use 			"$root/agric/AGSEC4B.dta", clear
 	
 * rename variables	
 	rename 			HHID hhid
@@ -46,6 +47,7 @@
 	
 	sort 			hhid prcid pltid
 	isid 			hhid prcid pltid
+	* we have 5 obs missing pltid 
 
 	
 ***********************************************************************
@@ -263,7 +265,7 @@
 	summarize
 
 * save file
-	save 			"$export/2015_agsec3a_plt.dta", replace
+	save 			"$export/2015_agsec4a_plt.dta", replace
 
 * close the log
 	log	close

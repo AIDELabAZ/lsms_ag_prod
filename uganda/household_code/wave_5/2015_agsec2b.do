@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: Apr 2024
-* Created by: jdm
-* Edited on: 19 Apr 24
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Sep 2024
+* Created by: rg
+* Edited on: 20 Sep 2024
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* reads Uganda wave 5 owned plot info (2015_AGSEC2B) for the 1st season
@@ -29,7 +29,7 @@
 
 * open log	
 	cap 				log close
-	log using 			"$logout/2015_agsec2b", append
+	log using 			"$logout/2015_agsec2b.plt", append
 
 	
 ***********************************************************************
@@ -163,10 +163,10 @@
 * keep only necessary variables
 	keep 			hhid hh_agric prcid region district subcounty ///
 					parish  wgt15 hwgt_W4_W5 ///
-					plotsize irr_any ea rotate
+					plotsize irr_any ea tenure rotate
 
 * append owned plots
-	append			using "$export/2015_agsec2a.dta"
+	append			using "$export/2015_agsec2a_plt.dta"
 	*** creates 1 duplicate observation
 	
 * drop duplicate
@@ -182,7 +182,7 @@
 	summarize
 
 * save file
-	save 			"$export/2015_agsec2.dta", replace
+	save 			"$export/2015_agsec2_plt.dta", replace
 
 * close the log
 	log	close
