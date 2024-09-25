@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 20 Sep 2024
+* Edited on: 25 Sep 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -44,10 +44,17 @@
 	rename 			HHID hhid
 	rename			parcelID prcid
 	rename			plotID pltid
+	rename 			cropID cropid
 	
-	sort 			hhid prcid pltid
-	isid 			hhid prcid pltid
-	* we have 5 obs missing pltid 
+	sort 			hhid prcid pltid cropid ACrop2_ID
+	
+	mdesc 			hhid prcid pltid cropid	
+	* we have 5 obs missing pltid and 1 cropid
+	drop if			pltid ==. | cropid ==.
+	* 6 observations dropped
+
+	isid 			hhid prcid pltid cropid	ACrop2_ID
+
 
 	
 ***********************************************************************
