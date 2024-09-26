@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 20 Sep 2024
+* Edited on: 25 Sep 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -69,8 +69,11 @@
 * fertilizer use
 	rename 		a3bq13 fert_any
 	rename 		a3bq15 kilo_fert
-	rename		a3bq4  forg_any
-	rename 		a3bq5  kilo_forg
+
+	
+* make a variable that shows  organic fertilizer use
+	gen				forg_any =1 if a3bq4 == 1
+	replace			forg_any = 0 if forg_any ==.
 
 		
 * replace the missing fert_any with 0
@@ -119,52 +122,10 @@
 	rename 			a3bq17 kfert_purch
 	rename			a3bq18 vle_fert_purch
 	
-	gen				price_fert = vle_fert_purch/kfert_purch
-	label var 		price_fert "price per kilo (shillings)"
+	gen				fert_price = vle_fert_purch/kfert_purch
+	label var 		fert_price "price per kilo (shillings)"
 	
-	
-********doing the same for organic fertilizer (forg)*******
-	
-* replace the missing fert_any with 0
-	tab 			kilo_forg if forg_any == .
-	*** no observations
-	
-	replace			forg_any = 2 if forg_any == . 
-	*** 0 changes
-			
-	sum 			kilo_forg if forg_any == 1, detail
-	*** mean 268.6, min 12, max 1500
-
-* replace zero to missing, missing to zero, and outliers to missing
-	replace			kilo_forg = . if kilo_forg > 1000
-	*** 1 outlier changed to missing
-
-	
-* impute missing values (only need to do four variables)
-	mi set 			wide 	// declare the data to be wide.
-	mi xtset		, clear 	// clear any xtset that may have had in place previously
-
-* impute each variable in local	
-	*** the finer geographical variables will proxy for soil quality which is a determinant of fertilizer use
-	mi register			imputed kilo_forg // identify variable to be imputed
-	sort				hhid prcid pltid, stable // sort to ensure reproducability of results
-	mi impute 			pmm kilo_forg  i.districtdstrng forg_any, add(1) rseed(245780) ///
-								noisily dots force knn(5) bootstrap					
-	mi 				unset		
-	
-* how did impute go?	
-	sum 		kilo_forg_1_ if forg_any == 1, detail
-	*** max 1000, mean 262, min 12
-	
-	replace			kilo_forg = kilo_forg_1_ if forg_any == 1
-	*** 1 changed
-	
-	drop 			kilo_forg_1_ mi_miss
-	
-* record fert_any
-	replace			forg_any = 0 if forg_any == 2
-
-	
+		
 	
 ***********************************************************************
 **# 4 - pesticide & herbicide
@@ -256,7 +217,7 @@
 	keep 			hhid hh_agric prcid region district subcounty ///
 					parish  wgt15 hwgt_W4_W5 ///
 					ea rotate fert_any kilo_fert labor_days pest_any herb_any pltid ///
-					kilo_forg forg_any
+					fert_price forg_any
 
 	compress
 	describe

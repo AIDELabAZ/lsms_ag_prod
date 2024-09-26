@@ -17,7 +17,7 @@
 
 * TO DO:
 	* seed quantity and seed price 
-	* dummy for intercropped 
+	* conversion file for units
 	
 
 ***********************************************************************
@@ -28,6 +28,7 @@
 	global root 	"$data/household_data/uganda/wave_5/raw"  
 	global export 	"$data/household_data/uganda/wave_5/refined"
 	global logout 	"$data/household_data/uganda/logs"
+	global conv 	"$data/household_data/uganda/conversion_files"  
 	
 * open log	
 	cap log 		close
@@ -45,42 +46,174 @@
 	rename			parcelID prcid
 	rename			plotID pltid
 	rename 			cropID cropid
+	rename 			ACrop2_ID cropid2
+	rename 			cropID_other cropid3
+	rename			a4bq12b unit
 	
-	sort 			hhid prcid pltid cropid ACrop2_ID
+	sort 			hhid prcid pltid cropid cropid2 
 	
-	mdesc 			hhid prcid pltid cropid	
+	mdesc 			hhid prcid pltid cropid cropid2
 	* we have 5 obs missing pltid and 1 cropid
 	drop if			pltid ==. | cropid ==.
 	* 6 observations dropped
 
-	isid 			hhid prcid pltid cropid	ACrop2_ID
+	isid 			hhid prcid pltid cropid	cropid2
 
 
 	
 ***********************************************************************
-**# 2 - merge location data
-***********************************************************************	
+**# 2 - merge kg conversion file and create seed quantity
+***********************************************************************
 	
-* merge the location identification
-	merge m:1 		hhid using "$export/2015_gsec1"
-	*** 53 unmatched from master
-	*** 1,107 unmatched from using
-	*** 6,739 matched 
+	merge m:1 		cropid unit condition using ///
+						"$conv/ValidCropUnitConditionCombinations.dta" 
+	*** unmatched 198 from master 
+	*** unmatched 717 from using
+	*** total unmatched, 915
 	
 	
-	drop if			_merge != 3
+* drop from using
+	drop 			if _merge == 2
+	** 717 obs dropped
+
+* how many unmatched had a harvest of 0
+	tab 			a5bq6a if _merge == 1
+	*** 0% have a harvest of 0
+	
+* how many unmatched because they used "other" to categorize the state of harvest?
+	tab 			condition if _merge == 1
+	*** this isn't it either
+	
+	tab 			cropid condition if condition != 99 & _merge == 1 & condition !=.
+	
+	tab 			unit if _merge == 1
+	tab				unit if _merge == 1, nolabel
+	
+
+* replace ucaconversion to 1 if the harvest is 0
+	replace 		ucaconversion = 1 if a5bq6a == 0 & _merge == 1
+	*** 0 changes
+
+* manually replace conversion for the kilograms and sacks 
+* if the condition is other condition and the observation is unmatched
+
+	*kgs
+		replace 		ucaconversion = 1 if unit == 1 & _merge == 1
+		*** 4 changes
+		
+	*sack 120 kgs
+		replace 		ucaconversion = 120 if unit == 9 & _merge == 1
+		*** 1 change
+	
+	*sack 100 kgs
+		replace 		ucaconversion = 100 if unit == 10 & _merge == 1
+		*** 1 change
+		
+	* sack 50 kgs
+		replace 		ucaconversion = 50 if unit == 12 & _merge == 1
+		*** 2 changes
+		
+	* jerrican 20 kgs
+		replace 		ucaconversion = 20 if unit == 14 & _merge == 1
+		*** 8 changes
+		
+	* jerrican 10 kgs
+		replace 		ucaconversion = 10 if unit == 15 & _merge == 1
+		*** 1 change
+		
+	* jerrican 5 kgs
+		replace 		ucaconversion = 5 if unit == 16 & _merge == 1
+		*** 1 change
+		
+	* jerrican 2 kgs
+		replace 		ucaconversion = 2 if unit == 18 & _merge == 1
+		*** 1 change 
+		
+
+	* tin 5 kgs
+		replace 		ucaconversion = 5 if unit == 21 & _merge == 1
+		*** 1 change 
+
+	* 15 kg plastic Basin
+		replace 		ucaconversion = 15 if unit == 22 & _merge == 1	
+		*** 1 change
+		
+	* kimbo 2 kg 
+		replace 		ucaconversion = 2 if unit == 29 & _merge == 1
+		*** 3 changes
+		
+	* kimbo 1 kg
+		replace 		ucaconversion = 0.5 if unit == 30 & _merge == 1	
+		*** 1 change
+		
+	* kimbo 0.5 kg
+		replace 		ucaconversion = 0.5 if unit == 31 & _merge == 1	
+		*** 2 changes 
+		
+	* basket 20 kg 
+		replace 		ucaconversion = 20 if unit == 37 & _merge == 1
+		*** 3 changes
+
+	* basket 5 kg 
+		replace 		ucaconversion = 5 if unit == 39 & _merge == 1	
+		*** 1 change
+
+		
+* drop the unmatched remaining observations
+	drop 			if _merge == 1 & ucaconversion == .
+	*** 167 observatinos deleted
+
+	replace 			ucaconversion = medconversion if _merge == 3 & ucaconversion == .
+	*** 579 changes made
+	
+		mdesc 			ucaconversion
+		*** 0 missing
+		
+	drop 			_merge
+	
+	tab				cropid
+	*** beans are the most numerous crop being 23.32% of crops planted
+	***	maize is the second highest being 22.9%
+	*** maize will be main crop following most other countries in the study
+	
+* Convert harv quantity to kg
+	*** harvest quantity is in a variety of measurements
+	*** included in the file are the conversions from other measurements to kg
+	
+* replace missing harvest quantity to 0
+	replace 		a5bq6a = 0 if a5bq6a == .
+	*** no changes
+	
+* Convert harv quantity to kg
+	gen 			harvqtykg = a5bq6a*ucaconversion
+	label var		harvqtykg "quantity of crop harvested (kg)"
+	mdesc 			harvqtykg
+	*** all converted
+	
+* summarize harvest quantity
+	sum				harvqtykg
+	*** no values > 100,000
+	
+	mdesc 			harvqtykg
+	
+* summarize maize quantity harvest
+	sum				harvqtykg if cropid == 130
+	*** 271.79 mean, 13,800 max
 	
 
 ***********************************************************************
-**# 3 - fertilizer, pesticide and herbicide
+**# 3 - type of crop stand
 ***********************************************************************
 
-* fertilizer use
-	rename 		a3bq13 fert_any
-	rename 		a3bq15 kilo_fert
-	rename		a3bq4  forg_any
-	rename 		a3bq5  kilo_forg
+* make a variable that shows if intercropped or not
+	gen				intrcrp_any =1 if a4bq8 == 2
+	replace			intrcrp_any = 0 if intrcrp_any ==.
 
+* variable for use of seeds
+	gen				seeds_any = 1 if a4bq16 ==1
+	replace			seeds_any = 0 if a4bq16 ==.
+	
+	rename 			abaq11a 
 		
 * replace the missing fert_any with 0
 	tab 			kilo_fert if fert_any == .
@@ -265,7 +398,7 @@
 	keep 			hhid hh_agric prcid region district subcounty ///
 					parish  wgt15 hwgt_W4_W5 ///
 					ea rotate fert_any kilo_fert labor_days pest_any herb_any pltid ///
-					kilo_forg forg_any
+					kilo_forg forg_any intrcrp_any
 
 	compress
 	describe
