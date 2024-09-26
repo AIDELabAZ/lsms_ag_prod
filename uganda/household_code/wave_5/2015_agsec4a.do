@@ -48,7 +48,8 @@
 	rename 			cropID cropid
 	rename 			ACrop2_ID cropid2
 	rename 			cropID_other cropid3
-	rename			a4bq12b unit
+	rename			a4bq11b unit
+	rename			abaq11a seed_qty
 	
 	sort 			hhid prcid pltid cropid cropid2 
 	
@@ -64,6 +65,10 @@
 ***********************************************************************
 **# 2 - merge kg conversion file and create seed quantity
 ***********************************************************************
+
+	describe		unit
+	label list		a4bq11b 
+	tab				unit
 	
 	merge m:1 		cropid unit condition using ///
 						"$conv/ValidCropUnitConditionCombinations.dta" 

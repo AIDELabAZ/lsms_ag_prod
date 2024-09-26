@@ -125,6 +125,9 @@
 	gen				fert_price = vle_fert_purch/kfert_purch
 	label var 		fert_price "price per kilo (shillings)"
 	
+	tab 			fert_price if fert_any ==1
+	* no missing prices for hh who used fertilizer
+	
 		
 	
 ***********************************************************************
