@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 20 Sep 2024
+* Edited on: 30 Sep 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -16,6 +16,7 @@
 
 * TO DO:
 	* done
+	* decide which variable to keep (indicating ownership)
 
 ***********************************************************************
 **# 0 - setup
@@ -155,6 +156,16 @@
 	
 	mdesc 			plotsize
 	*** none missing
+	
+* create a dummy for plot ownership (freehold)
+	label list		a2bq7
+	gen 			plt_ownshp =1 if tenure == 1
+	replace 		plt_ownshp =0 if plt_ownshp == .
+	
+* creare variable indicting plot ownership (freehold, mailo, customary )
+	gen 			plt_ownshp_all = 1 if tenure == 1| tenure == 3 | tenure == 4
+	replace 		plt_ownshp_all = 0 if plt_ownshp_all ==. 
+	
 
 ***********************************************************************
 **# 5 - appends sec2a
