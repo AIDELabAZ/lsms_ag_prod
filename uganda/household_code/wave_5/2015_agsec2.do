@@ -1,13 +1,13 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 7 Oct 2024
+* Edited on: 8 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
 * does
-	* merges agsec2A with hh roster information 
-	* reads Uganda wave 5 hh information (AGSE2A)
+	* merges AGSEC2A with hh roster information (ownership rights)
+	* reads Uganda wave 5 hh information (AGSEC2A)
 
 * assumes
 	* access to raw data
@@ -41,12 +41,38 @@
 * rename variables and prepare for merging 
 	rename 			HHID hhid
 	rename			parcelID prcid
-	
-	isid			hhid a2aq24a
+	rename 			a2aq24a PID
+	rename 			a2aq24b ownshp_rght_b
 	
 ***********************************************************************
-**# 2 - ,erge with hh information 
+**# 2 - merge with hh information 
 ***********************************************************************	
 
-	merge 1:m 		hhid prcid using "$export/2015_gsec2_plt.dta"
+	merge m:1 		hhid PID using "$export/2015_gsec2_plt.dta"
+	* 848 unmatched from using 
+	
+	drop 			if _merge == 2
+	count 			if _merge ==1 & PID !=.
+	* 118 PID that are not missing 
+	
+	rename 			PID ownshp_rght_a
+	drop 			_merge
+***********************************************************************
+**# 3 - end matter, clean up to save
+***********************************************************************
+
+	
+	keep 			hhid hh prcid member_number gender ownshp_rght_a ownshp_rght_b
+
+	compress
+	describe
+	summarize
+
+* save file
+	save			"$export/2015_agsec2_plt.dta", replace	
+
+* close the log
+	log	close
+
+/* END */
 	

@@ -1,13 +1,13 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 7 Oct 2024
+* Edited on: 8 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
 * does
-	* hh roster information from hh questionaire
-	* reads Uganda wave 5 hh information (gsec2)
+	* merges agsec2 with decision-maker info (AGSEC3B)
+	* reads Uganda wave 5 (AGSEC3B)
 
 * assumes
 	* access to raw data
@@ -28,38 +28,26 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2015_gsec2_plt", append
+	log using 		"$logout/2015_agsec3_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
 
 * import hh roster info
-	use 			"$root/hh/gsec2.dta", clear
+	use 			"$root/agric/AGSEC3B.dta", clear
 	
 * rename variables			
-	rename			h2q1 member_number
-	rename 			h2q3 gender
-
-* modify format of pid so it matches pid from other files 
-	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
-	destring		PID, replace
-	
-	isid 			hhid PID
+	rename 			HHID hhid 
+	rename			parcelID prcid
+	rename 			a3bq3_3 PID
 
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-	keep 			hhid PID member_number gender
-	
-* save file 
-	save 			"$export/2015_gsec2_plt.dta", replace	
-	
-* close the log
-	log	close
 
-/* END */
 	
-
+	merge 1:m 		hhid hh prcid using "$export/2015_agsec2_plt.dta"
+	* drop 
 
 	
