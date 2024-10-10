@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 14 Sep 2024
+* Edited on: 10 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -42,12 +42,16 @@
 	*** matched 6,546, unmatched 428 from master
 
 	drop			if _sec2 != 3
-		
+	
+	*merge m:1 		hhid prcid "$root/2015_agsec2_plt", generate(_sec2gender)
+	
 * merging in labor, fertilizer and pest data
 	merge			m:1 hhid prcid pltid  using "$root/2015_agsec3a", generate(_sec3a)
 	*** 12 unmatched from master
 
 	drop			if _sec3a == 2
+	
+	merge m:1 		hhid prcid pltid using "$root"
 	
 * replace missing binary values
 	replace			irr_any = 0 if irr_any == .

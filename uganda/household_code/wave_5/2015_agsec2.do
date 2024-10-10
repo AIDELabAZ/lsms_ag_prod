@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 8 Oct 2024
+* Edited on: 10 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -42,7 +42,6 @@
 	rename 			HHID hhid
 	rename			parcelID prcid
 	rename 			a2aq24a PID
-	rename 			a2aq24b ownshp_rght_b
 	
 ***********************************************************************
 **# 2 - merge with hh information 
@@ -62,8 +61,26 @@
 ***********************************************************************
 
 	
-	keep 			hhid hh prcid member_number gender ownshp_rght_a ownshp_rght_b
+	keep 			hhid hh prcid member_number gender ownshp_rght_a a2aq24b
+	
+	rename			gender gender_own_a
+	rename			a2aq24b PID
 
+	merge m:1 		hhid PID using "$export/2015_gsec2_plt.dta"
+	rename			gender gender_own_b
+	rename 			PID ownshp_rght_b
+	
+	drop if 		_merge == 2
+	drop 			_merge
+	
+	gen 			two_own = 1 if ownshp_rght_a !=. & ownshp_rght_b !=.
+	replace 		two_own = 0 if two_own==.
+	
+	gen 			joint = 1 if gender_own_a !=. & gender_own_b !=.
+	replace 		joint =0 if joint ==.
+	
+	
+	
 	compress
 	describe
 	summarize
