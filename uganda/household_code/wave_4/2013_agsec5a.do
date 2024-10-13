@@ -1,10 +1,9 @@
-* Project: WB Weather
-* Created on: Feb 2024
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
 * Created by: rg
-* Edited on: 17 April 24
+* Edited on: 13 Oct 24
 * Edited by: rg
 * Stata v.18, mac
-
 * does
 	* Crop output
 	* reads Uganda wave 4 crop output (2013_AGSEC5A) for the 1st season
@@ -31,7 +30,7 @@
 
 * open log	
 	cap log 			close
-	log using 			"$logout/2013_AGSEC5A", append
+	log using 			"$logout/2013_AGSEC5A_plt", append
 
 	
 ***********************************************************************
@@ -626,7 +625,7 @@
 	summarize
 
 * save file
-	save			"$export/2013_agsec5a.dta", replace
+	save			"$export/2013_agsec5a_plt.dta", replace
 	
 
 * close the log

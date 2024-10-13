@@ -6,15 +6,17 @@
 * Stata v.18, mac
 
 * does
-	* household Location data (2013_AGSEC1) for the 1st season
+	* hh roster information from hh questionaire
+	* reads Uganda wave 4 hh information (gsec2)
 
 * assumes
 	* access to raw data
-	
+	* mdesc.ado
+
 * TO DO:
 	* done
-
 	
+
 ***********************************************************************
 **# 0 - setup
 ***********************************************************************
@@ -26,46 +28,42 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2013_AGSEC1_plt", append
-
+	log using 		"$logout/2013_gsec2_plt", append
 	
 ***********************************************************************
-**# 1 - UNPS 2013 (Wave 4) - Section 1 
+**# 1 - import data and rename variables
 ***********************************************************************
 
-* import wave 4 season 1
-	use				"$root/agric/AGSEC1", clear
-
-* rename variables
-	isid 			HHID
-	rename			HHID hhid
-
-	rename 			district_name district
-	rename 			subcounty_name subcounty
-	rename 			parish_name parish
-	rename 			wgt wgt13
-	rename			HHID_old hhid_pnl
-
-* drop if missing
-	drop if			district == ""
-	*** dropped 0 observations
+* import hh roster info
+	use 			"$root/hh/gsec2.dta", clear
 	
+* rename variables			
+	rename			h2q1 member_number
+	rename 			h2q3 gender
+
+* modify format of pid so it matches pid from other files 
+	rename			PID pid
+	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
+	destring		PID, replace
 	
+	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
+	destring		hhid, replace
+	
+	isid 			hhid PID
+
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-
-	keep 			hh hhid region district subcounty parish ///
-						 wgt13 hhid_pnl rotate ea 
-
-	compress
-	describe
-	summarize
-
-* save file
-	save			"$export/2013_agsec1_plt.dta", replace 
-
+	keep 			hhid PID gender
+	
+* save file 
+	save 			"$export/2013_gsec2_plt.dta", replace	
+	
 * close the log
 	log	close
 
-/* END */	
+/* END */
+	
+
+
+	

@@ -39,7 +39,7 @@
 	
 
 * merge harvest quantity and value data
-	merge 			m:1 hhid prcid pltid cropid using "$root/2015_agsec5a.dta", generate(_sec5a) 
+	merge 			m:1 hhid prcid pltid cropid using "$root/2015_agsec5a_plt.dta", generate(_sec5a) 
 	*** matched 6,657
 	*** unmatched 3,028 from master
 	
@@ -84,7 +84,7 @@
 	drop			if herb_any == .
 	*** no observations dropped
 
-	drop			_sec2 _sec3a _sec2g _sec3 
+	drop			_sec2 _sec3a _sec2g _sec3 _sec5a
 	
 	isid 			hhid prcid pltid cropid cropid2
 

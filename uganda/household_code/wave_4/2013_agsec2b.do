@@ -1,7 +1,7 @@
-* Project: WB Weather
-* Created on: Apr 2024
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
 * Created by: rg
-* Edited on: 29 April 24
+* Edited on: 13 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -29,7 +29,7 @@
 
 * open log	
 	cap 				log close
-	log using 			"$logout/2013_agsec2b", append
+	log using 			"$logout/2013_agsec2b_plt", append
 
 	
 ***********************************************************************
@@ -158,6 +158,15 @@
 	
 	mdesc 			plotsize
 	*** none missing
+	
+* create a dummy for plot ownership (freehold)
+	label list		a2bq7
+	gen 			plt_ownshp =1 if tenure == 1
+	replace 		plt_ownshp =0 if plt_ownshp == .
+	
+* creare variable indicting plot ownership (freehold, mailo, customary )
+	gen 			plt_ownshp_all = 1 if tenure == 1| tenure == 3 | tenure == 4
+	replace 		plt_ownshp_all = 0 if plt_ownshp_all ==. 
 
 ***********************************************************************
 **# 5 - appends sec2a
@@ -169,7 +178,7 @@
 					plotsize irr_any ea rotate
 
 * append owned plots
-	append			using "$export/2013_agsec2a.dta"
+	append			using "$export/2013_agsec2a_plt.dta"
 	
 * drop duplicate
 	duplicates 		drop hhid prcid, force
@@ -184,7 +193,7 @@
 	summarize
 
 * save file
-	save 			"$export/2013_agsec2.dta", replace
+	save 			"$export/2013_agsec2_plt.dta", replace
 
 * close the log
 	log	close

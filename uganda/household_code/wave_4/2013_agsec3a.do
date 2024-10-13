@@ -1,7 +1,7 @@
-* Project: WB Weather
-* Created on: Feb 2024
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 April 24
+* Edited on: 13 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -70,6 +70,11 @@
 	rename 		a3aq13 fert_any
 	rename 		a3aq15 kilo_fert
 
+* make a variable that shows  organic fertilizer use
+	gen				forg_any =1 if a3aq4 == 1
+	replace			forg_any = 0 if forg_any ==.
+	*** only 4.26 percent used organic fert
+	
 		
 * replace the missing fert_any with 0
 	tab 			kilo_fert if fert_any == .
@@ -111,6 +116,22 @@
 	
 * record fert_any
 	replace			fert_any = 0 if fert_any == 2
+	
+* variable showing if hh purchased fertilizer
+
+	gen 			fert_purch_any = 1 if a3aq16 ==1
+	replace 		fert_purch_any = 0 if fert_purch_any ==. 
+	*** 1.9 % purchased fert
+		
+* calculate price of fertilizer
+	rename 			a3aq17 kfert_purch
+	rename			a3aq18 vle_fert_purch
+	
+	gen				fert_price = vle_fert_purch/kfert_purch
+	label var 		fert_price "price per kilo (shillings)"
+	
+	count if 		fert_price== . &  fert_purch_any == 1
+	* 0 observations missing price for hh who purchased fertilizer
 
 	
 ***********************************************************************
@@ -208,14 +229,14 @@
 
 	keep 			hhid hhid_pnl prcid region district subcounty ///
 					parish wgt13 ea rotate pest_any herb_any labor_days ///
-					fert_any kilo_fert pltid
+					fert_any kilo_fert pltid forg_any fert_price
 
 	compress
 	describe
 	summarize
 
 * save file
-	save 			"$export/2013_agsec3a.dta", replace
+	save 			"$export/2013_agsec3a_plt.dta", replace
 
 * close the log
 	log	close

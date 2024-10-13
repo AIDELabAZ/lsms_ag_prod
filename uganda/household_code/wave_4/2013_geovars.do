@@ -1,7 +1,7 @@
-* Project: WB Weather
-* Created on: Feb 2024
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
 * Created by: rg
-* Edited on: 11 April 24
+* Edited on: 13 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -26,7 +26,7 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2013_geovars", append
+	log using 		"$logout/2013_geovars_plt", append
 
 	
 ************************************************************************
@@ -55,7 +55,7 @@
 	summarize
 
 * save file
-	save			"$export/2013_geovars.dta", replace
+	save			"$export/2013_geovars_plt.dta", replace
 
 * close the log
 	log	close

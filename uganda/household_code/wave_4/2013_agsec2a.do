@@ -1,7 +1,7 @@
-* Project: WB Weather
-* Created on: Feb 2024
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Feb 24
+* Edited on: 13 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -29,7 +29,7 @@
 	
 * open log	
 	cap log 			close
-	log using 			"$logout/2013_agsec2a", append
+	log using 			"$logout/2013_agsec2a_plt", append
 
 	
 ***********************************************************************
@@ -37,7 +37,7 @@
 ***********************************************************************
 
 * import wave 4 season A
-	use "$root/agric/AGSEC2A.dta", clear
+	use 			"$root/agric/AGSEC2A.dta", clear
 		
 	rename			HHID hhid
 	
@@ -62,7 +62,7 @@
 **# 2 - merge location data
 ***********************************************************************			
 * merge household key 
-	merge m:1 hhid using "$export/2013_agsec1"		
+	merge m:1 hhid using "$export/2013_agsec1_plt"		
 	*** merged 4,142, 345 unmerged in using data
 	*** drop all unmatched since no land area data
 	
@@ -193,7 +193,7 @@
 	summarize
 
 * save file
-	save 			"$export/2013_agsec2a.dta", replace
+	save 			"$export/2013_agsec2a_plt.dta", replace
 
 * close the log
 	log	close

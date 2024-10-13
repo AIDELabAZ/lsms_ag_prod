@@ -117,6 +117,11 @@
 * record fert_any
 	replace			fert_any = 0 if fert_any == 2
 	
+* variable showing if hh purchased fertilizer
+	gen 			fert_purch_any = 1 if a3bq16 ==1
+	replace 		fert_purch_any = 0 if fert_purch_any ==. 
+	*** 1.29 % purchased fert
+	
 
 * calculate price of fertilizer
 	rename 			a3bq17 kfert_purch
@@ -125,8 +130,8 @@
 	gen				fert_price = vle_fert_purch/kfert_purch
 	label var 		fert_price "price per kilo (shillings)"
 	
-	tab 			fert_price if fert_any ==1
-	* no missing prices for hh who used fertilizer
+	count if 		fert_price== . &  fert_purch_any == 1
+	* 7 observations missing prices for hh who purchased fertilizer
 	
 		
 	
