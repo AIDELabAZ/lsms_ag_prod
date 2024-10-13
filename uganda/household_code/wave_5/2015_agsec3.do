@@ -1,12 +1,13 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 10 Oct 2024
+* Edited on: 12 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
 * does
-	* merges agsec2 with decision-maker info (AGSEC3B)
+	* merges agsec2 with decision-maker info  (AGSEC3B)
+	* creates gender variables
 	* reads Uganda wave 5 (AGSEC3B)
 
 * assumes
@@ -82,6 +83,9 @@
 	replace 		gender_a =. if a3bq3_2 == 2
 	* we don't know gender_b  for 280 observations 
 	
+	order 			gender_single, after(mgmt_single)
+	order 			gender_a, after(mgmt_b)
+	order 			gender_b, after(gender_a)
 
 
 	compress

@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 10 Oct 2024
+* Edited on: 12 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -79,14 +79,16 @@
 	gen 			joint = 1 if gender_own_a !=. & gender_own_b !=.
 	replace 		joint =0 if joint ==.
 	
-	
+	order 			gender_own_a, after(ownshp_rght_a)
+	order 			gender_own_b, after(ownshp_rght_b)
+	order 			hh, after(joint)
 	
 	compress
 	describe
 	summarize
 
 * save file
-	save			"$export/2015_agsec2_plt.dta", replace	
+	save			"$export/2015_agsec2g_plt.dta", replace	
 
 * close the log
 	log	close

@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 30 Sep 2024
+* Edited on: 12 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -200,19 +200,14 @@
 	gen				seeds_any = 1 if a4bq16 ==1
 	replace			seeds_any = 0 if a4bq16 ==.
 	
-	rename 			abaq11a 
-		
-
-
+	
 	
 ***********************************************************************
-**# 6 - end matter, clean up to save
+**# 5 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid hh_agric prcid region district subcounty ///
-					parish  wgt15 hwgt_W4_W5 ///
-					ea rotate fert_any kilo_fert labor_days pest_any herb_any pltid ///
-					kilo_forg forg_any intrcrp_any
+	keep 			hhid hh_agric prcid cropid cropid2 cropid3 ///
+					pltid intrcrp_any seed_qty_kg seed_type seed_vle seed_price
 
 	compress
 	describe

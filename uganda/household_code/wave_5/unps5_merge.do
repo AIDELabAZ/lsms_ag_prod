@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 10 Oct 2024
+* Edited on: 12 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -33,25 +33,43 @@
 **# 1 - merge plot level data sets together
 ************************************************************************
 
-* start by loading harvest quantity and value, since this is our limiting factor
-	use 			"$root/2015_agsec5a.dta", clear
-	isid 			hhid prcid pltid cropid
+* start by loading seed info , since this is our limiting factor
+	use 			"$root/2015_agsec4a_plt", clear
+	isid 			hhid prcid pltid cropid cropid2
+	
+
+* merge harvest quantity and value data
+	merge 			m:1 hhid prcid pltid cropid using "$root/2015_agsec5a.dta", generate(_sec5a) 
+	*** matched 6,657
+	*** unmatched 3,028 from master
+	
+	drop 			if _sec5a != 3
 	
 * merge in plot size data and irrigation data
-	merge			m:1 hhid prcid using "$root/2015_agsec2", generate(_sec2)
-	*** matched 6,546, unmatched 428 from master
+	merge			m:1 hhid prcid using "$root/2015_agsec2_plt", generate(_sec2)
+	*** matched 6,230, unmatched 427 from master
 
 	drop			if _sec2 != 3
 	
-	*merge m:1 		hhid prcid "$root/2015_agsec2_plt", generate(_sec2gender)
+* merge in ownership data
+	merge m:1 		hhid prcid using "$root/2015_agsec2g_plt", generate(_sec2g)
+	*** matched 5,893
+	*** unmatched from master 1,337 
+	
+	drop 			if _sec2g !=3
 	
 * merging in labor, fertilizer and pest data
-	merge			m:1 hhid prcid pltid  using "$root/2015_agsec3a", generate(_sec3a)
-	*** 12 unmatched from master
+	merge			m:1 hhid prcid pltid  using "$root/2015_agsec3a_plt", generate(_sec3a)
+	*** 8 unmatched from master
 
 	drop			if _sec3a == 2
+		
+
+* merge in decision making data and gender data
+	merge m:1 		hhid prcid pltid using "$root/2015_agsec3_plt", generate (_sec3)
+	*** 8 unmatched from master
 	
-	merge m:1 		hhid prcid pltid using "$root"
+	drop 			if _sec3 !=3
 	
 * replace missing binary values
 	replace			irr_any = 0 if irr_any == .
@@ -66,9 +84,9 @@
 	drop			if herb_any == .
 	*** no observations dropped
 
-	drop			_sec2 _sec3a
+	drop			_sec2 _sec3a _sec2g _sec3 
 	
-	isid 			hhid prcid pltid cropid
+	isid 			hhid prcid pltid cropid cropid2
 
 
 * close the log
