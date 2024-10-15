@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 14 Sep 2024
+* Edited on: 15 Sep 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -33,23 +33,45 @@
 **# 1 - merge plot level data sets together
 ************************************************************************
 
-* start by loading harvest quantity and value, since this is our limiting factor
-	use 			"$root/2011_AGSEC5A.dta", clear
-	isid 			hhid prcid pltid cropid
+* start by loading seed info , since this is our limiting factor
+	use 			"$root/2011_agsec4a_plt", clear
+	isid 			hhid prcid pltid cropid 
+	
+
+* merge harvest quantity and value data
+	merge 			m:1 hhid prcid pltid cropid using "$root/2011_AGSEC5A_plt.dta", generate(_sec5a) 
+	*** matched 9,237
+	*** unmatched 1,687 from master
+	
+	drop 			if _sec5a != 3
 	
 * merge in plot size data and irrigation data
-	merge			m:1 hhid prcid using "$root/2011_agsec2", generate(_sec2)
-	*** matched 8,755, unmatched 536 from master
-	*** a lot unmatched, means plots do not area data
-	*** for now as per Malawi (rs_plot) we drop all unmerged observations
+	merge			m:1 hhid prcid using "$root/2011_agsec2_plt", generate(_sec2)
+	*** matched 8,717
+	*** unmatched from master 520 
 
 	drop			if _sec2 != 3
-		
+	
+* merge in ownership data
+	merge m:1 		hhid prcid using "$root/2011_agsec2g_plt", generate(_sec2g)
+	*** matched 7,181
+	*** unmatched from master 1,526 
+	
+	drop 			if _sec2g !=3
+	
 * merging in labor, fertilizer and pest data
-	merge			m:1 hhid prcid pltid  using "$root/2011_AGSEC3A", generate(_sec3a)
-	*** 18 unmerged from master
+	merge			m:1 hhid prcid pltid  using "$root/2011_AGSEC3A_plt", generate(_sec3a)
+	*** matched 7,177
+	*** 4 unmatched from master 
 
-	drop			if _sec3a == 2
+	drop			if _sec3a !=3
+		
+
+* merge in decision making data and gender data
+	merge m:1 		hhid prcid pltid using "$root/2011_agsec3_plt", generate (_sec3)
+	*** matched 7,177
+	
+	drop 			if _sec3 !=3
 	
 * replace missing binary values
 	replace			irr_any = 0 if irr_any == .
@@ -64,29 +86,9 @@
 	drop			if herb_any == .
 	*** no observations dropped
 
-	drop			_sec2 _sec3a
-
-************************************************************************
-**# 1b - create total farm and maize variables
-************************************************************************
-
-* rename some variables
-	rename 			cropvalue vl_hrv
-	rename			kilo_fert fert
-	rename			labor_days labordays
-
-* generate mz_variables
-	gen				mz_lnd = plotsize	if cropid == 130
-	gen				mz_lab = labordays	if cropid == 130
-	gen				mz_frt = fert		if cropid == 130
-	gen				mz_pst = pest_any	if cropid == 130
-	gen				mz_hrb = herb_any	if cropid == 130
-	gen				mz_irr = irr_any	if cropid == 130
-	gen 			mz_hrv = vl_hrv	if cropid == 130
-	gen 			mz_damaged = 1 		if cropid == 130 & vl_hrv == 0
+	drop			_sec2 _sec3a _sec2g _sec3 _sec5a
 	
-	isid 			hhid prcid pltid cropid
-
+	isid 			hhid prcid pltid cropid 
 * close the log
 	log	close
 

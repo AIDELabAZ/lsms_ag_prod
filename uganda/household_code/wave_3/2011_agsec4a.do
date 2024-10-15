@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 14 Oct 24
+* Edited on: 15 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -16,7 +16,7 @@
 	* mdesc.ado
 
 * TO DO:
-	* define isid 
+	* done
 	
 
 ***********************************************************************
@@ -58,8 +58,11 @@
 	drop if			pltid ==. | prcid ==.
 	* 1 observations dropped
 
-	isid 			hhid prcid pltid cropid	
 
+	duplicates 		drop hhid prcid pltid cropid, force
+	*** these variables did not uniquely identify obs
+
+	isid 			hhid prcid pltid cropid	 
 
 	
 ***********************************************************************
@@ -68,96 +71,96 @@
 
 * see how many hh used traditional vs improved seed 
 	tab 			seed_type
-	* 6,139 used traditional
-	* 598 used improved
-	* 3,812 missing 
+	* 6,197 used traditional
+	* 738 used improved
+	* 3,989 missing 
 
 * create a variable showing used of seed 
-	gen 			seed_any = 1 if a4aq16 == 1
+	gen 			seed_any = 1 if a4aq3 == 1
 	replace			seed_any = 0 if seed_any ==.
-	* 63.9 % used seed
+	* 63.52 % used seed
 
 * convert seed_qty to kgs 
 	tab					unit
 	describe			unit
-	label list 			a4aq11b
+	label list 			L_Unit_Code
 	
 	gen 				seed_qty_kg =. 
 	label var			seed_qty_kg "quanity of seeds used (kg)"
 	
 	*kgs
 		replace 		seed_qty_kg = seed_qty if unit == 1
-		*** 4,165  changes
+		*** 4,268  changes
 		count if 		unit == 1 & seed_qty ==1 
-		*** 392 observations  
+		*** 377 observations  
 		
 	* grams 
 		replace 		seed_qty_kg = seed_qty/1000 if unit == 2 
-		*** 68 changes 
-		*** check values, observations with 1,2,8, 0.25 grams
+		*** 63 changes 
+		*** check values, observations less than 1kg
 		
 	* sack 120 kgs
 		replace			seed_qty_kg = seed_qty * 120 if unit == 9
-		*** 59 changes  
+		*** 124 changes  
 		
 	* sack 100 kgs 
 		replace 		seed_qty_kg = seed_qty * 100 if unit == 10
-		*** 318 changes 
+		*** 236 changes 
 		
 	* sack 80 kgs 
 		replace 		seed_qty_kg = seed_qty * 80 if unit == 11
-		***  70 changes 	
+		***  52 changes 	
 
 	* sack 50 kgs 
 		replace 		seed_qty_kg = seed_qty * 50 if unit == 12
-		***  79 changes 
+		***  52 changes 
 		
 	* Tin 20 lts
 		replace 		seed_qty_kg = seed_qty * 20 if unit == 20
-		***  126 changes 	
+		***  71 changes 	
 
 	* Tins 5 lts 
 		replace 		seed_qty_kg = seed_qty * 5 if unit == 21
-		***  69 changes 
+		***  14 changes 
 		
 	* plastic basin 15 lts 
 		replace 		seed_qty_kg = seed_qty * 15 if unit == 22
-		***  341 changes
+		***  282 changes
 		
 	* kimbo/cowboy/blueland tin (2kg)
 		replace 		seed_qty_kg = seed_qty * 2 if unit == 29
-		***  125 changes 
+		***  96 changes 
 		
 	* kimbo/cowboy/blueland tin (1kg)
 		replace 		seed_qty_kg = seed_qty * 1 if unit == 30
-		***  29 changes 
+		***  54 changes 
 
 	* kimbo/cowboy/blueland tin (0.5kg)
 		replace 		seed_qty_kg = seed_qty * 0.5 if unit == 31
-		***  182 changes 
+		***  681 changes 
 		
 	* basket 20 kg
 		replace 		seed_qty_kg = seed_qty * 20 if unit == 37
-		***  5 changes 
+		***  33 changes 
 
 	* basket 10 kg
 		replace 		seed_qty_kg = seed_qty * 10 if unit == 38
-		***  12 changes 
+		***  7 changes 
 		
 	* basket 5 kg
 		replace 		seed_qty_kg = seed_qty * 5 if unit == 39
-		***  27 changes 
+		***  12 changes 
 
 	* basket 2 kg
 		replace 		seed_qty_kg = seed_qty * 2 if unit == 40
-		***  25 changes 
+		***  22 changes 
 			
 	
 	
 * summarize seed quantity
 	sum				seed_qty_kg
-	*** min 0.001 
-	*** max 38,400
+	*** min 0.000001 
+	*** max 33,330
 	
 	mdesc 			seed_qty_kg
 	
@@ -170,7 +173,7 @@
 	gen				seed_purch = 1 if a4aq10 ==1
 	replace 		seed_purch = 0 if seed_purch ==.
 	tab 			seed_purch
-	* 20.12% purchased seeds
+	* 22.82% purchased seeds
 
 * purchase value 
 	rename 			a4aq15 seed_vle
@@ -181,7 +184,7 @@
 	
 	sum				seed_price
 	count if 		seed_price == . & seed_purch == 1
-	*** 247 hh who purchased but are missing price 
+	*** 178 hh who purchased but are missing price 
 	*** 1 missing seed value
 	
 	

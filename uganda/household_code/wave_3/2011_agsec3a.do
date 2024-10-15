@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 14 Oct 24
+* Edited on: 15 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -213,6 +213,10 @@
 	sum 			labor_days
 	*** mean 101.45, max 3080, min 0	
 
+* change format of hhid for merging purposes (merging file)
+
+	drop 			hhid 
+	rename 			HHID hhid
 	
 ************************************************************************
 **# 6 - end matter, clean up to save

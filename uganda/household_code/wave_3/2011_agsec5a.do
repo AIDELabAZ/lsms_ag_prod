@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 14 Oct 24
+* Edited on: 15 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -38,7 +38,7 @@
 **# 1 - import data and rename variables
 ************************************************************************
 
-* import wave 2 season 1
+* import wave 3 season 1
 	use 			"$root/2011_AGSEC5A.dta", clear
 		
 	rename 			cropID cropid
@@ -527,6 +527,10 @@
 **# 9 - end matter, clean up to save
 ************************************************************************
 
+* change format of hhid for future merging (merge file)
+	destring 		hhid, replace 
+	format 			hhid %16.0g
+	
 * summarize crop value, imputed crop value, and maize harvest
 	sum				cropvl
 	*** mean 56.21 max 989

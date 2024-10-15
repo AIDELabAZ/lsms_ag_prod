@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 14 Oct 24
+* Edited on: 15 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -175,6 +175,10 @@
 	
 * drop duplicate
 	duplicates 		drop hhid prcid, force
+	
+* drop hhid for merging purposes
+	drop 			hhid
+	rename 			HHID hhid 
 					
 ***********************************************************************
 **# 6 - end matter, clean up to save
