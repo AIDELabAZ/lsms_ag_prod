@@ -26,7 +26,7 @@
 	
 * open log
 	cap 				log close
-	log using 			"$logout/unps3_merge", append
+	log using 			"$logout/unps3_merge_plt", append
 
 	
 ************************************************************************

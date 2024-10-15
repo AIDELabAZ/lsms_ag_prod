@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: ek
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 14 Oct 24
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* fertilizer use
@@ -30,7 +30,7 @@
 	
 * open log	
 	cap log 			close
-	log using 			"$logout/2011_agsec3a", append
+	log using 			"$logout/2011_agsec3a_plt", append
 	
 ************************************************************************
 **# 1 - import data and rename variables
@@ -57,7 +57,7 @@
 ************************************************************************	
 	
 * merge the location identification
-	merge m:1 		hhid using "$export/2011_GSEC1"
+	merge m:1 		hhid using "$export/2011_GSEC1_plt"
 	*** 1054 unmatched from master
 	
 	drop if			_merge != 3
@@ -70,6 +70,11 @@
 * fertilizer use
 	rename 		a3aq13 fert_any
 	rename 		a3aq15 kilo_fert
+	
+* make a variable that shows  organic fertilizer use
+	gen				forg_any =1 if a3aq4 == 1
+	replace			forg_any = 0 if forg_any ==.
+	*** only 5.18 percent used organic fert
 
 		
 * replace the missing fert_any with 0
@@ -113,6 +118,22 @@
 * record fert_any
 	replace			fert_any = 0 if fert_any == 2
 
+* variable showing if hh purchased fertilizer
+
+	gen 			fert_purch_any = 1 if a3aq16 ==1
+	replace 		fert_purch_any = 0 if fert_purch_any ==. 
+	*** 1.68 % purchased fert
+		
+* calculate price of fertilizer
+	rename 			a3aq17 kfert_purch
+	rename			a3aq18 vle_fert_purch
+	
+	gen				fert_price = vle_fert_purch/kfert_purch
+	label var 		fert_price "price per kilo (shillings)"
+	
+	count if 		fert_price== . &  fert_purch_any == 1
+	* 0 observations missing price for hh who purchased fertilizer
+	
 	
 ************************************************************************
 **# 4 - pesticide & herbicide
@@ -197,15 +218,16 @@
 **# 6 - end matter, clean up to save
 ************************************************************************
 
-	keep hhid prcid pltid fert_any kilo_fert labor_days region ///
-		district county subcounty parish pest_any herb_any
+	keep hhid prcid region district subcounty pltid fert_any kilo_fert labor_days region ///
+		district county subcounty parish pest_any herb_any parish wgt11  ///
+		forg_any fert_price
 
 	compress
 	describe
 	summarize
 
 * save file
-	save 			"$export/2011_AGSEC3A.dta", replace
+	save 			"$export/2011_AGSEC3A_plt.dta", replace
 	
 * close the log
 	log	close

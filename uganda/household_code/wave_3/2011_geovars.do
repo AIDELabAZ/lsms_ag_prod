@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: Oct 2020
-* Created by: jdm
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 14 Oct 24
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* cleans geovars
@@ -26,7 +26,7 @@
 	
 * open log	
 	cap 				log close
-	log using 			"$logout/2011_geovars", append
+	log using 			"$logout/2011_geovars_plt", append
 
 	
 ************************************************************************
@@ -54,7 +54,7 @@
 	summarize
 
 * save file
-	save 			"$export/2011_geovars.dta", replace
+	save 			"$export/2011_geovars_plt.dta", replace
 
 * close the log
 	log	close
