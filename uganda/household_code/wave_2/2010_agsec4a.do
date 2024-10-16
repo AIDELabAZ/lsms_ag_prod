@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 15 Oct 24
+* Edited on: 16 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -42,11 +42,7 @@
 	
 * rename variables	
 	rename 			HHID hhid
-	rename			parcelID prcid
-	rename			plotID pltid
 	rename 			cropID cropid
-	rename 			cropID_other cropid2
-	rename			a4aq11b unit
 	rename			a4aq11a seed_qty
 	rename 			a4aq13 seed_type
 	

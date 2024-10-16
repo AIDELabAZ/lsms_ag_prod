@@ -1,10 +1,9 @@
-* Project: WB Weather
-* Created on: May 2020
-* Created by: McG
-* Edited on: 21 May 2024
-* Edited by: jdm
-* Stata v.18
-
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 16 Oct 2024
+* Edited by: rg
+* Stata v.18, mac
 * does
 	* cleans Tanzania household variables, wave 1 Ag sec4a
 	* kind of a crop roster, with harvest weights, long rainy season
@@ -28,13 +27,13 @@
 	global logout 	"$data/household_data/tanzania/logs"
 
 * open log 
-	cap log close 
-	log using "$logout/wv1_AGSEC4A", append
+	cap log 		close 
+	log using 		"$logout/wv1_AGSEC4A_plt", append
 
 	
-* **********************************************************************
-* 1 - prepare TZA 2008 (Wave 1) - Agriculture Section 4A 
-* **********************************************************************
+***********************************************************************
+**# 1 - prepare TZA 2008 (Wave 1) - Agriculture Section 4A 
+***********************************************************************
 
 * load data
 	use 		"$root/SEC_4A", clear
@@ -118,9 +117,9 @@
 	*** will replace these two obs equl to .25
 	*** they may not both actually equal .25, but they should sum to .5
 	
-* ***********************************************************************
-* 2 - generate harvest variables
-* ***********************************************************************	
+************************************************************************
+**# 2 - generate harvest variables
+************************************************************************	
 
 * other variables of interest
 	rename 				s4aq15 wgt_hvsted
@@ -212,9 +211,9 @@
 	*** imputed 18 values out of 1,864 total observations		
 	
 	
-* **********************************************************************
-* 3 - end matter, clean up to save
-* **********************************************************************
+***********************************************************************
+**# 3 - end matter, clean up to save
+***********************************************************************
 	
 * keep what we want, get rid of what we don't
 	keep 				hhid plotnum plot_id crop_code crop_id clusterid ///
@@ -253,7 +252,7 @@
 	describe
 	summarize 
 	sort 			plot_id
-	save 			"$export/AG_SEC4A.dta", replace
+	save 			"$export/AG_SEC4A_plt.dta", replace
 
 * close the log
 	log	close

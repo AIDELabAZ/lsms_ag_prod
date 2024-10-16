@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: May 2020
-* Created by: McG
-* Edited on: 21 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 16 Oct 2024
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* cleans Tanzania household variables, wave 1 Ag sec3a
@@ -28,8 +28,8 @@
 	global logout 	"$data/household_data/tanzania/logs"
 
 * open log 
-	cap log close 
-	log using "$logout/wv1_AGSEC3A", append
+	cap log 		close 
+	log 			using "$logout/wv1_AGSEC3A_plt", append
 
 
 * **********************************************************************
@@ -465,7 +465,7 @@
 	describe
 	summarize 
 	sort 			plot_id
-	save 			"$export/AG_SEC3A.dta", replace
+	save 			"$export/AG_SEC3A_plt.dta", replace
 
 * close the log
 	log	close

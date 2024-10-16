@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: themacfreezie
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 16 Oct 24
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* fertilizer use, pesticide, and labor
@@ -126,7 +126,7 @@
 	
 	count if 		fert_price== . &  fert_purch_any == 1
 	* 27 observations missing price for hh who purchased fertilizer
-
+	* check and compare the ranges of qty fert used and qty fert purchased 
 	
 ************************************************************************
 **# 4 - pesticide & herbicide

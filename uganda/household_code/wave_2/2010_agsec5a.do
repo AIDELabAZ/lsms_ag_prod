@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: ek
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 16 Oct 24
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* Crop output
@@ -30,7 +30,7 @@
 
 * open log	
 	cap log 		close
-	log using 		"$logout/2010_AGSEC5A", append
+	log using 		"$logout/2010_AGSEC5A_plt", append
 
 	
 ************************************************************************
@@ -550,7 +550,7 @@
 	summarize
 
 * save file
-	save 			"$export/2010_AGSEC5A.dta", replace
+	save 			"$export/2010_AGSEC5A_plt.dta", replace
 
 * close the log
 	log	close
