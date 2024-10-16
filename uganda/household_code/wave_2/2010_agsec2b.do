@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: Apr 2024
-* Created by: jdm
-* Edited on: 19 Apr 24
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 15 Oct 24
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* reads Uganda wave 5 owned plot info (2015_AGSEC2B) for the 1st season
@@ -29,7 +29,7 @@
 
 * open log	
 	cap 				log close
-	log using 			"$logout/2010_agsec2b", append
+	log using 			"$logout/2010_agsec2b_plt", append
 
 	
 ***********************************************************************
@@ -59,7 +59,7 @@
 ***********************************************************************	
 	
 * merge the location identification
-	merge m:1 hhid using "$export/2010_GSEC1"
+	merge m:1 hhid using "$export/2010_GSEC1_plt"
 	*** merged 1,052 1,921 unmerged total, only 11 from master
 	*** 71 unmerged from master
 	
@@ -176,7 +176,7 @@
 					plotsize irr_any
 
 * append owned plots
-	append			using "$export/2010_AGSEC2A.dta"
+	append			using "$export/2010_AGSEC2A_plt.dta"
 	*** creates 1 duplicate observation
 	
 * drop duplicate
@@ -192,7 +192,7 @@
 	summarize
 
 * save file
-	save 			"$export/2010_agsec2.dta", replace
+	save 			"$export/2010_agsec2_plt.dta", replace
 
 * close the log
 	log	close

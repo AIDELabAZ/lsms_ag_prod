@@ -30,7 +30,7 @@
 	
 * open log	
 	cap log 			close
-	log using 			"$logout/2010_agsec3a", append
+	log using 			"$logout/2010_agsec3a_plt", append
 
 	
 ************************************************************************
@@ -51,7 +51,7 @@
 ************************************************************************	
 	
 * merge the location identification
-	merge m:1 		hhid using "$export/2010_GSEC1"
+	merge m:1 		hhid using "$export/2010_GSEC1_plt"
 	*** 639 unmatched from master
 	
 	drop if			_merge != 3
@@ -64,6 +64,11 @@
 * fertilizer use
 	rename 			a3aq14 fert_any
 	rename 			a3aq16 kilo_fert
+	
+* make a variable that shows  organic fertilizer use
+	gen				forg_any =1 if a3aq4 == 1
+	replace			forg_any = 0 if forg_any ==.
+	*** only 4.69 percent used organic fert
 		
 * replace the missing fert_any with 0
 	tab 			kilo_fert if fert_any == .
@@ -106,6 +111,22 @@
 * record fert_any
 	replace			fert_any = 0 if fert_any == 2
 	
+* variable showing if hh purchased fertilizer
+
+	gen 			fert_purch_any = 1 if a3aq17 ==1
+	replace 		fert_purch_any = 0 if fert_purch_any ==. 
+	*** 1.25 % purchased fert
+		
+* calculate price of fertilizer
+	rename 			a3aq18 kfert_purch
+	rename			a3aq19 vle_fert_purch
+	
+	gen				fert_price = vle_fert_purch/kfert_purch
+	label var 		fert_price "price per kilo (shillings)"
+	
+	count if 		fert_price== . &  fert_purch_any == 1
+	* 27 observations missing price for hh who purchased fertilizer
+
 	
 ************************************************************************
 **# 4 - pesticide & herbicide
@@ -206,14 +227,15 @@
 ************************************************************************
 
 	keep hhid prcid pltid fert_any kilo_fert labor_days region ///
-		district county subcounty parish pest_any herb_any
+		district county subcounty parish pest_any herb_any forg_any fert_price
+
 
 	compress
 	describe
 	summarize
 
 * save file			
-	save 			"$export/2010_AGSEC3A.dta", replace
+	save 			"$export/2010_AGSEC3A_plt.dta", replace
 
 * close the log
 	log	close

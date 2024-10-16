@@ -1,9 +1,9 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: themacfreezie
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 15 Oct 24
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* reads Uganda wave 2 owned plot info (2010_AGSEC2A) for the 1st season
@@ -32,7 +32,7 @@
 	
 * open log	
 	cap 					log close
-	log using 				"$logout/2010_agsec2a", append
+	log using 				"$logout/2010_agsec2a_plt", append
 
 	
 ************************************************************************
@@ -62,7 +62,7 @@
 ************************************************************************	
 	
 * merge the location identification
-	merge m:1 hhid using "$export/2010_GSEC1"
+	merge m:1 hhid using "$export/2010_GSEC1_plt"
 	*** 10 unmatched from master
 	*** that means 10 observations did not have location data
 	*** no option at this stage except to drop all unmatched
@@ -196,7 +196,7 @@
 	summarize
 
 * save file
-	save 			"$export/2010_AGSEC2A.dta", replace
+	save 			"$export/2010_AGSEC2A_plt.dta", replace
 
 
 * close the log
