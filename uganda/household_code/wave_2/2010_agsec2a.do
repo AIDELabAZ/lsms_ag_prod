@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 15 Oct 24
+* Edited on: 17 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -23,9 +23,9 @@
 ************************************************************************
 
 * define paths	
-	global 	root 			"$data/household_data/uganda/wave_2/raw"  
-	global  export 			"$data/household_data/uganda/wave_2/refined"
-	global 	logout 			"$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_2/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_2"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 
 * close log 
 	*log close

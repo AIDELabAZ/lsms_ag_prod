@@ -22,13 +22,13 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/household_data/uganda/wave_2/raw"  
-	global export 	"$data/household_data/uganda/wave_2/refined"
-	global logout 	"$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_2/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_2"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2009_gsec2_plt", append
+	log using 		"$logout/2010_gsec2_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
@@ -57,7 +57,7 @@
 	keep 			hhid PID gender member_number
 	
 * save file 
-	save 			"$export/2009_gsec2_plt.dta", replace	
+	save 			"$export/2010_gsec2_plt.dta", replace	
 	
 * close the log
 	log	close

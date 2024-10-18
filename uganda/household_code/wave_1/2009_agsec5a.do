@@ -25,15 +25,15 @@
 * **********************************************************************
 
 * define paths	
-	global root 		"$data/household_data/uganda/wave_1/raw"  
-	global export 		"$data/household_data/uganda/wave_1/refined"
-	global logout 		"$data/household_data/uganda/logs"
-	global conv 		"$data/household_data/uganda/conversion_files"  
+	global root 	"$data/raw_lsms_data/uganda/wave_1/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_1"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
+	global conv 	"$data/raw_lsms_data/uganda/conversion_files"  
 
 	
 * open log	
 	cap log 			close
-	log using 			"$logout/2009_AGSEC5A", append
+	log using 			"$logout/2009_AGSEC5A_plt", append
 
 	
 * **********************************************************************
@@ -528,7 +528,7 @@
 	summarize
 
 * save file
-	save 			"$export/2009_AGSEC5A.dta", replace
+	save 			"$export/2009_AGSEC5A_plt.dta", replace
 
 
 * close the log

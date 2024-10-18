@@ -23,10 +23,10 @@
 ************************************************************************
 
 * define paths	
-	global root 		 "$data/household_data/uganda/wave_2/raw"  
-	global export 		 "$data/household_data/uganda/wave_2/refined"
-	global logout 		 "$data/household_data/uganda/logs"
-	global conv 		 "$data/household_data/uganda/conversion_files"  
+	global root 	"$data/raw_lsms_data/uganda/wave_2/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_2"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
+	global conv 	"$data/raw_lsms_data/uganda/conversion_files"  
 
 * open log	
 	cap log 		close
@@ -261,7 +261,7 @@
 **********************************************************************	
 	
 * merge the location identification
-	merge m:1 		hhid using "$export/2010_GSEC1"
+	merge m:1 		hhid using "$export/2010_GSEC1_plt"
 	*** 533 unmatched from master
 	
 	drop 			if _merge == 2
