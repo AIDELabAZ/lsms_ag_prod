@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 13 Oct 24
+* Edited on: 19 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -25,9 +25,9 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/household_data/uganda/wave_4/raw"  
-	global export 	"$data/household_data/uganda/wave_4/refined"
-	global logout 	"$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_4/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
@@ -49,6 +49,9 @@
 	rename			a4aq11b unit
 	rename			a4aq11a seed_qty
 	rename 			a4aq13 seed_type
+	rename 			a4aq7 area_plntd
+	rename			a4aq9 prctg_plntd
+	
 	
 	sort 			hhid prcid pltid cropid  
 	
@@ -59,10 +62,20 @@
 
 	isid 			hhid prcid pltid cropid	
 
-
+***********************************************************************
+**# 2 - percentage planted 	
+***********************************************************************
+* convert area to hectares 
+	replace 		area_plntd = area_plntd * 0.404686
+	
+* create variable for percentage of plot area
+	replace 		prctg_plntd = prctg_plntd / 100
+	
+	gen 			crop_area = area_plntd * prctg_plntd
+	label var 		crop_are "area planted under main crop in hectares"
 	
 ***********************************************************************
-**# 2 - merge kg conversion file and create seed quantity
+**# 3 - merge kg conversion file and create seed quantity
 ***********************************************************************
 
 * see how many hh used traditional vs improved seed 
@@ -162,7 +175,7 @@
 	
 
 ***********************************************************************
-**# 3 - create seed price 
+**# 4 - create seed price 
 ***********************************************************************	
 	
 * generate a variable showing seed purchase
@@ -178,6 +191,9 @@
 	gen 			seed_price = seed_vle / seed_qty_kg
 	label var		seed_price "price of seed per kg (shillings)"
 	
+	replace 		seed_price = seed_price/ 2860.0412
+	label var 		seed_price "price of seed per kg in 2015 USD"
+	
 	sum				seed_price
 	count if 		seed_price == . & seed_purch == 1
 	*** 247 hh who purchased but are missing price 
@@ -185,7 +201,7 @@
 	
 	
 ***********************************************************************
-**# 4 - type of crop stand
+**# 5 - type of crop stand
 ***********************************************************************
 
 * make a variable that shows if intercropped or not
@@ -194,11 +210,13 @@
 
 		
 ***********************************************************************
-**# 5 - end matter, clean up to save
+**# 6 - end matter, clean up to save
 ***********************************************************************
 
 	keep 			hhid prcid cropid cropid2  ///
-					pltid intrcrp_any seed_qty_kg seed_type seed_vle seed_price
+					pltid intrcrp_any seed_qty_kg seed_type seed_vle /// 
+					seed_price crop_area area_plntd prctg_plntd
+					
 
 	compress
 	describe

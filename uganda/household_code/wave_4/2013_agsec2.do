@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 17 Oct 24
+* Edited on: 19 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 

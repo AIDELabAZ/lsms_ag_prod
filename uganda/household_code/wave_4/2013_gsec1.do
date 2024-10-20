@@ -6,7 +6,7 @@
 * Stata v.18, mac
 
 * does
-	* hh roster information from hh questionaire
+	* hh roster information from hh questionaire (rural/urban)
 	* reads Uganda wave 4 hh information (gsec2)
 
 * assumes
@@ -28,42 +28,49 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2013_gsec2_plt", append
+	log using 		"$logout/2013_gsec1_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
 
 * import hh roster info
-	use 			"$root/hh/gsec2.dta", clear
-	
-* rename variables			
-	rename			h2q1 member_number
-	rename 			h2q3 gender
-	rename 			h2q8 age
+	use 			"$root/hh/gsec1.dta", clear
 
-* modify format of pid so it matches pid from other files 
-	rename			PID pid
-	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
-	destring		PID, replace
-	
+* modify format of hhid so it matches hhid from other files 
+
 	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
 	destring		hhid, replace
 	
-	isid 			hhid PID
-	order			hhid, after(gender)
-	order			gender, after(hhid)
+	isid 			hhid 
 	
-	keep 			hhid PID gender age 
-
+	keep 			hhid urban 
+	order 			urban, after(hhid)
+	
+* create dummy for rural/urban
+	gen				urban_status =1 if urban ==1 
+	replace 		urban_status = 0 if urban_status==.
 	
 ***********************************************************************
-**# 2 - end matter, clean up to save
+**# 2 - merge data (hh roster info)
 ***********************************************************************
-
+	
+	merge 1:m 		hhid using "$export/2013_gsec2_plt.dta"
+	** all observations matches 
+	
+	drop 			_merge
+	order 			PID, after(hhid)
+	order			gender, after(PID)
+	order 			age, after(gender)
+	
+	
+	
+***********************************************************************
+**# 3 - end matter, clean up to save
+***********************************************************************
 	
 * save file 
-	save 			"$export/2013_gsec2_plt.dta", replace	
+	save 			"$export/2013_gsec1_plt.dta", replace	
 	
 * close the log
 	log	close

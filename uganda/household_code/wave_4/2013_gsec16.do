@@ -6,8 +6,8 @@
 * Stata v.18, mac
 
 * does
-	* hh roster information from hh questionaire
-	* reads Uganda wave 4 hh information (gsec2)
+	* create indicator variables for shocks (agricultural and hh)
+	* reads Uganda wave 4 hh information (gsec16)
 
 * assumes
 	* access to raw data
@@ -28,34 +28,43 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2013_gsec2_plt", append
+	log using 		"$logout/2013_gsec16_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
 
 * import hh roster info
-	use 			"$root/hh/gsec2.dta", clear
+	use 			"$root/hh/gsec16.dta", clear
 	
 * rename variables			
-	rename			h2q1 member_number
-	rename 			h2q3 gender
-	rename 			h2q8 age
-
-* modify format of pid so it matches pid from other files 
-	rename			PID pid
-	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
-	destring		PID, replace
+	rename 			h16q00 shocks
+	describe 		shocks
+	label list 		h16q00
 	
+* create indicator variable for agricultural season shocks (flood, fire, drought, 
+/// irregular rains)
+
+	gen 			ag_shock = 1 if shocks == 102 | shocks == 117 | shocks == 1011 
+	replace 		ag_shock = 0 if ag_shock ==.
+
+* create indicator variable for hh shocks 
+	gen 			hh_shock = 1 if shocks == 112 | shocks == 113
+	replace 		hh_shock = 0 if hh_shock ==.
+	
+* modify format of pid so it matches pid from other files 
 	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
 	destring		hhid, replace
 	
-	isid 			hhid PID
-	order			hhid, after(gender)
-	order			gender, after(hhid)
-	
-	keep 			hhid PID gender age 
 
+	keep 			hhid  ag_shock hh_shock
+	order 			hhid, after(ag_shock)
+	order 			ag_shock, after(hhid)
+	
+	collapse 		(max) ag_shock (max) hh_shock , by(hhid)
+	format 			hhid %16.0g
+	
+	
 	
 ***********************************************************************
 **# 2 - end matter, clean up to save
@@ -63,7 +72,7 @@
 
 	
 * save file 
-	save 			"$export/2013_gsec2_plt.dta", replace	
+	save 			"$export/2013_gsec16_plt.dta", replace	
 	
 * close the log
 	log	close

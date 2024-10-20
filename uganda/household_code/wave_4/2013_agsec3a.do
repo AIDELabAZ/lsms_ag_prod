@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 13 Oct 24
+* Edited on: 19 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -24,13 +24,13 @@
 ***********************************************************************
 
 * define paths	
-	global root 	 	"$data/household_data/uganda/wave_4/raw"  
-	global export		"$data/household_data/uganda/wave_4/refined"
-	global logout 		"$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_4/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 			close
-	log using 			"$logout/2013_agsec3a", append
+	log using 			"$logout/2013_agsec3a_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
@@ -55,7 +55,7 @@
 ***********************************************************************	
 	
 * merge the location identification
-	merge m:1 		hhid using "$export/2013_agsec1"
+	merge m:1 		hhid using "$export/2013_agsec1_plt"
 	*** 101 unmatched from using
 	*** 7,550 matched
 	
@@ -125,13 +125,18 @@
 		
 * calculate price of fertilizer
 	rename 			a3aq17 kfert_purch
-	rename			a3aq18 vle_fert_purch
+	rename			a3aq18 fert_vle
 	
-	gen				fert_price = vle_fert_purch/kfert_purch
-	label var 		fert_price "price per kilo (shillings)"
+
+	gen 			fert_vle_usd = fert_vle / 2860.0412
+	label var 		fert_vle_usd "value of inorganic fert purchase in 2015 USD"
 	
-	count if 		fert_price== . &  fert_purch_any == 1
-	* 0 observations missing price for hh who purchased fertilizer
+	gen 			fert_price = fert_vle_usd / kfert_purch
+	label var 		fert_price "price of inorganic fert per kg in 2015 USD"
+	
+	
+	count if 		fert_vle_usd== . &  fert_purch_any == 1
+	* 0 observations missing value for hh who purchased fertilizer
 
 	
 ***********************************************************************
@@ -229,7 +234,7 @@
 
 	keep 			hhid hhid_pnl prcid region district subcounty ///
 					parish wgt13 ea rotate pest_any herb_any labor_days ///
-					fert_any kilo_fert pltid forg_any fert_price
+					fert_any kilo_fert pltid forg_any fert_vle_usd fert_price
 
 	compress
 	describe

@@ -6,8 +6,8 @@
 * Stata v.18, mac
 
 * does
-	* hh roster information from hh questionaire
-	* reads Uganda wave 2 hh information (gsec2)
+	* education level 
+	* reads Uganda wave 4 hh information (gsec2)
 
 * assumes
 	* access to raw data
@@ -22,44 +22,44 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/raw_lsms_data/uganda/wave_2/raw"  
-	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_2"
+	global root 	"$data/raw_lsms_data/uganda/wave_4/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
 	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2010_gsec2_plt", append
+	log using 		"$logout/2013_gsec4_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
 
 * import hh roster info
-	use 			"$root/GSEC2.dta", clear
+	use 			"$root/hh/gsec4.dta", clear
 	
 * rename variables			
-	rename 			h2q3 gender
-	rename 			h2q1 member_number
-	rename 			h2q8 age 
-	
+	rename			h4q7 education
 
 * modify format of pid so it matches pid from other files 
+	rename			PID pid
+	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
 	destring		PID, replace
-	format			PID %16.0g
 	
-	rename 			HHID hhid 
+	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
+	destring		hhid, replace
+	
 	isid 			hhid PID
+	order 			hhid, after(education)
+	order			education, after(PID)
 	
-	duplicates 		drop hhid member_number, force
-	isid 			hhid member_number
 
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-	keep 			hhid PID gender member_number
+	keep 			hhid PID education
 	
 * save file 
-	save 			"$export/2010_gsec2_plt.dta", replace	
+	save 			"$export/2013_gsec4_plt.dta", replace	
 	
 * close the log
 	log	close

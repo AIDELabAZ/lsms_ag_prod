@@ -6,8 +6,8 @@
 * Stata v.18, mac
 
 * does
-	* hh roster information from hh questionaire
-	* reads Uganda wave 2 hh information (gsec2)
+	* livestock ownership information from agric questionaire
+	* reads Uganda wave 4 hh information (agsec6a)
 
 * assumes
 	* access to raw data
@@ -22,44 +22,38 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/raw_lsms_data/uganda/wave_2/raw"  
-	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_2"
+	global root 	"$data/raw_lsms_data/uganda/wave_4/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
 	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2010_gsec2_plt", append
+	log using 		"$logout/2013_agsec6a_plt", append
 	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
 
-* import hh roster info
-	use 			"$root/GSEC2.dta", clear
+* import LIVESTOCK  info
+	use 			"$root/agric/AGSEC6A.dta", clear
 	
-* rename variables			
-	rename 			h2q3 gender
-	rename 			h2q1 member_number
-	rename 			h2q8 age 
+* rename variables 
+	rename 			HHID hhid
+	rename 			a6aq2 livstck
+	rename			a6aq3a lvstck_qty
+	rename			a6aq3b lvstck_own
 	
-
-* modify format of pid so it matches pid from other files 
-	destring		PID, replace
-	format			PID %16.0g
-	
-	rename 			HHID hhid 
-	isid 			hhid PID
-	
-	duplicates 		drop hhid member_number, force
-	isid 			hhid member_number
+* create livestock ownership indicator 
+	gen 			lvstck = 1 if livstck == 1 & lvstck_qty > 0
+	replace 		lvstck = 0 if lvstck ==.
 
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-	keep 			hhid PID gender member_number
+	keep 			hhid lvstck_own lvstck
 	
 * save file 
-	save 			"$export/2010_gsec2_plt.dta", replace	
+	save 			"$export/2013_agsec6a_plt.dta", replace	
 	
 * close the log
 	log	close
