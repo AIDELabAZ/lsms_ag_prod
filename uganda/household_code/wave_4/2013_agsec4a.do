@@ -70,6 +70,9 @@
 	gen				intrcrp = 1 if a4aq8 == 2
 	replace			intrcrp = 0 if intrcrp ==.
 
+* drop cropid is annual, other, fallow, pasture, and trees
+	drop 			if cropid > 699
+	*** 2,357 observations deleted 
 	
 ***********************************************************************
 **# 2 - percentage planted 	

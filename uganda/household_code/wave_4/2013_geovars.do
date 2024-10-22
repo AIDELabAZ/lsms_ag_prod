@@ -59,7 +59,11 @@
 
 	keep 			hhid aez sector elevation sq1-sq7 dist_road dist_popcenter
 
-	isid			hhid
+	destring		hhid, gen(hhid_pnl)
+	drop			hhid
+	format %16.0g 	hhid_pnl
+	
+	isid			hhid_pnl
 	
 	compress
 

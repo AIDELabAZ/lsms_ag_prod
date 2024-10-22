@@ -143,8 +143,8 @@
 	*** activities includepasture, forest. cultivation, and other
 	*** we will only include plots used for annual or perennial crops
 	
-	keep			if a2bq12a == 1
-	*** 344 observations deleted	
+	keep			if a2bq12a == 1 | a2bq12a == 2
+	*** 231 observations deleted	
 
 	
 ***********************************************************************

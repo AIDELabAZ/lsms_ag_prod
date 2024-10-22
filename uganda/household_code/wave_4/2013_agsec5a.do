@@ -257,11 +257,21 @@
 	keep 			hhid prcid pltid Production_ID cropid hrv_str_month ///
 						hrv_str_year hrv_stp_month hrv_stp_year hh harvqtykg 
 
+* collapse to hhid prcid pltid cropid
+* since Production_ID just accounts for different start of hrv month
+	collapse 		(sum) harvqtykg ///
+					(mean) hrv_str_month hrv_str_year hrv_stp_month hrv_stp_year, ///
+						by(hh hhid prcid pltid cropid)
+	* goes from 6,359 to 5,649		
+	
 	lab var			hrv_str_month "Harvest start month"
 	lab var			hrv_str_year "Harvest start year"
 	lab var			hrv_stp_month "Harvest stp month"
 	lab var			hrv_stp_year "Harvest stop year"
-						
+	lab var			harvqtykg "Harvest quantity (kg)"
+		
+	isid			hhid prcid pltid cropid
+		
 	compress
 
 * save file

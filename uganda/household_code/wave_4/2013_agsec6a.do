@@ -61,6 +61,10 @@
 	
 	lab var			lvstck "=1 if household owns livestock"
 	
+	isid			hhid
+	
+	compress
+	
 * save file 
 	save 			"$export/2013_agsec6a.dta", replace	
 	

@@ -12,7 +12,7 @@
 	* previously cleaned household datasets
 
 * TO DO:
-	* review by jdm
+	* done
 	
 
 ************************************************************************
@@ -20,9 +20,9 @@
 ************************************************************************
 
 * define paths
-	global root 		"$data/household_data/uganda/wave_4/refined"  
-	global export 		"$data/household_data/uganda/wave_4/refined"
-	global logout 		"$data/household_data/uganda/logs"
+	global 	root  		"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
+	global  export 		"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
+	global 	logout 		"$data/lsms_ag_prod_data/merged_data/uganda/logs"
 	
 * open log
 	cap log 			close
@@ -33,62 +33,85 @@
 **# 1 - merge plot level data sets together
 ************************************************************************
 
-* start by loading seed info , since this is our limiting factor
-	use 			"$root/2013_agsec4a_plt", clear
+* start by loading harvest data, this is our limiting factor
+	use 			"$root/2013_agsec5a", clear
+	
 	isid 			hhid prcid pltid cropid 
-	
 
-* merge harvest quantity and value data
-	merge 			m:1 hhid prcid pltid cropid using "$root/2013_agsec5a_plt.dta", generate(_sec5a) 
-	*** matched 6,904
-	*** unmatched 3,645 from master
+* merge in seed and planting date data
+	merge 			m:1 hhid prcid pltid cropid using "$root/2013_agsec4a.dta", generate(_sec4a) 
+	*** matched 5,648
+	*** only 1 unmatched from master
 	
-	drop 			if _sec5a != 3
+	drop 			if _sec4a != 3
+	*** 2,545 dropped
 	
+* merging in labor, fertilizer, pest, manager data
+	merge			m:1 hhid prcid pltid  using "$root/2013_agsec3a", generate(_sec3a)
+	*** matched 5,648
+	*** 0 unmatched from master
+
+	drop			if _sec3a != 3
+	*** 3,032 dropped
+		
 * merge in plot size data and irrigation data
-	merge			m:1 hhid prcid using "$root/2013_agsec2_plt", generate(_sec2)
-	*** matched 6,904
+	merge			m:1 hhid prcid using "$root/2013_agsec2", generate(_sec2)
+	*** matched 5,648
+	*** 0 unmatched from master
 
 	drop			if _sec2 != 3
-	
-* merge in ownership data
-	merge m:1 		hhid prcid using "$root/2013_agsec2g_plt", generate(_sec2g)
-	*** matched 5,507
-	*** unmatched from master 1,397 
-	
-	drop 			if _sec2g !=3
-	
-* merging in labor, fertilizer and pest data
-	merge			m:1 hhid prcid pltid  using "$root/2013_agsec3a_plt", generate(_sec3a)
-	*** matched 5,507
-
-	drop			if _sec3a == 2
-		
-
-* merge in decision making data and gender data
-	merge m:1 		hhid prcid pltid using "$root/2013_agsec3_plt", generate (_sec3)
-	*** matched 5,507
-	
-	drop 			if _sec3 !=3
-	
-* replace missing binary values
-	replace			irr_any = 0 if irr_any == .
-	replace			pest_any = 0 if pest_any == .
-	replace 		herb_any = 0 if herb_any == .
-	replace			fert_any = 0 if fert_any == .
-
-* drop observations missing values (not in continuous)
-	drop			if plotsize == .
-	drop			if irr_any == .
-	drop			if pest_any == .
-	drop			if herb_any == .
-	*** no observations dropped
-
-	drop			_sec2 _sec3a _sec2g _sec3 _sec5a
+	*** 1,327 dropped
 	
 	isid 			hhid prcid pltid cropid 
 
+	
+************************************************************************
+**# 2 - merge household level data in
+************************************************************************
 
+* merge in livestock data
+	merge 			m:1 hhid using "$root/2013_agsec6a.dta", generate(_sec6a) 
+	*** matched 1,748
+	*** 3,900 unmatched from master - households that do not own livestock
+	
+	drop 			if _sec6a == 2
+	*** 88 dropped - want to keep households w/o livestock
+
+* merge in electricity data
+	merge 			m:1 hh using "$root/2013_gsec10.dta", generate(_gsec10) 
+	*** matched 5,648
+	*** 0 unmatched from master
+	
+	drop 			if _gsec10 != 3
+	*** 1,011 dropped
+
+* merge in shock data
+	merge 			m:1 hh using "$root/2013_gsec16.dta", generate(_gsec16) 
+	*** matched 5,639
+	*** 9 unmatched from master
+	
+	drop 			if _gsec16 == 2
+	*** 1,007 dropped - want to keep households w/o shock
+
+* merge in geovars data
+	merge 			m:1 hhid_pnl using "$root/2013_geovars.dta", generate(_geovar) 
+	*** matched 3,257 matched
+	*** 2,391 unmatched from master - most are rotated in hh (2,213)
+	
+	drop 			if _geovar == 2
+	*** 1,007 dropped - want to keep households w/o shock
+
+***********************************************************************
+**# 3 - end matter, clean up to save
+***********************************************************************
+
+	isid			hhid prcid pltid cropid 
+	
+	compress
+	
+* save file 
+	save 			"$export/hhfinal_unps5.dta.dta", replace
+	
 * close the log
 	log	close
 

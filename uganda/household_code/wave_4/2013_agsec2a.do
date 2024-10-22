@@ -145,8 +145,8 @@
 	*** activities include renting out, pasture, forest. cultivation, and other
 	*** we will only include plots used for annual crops
 	
-	keep			if a2aq11a == 1
-	*** 1,554 observations deleted	
+	keep			if a2aq11a == 1 | a2aq11a == 2
+	*** 507 observations deleted	
 
 	
 ***********************************************************************
@@ -155,15 +155,15 @@
 
 * summarize plot size
 	sum 			plotsizeGPS
-	***	mean 1.48, max 48, min .01
+	***	mean 1.49, max 48, min .01
 	*** no plotsizes that are zero
 	
 	sum				plotsizeSR
-	*** mean 1.45, max 40, min .02
+	*** mean 1.48, max 40, min .02
 
 * how many missing values are there?
 	mdesc 			plotsizeGPS
-	*** 1,360 missing, 53% of observations
+	*** 1,906 missing, 53% of observations
 
 * convert acres to hectares
 	gen				plotsize = plotsizeGPS*0.404686
