@@ -1,19 +1,24 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 13 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 22 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* Crop output
 	* reads Uganda wave 4 crop output (2013_AGSEC5A) for the 1st season
-	* 3A - 5A are questionaires for the first planting season
-	* 3B - 5B are questionaires for the second planting season
+	* questionaire 5B is for 2nd season
+	* cleans
+		* harvest date
+		* crops
+		* output
+	* outputs cleaned harvest date file
 
 * assumes
 	* mdesc.ado
 	* access to raw data
+	* access to unit conversion file
+	* access to cleaned AGSEC1
 
 * TO DO:
 	* edit by jdm
@@ -24,10 +29,10 @@
 ***********************************************************************
 
 * define paths	
-	global 	root  		"$data/household_data/uganda/wave_4/raw"  
-	global  export 		"$data/household_data/uganda/wave_4/refined"
-	global 	logout 		"$data/household_data/uganda/logs"
-	global 	conv 		"$data/household_data/uganda/conversion_files"  
+	global 	root  		"$data/raw_lsms_data/uganda/wave_4/raw"  
+	global  export 		"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
+	global 	logout 		"$data/lsms_ag_prod_data/refined_data/uganda/logs"
+	global 	conv 		"$data/raw_lsms_data/uganda/conversion_files"  
 
 * open log	
 	cap log 			close
@@ -41,6 +46,8 @@
 * import wave 4 season 1
 	use 			"$root/agric/AGSEC5A.dta", clear
 		
+* rename variables	
+	rename 			HHID hhid
 	rename 			cropID cropid
 	rename			plotID pltid
 	rename			parcelID prcid
@@ -54,14 +61,9 @@
 	*** the hhids are 163060401 and 172100401
 	*** drop this observations
 	
-	drop			if pltid ==. & (HHID == 163060401| HHID == 172100401)
+	drop			if pltid ==. & (hhid == 163060401| hhid == 172100401)
 	*** two observations dropped
 
-* unlike other waves, HHID is a numeric here
-	format 			%18.0g HHID
-	tostring		HHID, gen(hhid) format(%18.0g)
-
-	
 * drop observations from plots that did not harvest because crop was immature
 	drop if 		a5aq5_2 == 1
 	*** 2,002 observations deleted
@@ -79,10 +81,6 @@
 * replace harvests with 99999 with a 0, 99999 is code for missing
 	replace 		a5aq6a = 0 if a5aq6a == 99999
 	*** 0 changed to zero
-	
-* replace missing cropharvests with 0
-	replace 		a5aq6a = 0 if a5aq6a == .
-	*** 5 changed to zero
 
 * missing prcid and pltid don't allow for unique id, drop missing
 	drop			if prcid == .
@@ -113,7 +111,7 @@
 
 * how many unmatched had a harvest of 0
 	tab 			a5aq6a if _merge == 1
-	*** only 2% have a harvest of 0
+	*** none have a harvest of 0
 	
 * how many unmatched because they used "other" to categorize the state of harvest?
 	tab 			condition if _merge == 1
@@ -124,10 +122,9 @@
 	tab 			unit if _merge == 1
 	tab 			unit if _merge == 1, nolabel
 	
-
 * replace ucaconversion to 1 if the harvest is 0
 	replace 		ucaconversion = 1 if a5aq6a == 0 & _merge == 1
-	*** 5 changes
+	*** 0 changes
 
 * manually replace conversion for the kilograms and sacks 
 * if the condition is other condition and the observation is unmatched
@@ -222,7 +219,7 @@
 		
 * drop the unmatched remaining observations
 	drop 			if _merge == 1 & ucaconversion == .
-	*** 193 observatinos deleted
+	*** 198 observatinos deleted
 
 	replace 			ucaconversion = medconversion if _merge == 3 & ucaconversion == .
 	*** 821 changes made
@@ -233,8 +230,8 @@
 	drop 			_merge
 	
 	tab				cropid
-	*** beans are the most numerous crop being 23.77% of crops planted
-	***	maize is the second highest being 20.26%
+	*** beans are the most numerous crop being 24% of crops planted
+	***	maize is the second highest being 20%
 	*** maize will be main crop following most other countries in the study
 	
 * convert harv quantity to kg
@@ -268,21 +265,12 @@
 ***********************************************************************
 
 * value of crop sold in shillings
-	rename			a5aq8 harvvlush
-	label var 		harvvlush "Value of crop sold in ugandan shilling"
+	rename			a5aq8 cropvl
+	label var 		cropvl "Value of crop sold (shilling)"
 	
 * summarize the value of sales in shillings
-	sum 			harvvlush, detail
-	*** mean 201,443.1 , min 6, max 1.03e+07
-
-* NOTE: Anna will check the conversions 	
-* generate crop is USD
-	gen 			cropvl = harvvlush / 2860.0412
-	lab var 		cropvl "total value of harvest in 2015 USD"
-	*** value comes from World Bank. Used excel file "world_bank_exchange_rates.xlxs"
-		
 	sum 			cropvl, detail
-	*** mean 70.4, min 0.002, max 3,593.48
+	*** mean 201,443 , min 6, max 1.03e+07
 	
 	
 ***********************************************************************
@@ -302,12 +290,11 @@
 * merge conversion file in for sold
 	merge m:1 		cropid unit condition using ///
 						"$conv/ValidCropUnitConditionCombinations.dta" 
-	*** unmatched 161 from master
+	*** unmatched 156 from master
 	*** dropping unmatched obs 
 	
 	drop			if _merge !=3
-	*** 932 observations deleted, 771 are from using file
-	
+	*** 927
 	
 * replace missing ucaconversion with kg if unit = kg
 	replace			ucaconversion = 1 if ucaconversion == . & ///
@@ -324,10 +311,10 @@
 	
 * convert quantity sold into kg
 	gen 			harvkgsold = a5aq7a*ucaconversion
-	lab	var			harvkgsold "quantity sold, in kilograms"
+	lab	var			harvkgsold "quantity sold (kg)"
 
 	sum				harvkgsold, detail
-	*** 0.25 min, mean 606.61, max 425,000
+	*** 0.25 min, mean 606, max 425,000
 	*** only 1 observation =425000
 	
 	drop 			if harvkgsold == 425000
@@ -351,10 +338,6 @@
 **# 5 - generate price data
 *********************************************************************	
 
-* hhid is a long variable in the using file 
-	destring		hhid, replace
-	format 			hhid %16.0g
-	
 * merge the location identification
 	merge m:1 		hhid using "$export/2013_agsec1"
 	*** 0 unmatched from master
@@ -367,10 +350,6 @@
 	encode			subcounty, gen (subcountydstrng)
 	encode			parish, gen (parishdstrng)
 
-* look at crop value in USD
-	sum 			cropvl, detail
-	*** max 3,593.48, mean 73.2, min 0.002
-	
 * condensed crop codes
 	inspect 		cropid
 	*** generally things look all right - only 38 unique values 
@@ -379,7 +358,7 @@
 	sort 			cropid
 	by 				cropid: gen cropprice = cropvl / harvkgsold 
 	sum 			cropprice, detail
-	*** mean = 0.79, max = 87.41, min = 0.0001
+	*** mean = 2274, max = 250,000, min = 0.5
 	*** will do some imputations later
 	
 * make datasets with crop price information
@@ -477,7 +456,7 @@
 	*** no missing
 	
 	sum 			cropprice croppricei
-	*** mean = 0.436, max = 64.1
+	*** mean = 1,524, max = 183,333
 
 	
 ***********************************************************************
@@ -522,7 +501,7 @@
 
 * summarize value of sales prior to imputations
 	sum				cropvl
-	*** mean 73.2, max 3,593.48
+	*** mean 209,408, max  1.03e+07
 	
 * replace cropvl with missing if over 3 std dev from the mean
 	sum 			cropvl, detail
@@ -542,7 +521,7 @@
 	
 * how did impute go?
 	sum 			cropvl_1_, detail
-	*** mean 41.9, max 524.46
+	*** mean 119989, max 1,500,000
 
 	replace 		cropvl = cropvl_1_
 	*** 4,390 changes
@@ -572,12 +551,12 @@
 
 * summarize value of harvest prior to imputations	
 	sum 			cropvalue
-	*** mean 99.3, max 34,964
+	*** mean 386,962, max 1.00e+08
 
 * replace any +3 s.d. away from median as missing, by crop	
 	sum				cropvalue, detail
 	replace			cropvalue = . if cropvalue > `r(p50)'+ (3*`r(sd)')
-	*** replaced 31 values
+	*** replaced 56 values
 	
 * impute missing values
 	mi set 			wide 	// declare the data to be wide.
@@ -590,11 +569,11 @@
 
 * how did impute go?
 	sum 			cropvalue_1_, detail
-	*** mean 64.05, max 2,185.2
+	*** mean 227,551, max 7,058,334
 	
 	replace			cropvalue = cropvalue_1_
 	lab var			cropvalue "value of harvest, imputed"
-	*** 31 changes
+	*** 56 changes
 	
 	drop 			cropvalue_1_ mi_miss
 
@@ -626,7 +605,7 @@
 	summarize
 
 * save file
-	save			"$export/2013_agsec5a_plt.dta", replace
+	save			"$export/2013_agsec5a.dta", replace
 	
 
 * close the log
