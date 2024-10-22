@@ -1,18 +1,23 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* fertilizer use
-	* reads Uganda wave 4 fertilizer and pest info (2013_AGSEC3A) for the 1st season
-	* 3A - 5A are questionaires for the first planting season
-	* 3B - 5B are questionaires for the second planting season
+	* reads Uganda wave 4 post-planting inputs (2013_AGSEC3A) for the 1st season
+	* cleans
+		* fertilizer (inorganic and organic)
+		* pesticide and herbicide
+		* labor
+		* plot management
+	* merge in manager characteristics from gsec2 gsec4
+	* output cleaned measured input file
 
 * assumes
-	* access to raw data
+	* access to the raw data
+	* access to cleaned GSEC2, GSEC4, and AGSEC1
 	* mdesc.ado
 
 * TO DO:
@@ -49,13 +54,68 @@
 	sort 			hhid prcid pltid
 	isid 			hhid prcid pltid
 
+* clean up ownership data to make 2 ownership variables
+	gen	long		PID = a3aq3_3
+	replace			PID = a3aq3_4a if PID == .
+	
+	gen	long		PID2 = a3aq3_4b
+
 	
 ***********************************************************************
-**# 2 - merge location data
+**# 2 - merge in manager characteristics
+***********************************************************************	
+
+* merge in age and gender for owner a
+	merge m:1 		hhid PID using "$export/2013_gsec2.dta"
+	* 41 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner a	
+	merge m:1 		hhid PID using "$export/2013_gsec4.dta"
+	* 43 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			PID manage_rght_a
+	rename			gender gender_mgmt_a
+	rename			age age_mgmt_a
+	rename			edu edu_mgmt_a
+	
+* rename PID for b to just PID so we can merge	
+	rename			PID2 PID
+
+* merge in age and gender for owner b
+	merge m:1 		hhid PID using "$export/2013_gsec2.dta"
+	* 3,080 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner b	
+	merge m:1 		hhid PID using "$export/2013_gsec4.dta"
+	* 3,083 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			PID manage_rght_b
+	rename			gender gender_mgmt_b
+	rename			age age_mgmt_b
+	rename			edu edu_mgmt_b
+
+	gen 			two_mgmt = 1 if manage_rght_a != . & manage_rght_b != .
+	replace 		two_mgmt = 0 if two_mgmt ==.	
+	
+	
+***********************************************************************
+**# 3 - merge location data
 ***********************************************************************	
 	
 * merge the location identification
-	merge m:1 		hhid using "$export/2013_agsec1_plt"
+	merge m:1 		hhid using "$export/2013_agsec1"
 	*** 101 unmatched from using
 	*** 7,550 matched
 	
@@ -63,19 +123,14 @@
 	
 
 ***********************************************************************
-**# 3 - fertilizer, pesticide and herbicide
+**# 4 - fertilizer
 ***********************************************************************
 
 * fertilizer use
 	rename 		a3aq13 fert_any
 	rename 		a3aq15 kilo_fert
+	rename		a3aq4 fert_org
 
-* make a variable that shows  organic fertilizer use
-	gen				forg_any =1 if a3aq4 == 1
-	replace			forg_any = 0 if forg_any ==.
-	*** only 4.26 percent used organic fert
-	
-		
 * replace the missing fert_any with 0
 	tab 			kilo_fert if fert_any == .
 	*** no observations
@@ -118,34 +173,29 @@
 	replace			fert_any = 0 if fert_any == 2
 	
 * variable showing if hh purchased fertilizer
-
 	gen 			fert_purch_any = 1 if a3aq16 ==1
 	replace 		fert_purch_any = 0 if fert_purch_any ==. 
 	*** 1.9 % purchased fert
 		
 * calculate price of fertilizer
-	rename 			a3aq17 kfert_purch
+	rename 			a3aq17 fert_purch
 	rename			a3aq18 fert_vle
-	
 
-	gen 			fert_vle_usd = fert_vle / 2860.0412
-	label var 		fert_vle_usd "value of inorganic fert purchase in 2015 USD"
-	
-	gen 			fert_price = fert_vle_usd / kfert_purch
-	label var 		fert_price "price of inorganic fert per kg in 2015 USD"
-	
-	
-	count if 		fert_vle_usd== . &  fert_purch_any == 1
+	gen 			fert_price = fert_vle / fert_purch
+	label var 		fert_price "Price of inorganic fert per kg in Shilling"
+		
+	count if 		fert_vle == . &  fert_purch_any == 1
 	* 0 observations missing value for hh who purchased fertilizer
 
 	
 ***********************************************************************
-**# 4 - pesticide & herbicide
+**# 5 - pesticide & herbicide
 ***********************************************************************
 
 * pesticide & herbicide
 	tab 		a3aq22
 	*** 4.83 percent of the sample used pesticide or herbicide
+	
 	tab 		a3aq23
 	
 	gen 		pest_any = 1 if a3aq23 != . & a3aq23 != 4 & a3aq23 != 96
@@ -156,7 +206,7 @@
 
 	
 ***********************************************************************
-**# 5 - labor 
+**# 6 - labor 
 ***********************************************************************
 	* per Palacios-Lopez et al. (2017) in Food Policy, we cap labor per activity
 	* 7 days * 13 weeks = 91 days for land prep and planting
@@ -221,27 +271,58 @@
 	replace			hired_women = 365 if hired_women > 365
 	*** no changes made
 	
+* generate hired labor days
+	gen				hrd_lab = hired_men + hired_women
+	
 * generate labor days as the total amount of labor used on plot in person days
-	gen				labor_days = fam_lab + hired_men + hired_women
+	gen				labor_days = fam_lab + hrd_lab
 	
 	sum 			labor_days
 	*** mean 137.59, max 2,250, min 0	
 
 	
 ***********************************************************************
-**# 6 - end matter, clean up to save
+**# 7 - end matter, clean up to save
 ***********************************************************************
 
 	keep 			hhid hhid_pnl prcid region district subcounty ///
 					parish wgt13 ea rotate pest_any herb_any labor_days ///
-					fert_any kilo_fert pltid forg_any fert_vle_usd fert_price
+					fam_lab hrd_lab kilo_fert pltid fert_org fert_price ///
+					manage_rght_a manage_rght_b gender_mgmt_a age_mgmt_a ///
+					edu_mgmt_a gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt
+		
+	lab var			manage_rght_a "PID for first manager"
+	lab var			manage_rght_b "PID for second manager"	
+	lab var			gender_mgmt_a "Gender of first manager"
+	lab var			age_mgmt_a "Age of first manager"
+	lab var			edu_mgmt_a "=1 if first manager has formal edu"
+	lab var			gender_mgmt_b "Gender of second manager"	
+	lab var			age_mgmt_b "Age of second manager"
+	lab var			edu_mgmt_b "=1 if second manager has formal edu"
+	lab var			two_mgmt "=1 if there is joint management"
+	lab var			prcid "Parcel ID"
+	lab var			district "District"
+	lab var			subcounty "Subcounty"
+	lab var			parish "Parish"
+	lab var			fert_org "=1 if organic fertilizer used"
+	lab var			kilo_fert "Inorganic Fertilizer (kg)"
+	lab var			pltid "Plot ID"
+	lab var			pest_any "=1 if pesticide used"
+	lab var			herb_any "=1 if herbicide used"
+	lab var			labor_days "Total labor (days)"
+	lab var			fam_lab "Total family labor (days)"
+	lab var			hrd_lab "Total hired labor (days)"
 
+	isid			hhid prcid pltid
+	
+	order			region district subcounty parish ea hhid hhid_pnl ///
+						wgt13 rotate prcid pltid fert_org kilo_fert fert_price ///
+						pest_any herb_any
+	
 	compress
-	describe
-	summarize
-
+	
 * save file
-	save 			"$export/2013_agsec3a_plt.dta", replace
+	save 			"$export/2013_agsec3a.dta", replace
 
 * close the log
 	log	close
