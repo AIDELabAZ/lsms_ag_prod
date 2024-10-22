@@ -40,14 +40,18 @@
 
 * rename variables and prepare for merging 
 	rename 			HHID hhid
-	rename 			a2aq26a member_number
+	gen				member_number = a2aq26a
+	replace			member_number = a2aq28a if member_number == .
+	replace			member_number = a2aq27a if member_number == .
+	replace			member_number = a2aq26b if member_number == .
+	
 	
 ***********************************************************************
 **# 2 - merge with hh information 
 ***********************************************************************	
 
 	merge m:1 		hhid member_number using "$export/2010_gsec2_plt.dta"
-	* 28 unmatched from master 
+	* 18 unmatched from master 
 	
 	drop 			if _merge == 2
 	count 			if _merge ==1 & PID !=.

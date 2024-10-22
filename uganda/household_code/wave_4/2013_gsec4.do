@@ -1,17 +1,17 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* education level 
-	* reads Uganda wave 4 hh information (gsec2)
+	* reads Uganda wave 4 hh information (gsec4)
+	* cleans education of household member
+	* outputs file for merging with plot owner (agsec2a and agsec2b)
 
 * assumes
 	* access to raw data
-	* mdesc.ado
 
 * TO DO:
 	* done
@@ -52,14 +52,22 @@
 	order 			hhid, after(education)
 	order			education, after(PID)
 	
-
+	rename			education edu
+	
+	replace			edu = 1 if edu != .
+	replace			edu = 0 if edu == .
+	
+	lab var			edu "=1 if has formal education"
+	lab values 		edu .
+	
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-	keep 			hhid PID education
+	
+	keep 			hhid PID edu
 	
 * save file 
-	save 			"$export/2013_gsec4_plt.dta", replace	
+	save 			"$export/2013_gsec4.dta", replace	
 	
 * close the log
 	log	close

@@ -1,17 +1,17 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* hh roster information from hh questionaire
 	* reads Uganda wave 4 hh information (gsec2)
+	* cleans gender and age of household member
+	* outputs file for merging with plot owner (agsec2a and agsec2b)
 
 * assumes
 	* access to raw data
-	* mdesc.ado
 
 * TO DO:
 	* done
@@ -63,7 +63,7 @@
 
 	
 * save file 
-	save 			"$export/2013_gsec2_plt.dta", replace	
+	save 			"$export/2013_gsec2.dta", replace	
 	
 * close the log
 	log	close

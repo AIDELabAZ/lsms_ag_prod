@@ -1,12 +1,14 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* household Location data (2013_AGSEC1) for the 1st season
+	* reads in household Location data (2013_AGSEC1) for the 1st season
+	* cleans political geography locations
+	* outputs file of location for merging with other ag files that lack this info
 
 * assumes
 	* access to raw data
@@ -63,7 +65,7 @@
 	summarize
 
 * save file
-	save			"$export/2013_agsec1_plt.dta", replace 
+	save			"$export/2013_agsec1.dta", replace 
 
 * close the log
 	log	close
