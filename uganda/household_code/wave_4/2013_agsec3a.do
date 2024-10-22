@@ -7,6 +7,7 @@
 
 * does
 	* reads Uganda wave 4 post-planting inputs (2013_AGSEC3A) for the 1st season
+	* questionaire 3B is for 2nd season
 	* cleans
 		* fertilizer (inorganic and organic)
 		* pesticide and herbicide

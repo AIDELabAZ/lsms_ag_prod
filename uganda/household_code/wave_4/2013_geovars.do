@@ -1,18 +1,25 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 13 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* cleans geovars
+	* reads Uganda wave 3 geovars (Geovars_1112)
+	* this wave (4) is missing geovars
+	* cleans and outputs geovars
+		* aez
+		* urban/rural
+		* elevation
+		* soil variables for use in index
+		* distances to road and pop center
 
 * assumes
 	* access to raw data
 
 * TO DO:
-	* everything
+	* done
 
 	
 ***********************************************************************
@@ -20,9 +27,9 @@
 ************************************************************************
 
 * define paths	
-	global root 		"$data/household_data/uganda/wave_3/raw"  
-	global export 		"$data/household_data/uganda/wave_4/refined"
-	global logout 		"$data/household_data/uganda/logs"
+	global root 		"$data/raw_lsms_data/uganda/wave_3/raw"  
+	global export 		"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
+	global logout 		"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
@@ -42,20 +49,22 @@
 	rename 			HHID hhid
 
 	rename 			ssa_aez09 aez
+	rename			urban sector
+	rename			srtm_uga elevation
 	
 	
 ************************************************************************
 **# 2 - end matter, clean up to save
 ************************************************************************
 
-	keep 			hhid aez
+	keep 			hhid aez sector elevation sq1-sq7 dist_road dist_popcenter
 
+	isid			hhid
+	
 	compress
-	describe
-	summarize
 
 * save file
-	save			"$export/2013_geovars_plt.dta", replace
+	save			"$export/2013_geovars.dta", replace
 
 * close the log
 	log	close

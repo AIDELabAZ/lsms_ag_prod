@@ -1,17 +1,16 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* livestock ownership information from agric questionaire
-	* reads Uganda wave 4 hh information (agsec6a)
+	* reads Uganda wave 4 livestock roster (2013_AGSEC6A)
+	* produces indicator if households owns livestock
 
 * assumes
 	* access to raw data
-	* mdesc.ado
 
 * TO DO:
 	* done
@@ -30,6 +29,7 @@
 	cap log 		close
 	log using 		"$logout/2013_agsec6a_plt", append
 	
+	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
@@ -39,21 +39,30 @@
 	
 * rename variables 
 	rename 			HHID hhid
-	rename 			a6aq2 livstck
-	rename			a6aq3a lvstck_qty
-	rename			a6aq3b lvstck_own
 	
 * create livestock ownership indicator 
-	gen 			lvstck = 1 if livstck == 1 & lvstck_qty > 0
+	gen 			lvstck = 1 if a6aq2 == 1
 	replace 		lvstck = 0 if lvstck ==.
 
+* convert to household level
+	collapse (sum)	lvstck, by(hhid)
+	
+* recode so non-zero is 1
+	replace			lvstck = 1 if lvstck > 0
+	*** note this should all be 1 since household only answers if they have lvstck
+	*** but for some reason 2 households w/o livestock answered
+	
+	
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-	keep 			hhid lvstck_own lvstck
+
+	keep 			hhid lvstck
+	
+	lab var			lvstck "=1 if household owns livestock"
 	
 * save file 
-	save 			"$export/2013_agsec6a_plt.dta", replace	
+	save 			"$export/2013_agsec6a.dta", replace	
 	
 * close the log
 	log	close

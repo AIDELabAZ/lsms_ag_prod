@@ -247,6 +247,8 @@
 * append owned plots
 	append			using "$export/2013_agsec2a.dta"
 	
+	erase			"$export/2013_agsec2a.dta"
+	
 * drop duplicate
 	duplicates 		drop hhid prcid, force
 	* 0 deleted

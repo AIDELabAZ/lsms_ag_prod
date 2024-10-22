@@ -4,6 +4,7 @@
 * Edited on: 13 Oct 24
 * Edited by: rg
 * Stata v.18, mac
+
 * does
 	* Crop output
 	* reads Uganda wave 4 crop output (2013_AGSEC5A) for the 1st season
@@ -15,7 +16,7 @@
 	* access to raw data
 
 * TO DO:
-	* done
+	* edit by jdm
 
 	
 ***********************************************************************

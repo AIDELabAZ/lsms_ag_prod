@@ -1,23 +1,25 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* seed use
-	* reads Uganda wave 4 crops grown and types of seeds info (AGSEC4A) for the 1st season
-	* 3A - 5A are questionaires for the second planting season
-	* 3B - 5B are questionaires for the first planting season
+	* reads Uganda wave 4 crops grown and seed (2013_AGSEC4A) for the 1st season
+	* questionaire 4B is for 2nd season
+	* cleans
+		* planting date
+		* seeds
+		* crops
+	* output cleaned seed and planting date file
 
 * assumes
-	* access to raw data
+	* access to the raw data
 	* mdesc.ado
 
 * TO DO:
-	* seed quantity and seed price 
-	* last section
+	* done
 	
 
 ***********************************************************************
@@ -33,6 +35,7 @@
 	cap log 		close
 	log using 		"$logout/2013_agsec4a_plt", append
 	
+	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
@@ -45,48 +48,58 @@
 	rename			parcelID prcid
 	rename			plotID pltid
 	rename 			cropID cropid
-	rename 			cropID_other cropid2
 	rename			a4aq11b unit
 	rename			a4aq11a seed_qty
 	rename 			a4aq13 seed_type
 	rename 			a4aq7 area_plntd
-	rename			a4aq9 prctg_plntd
-	
+	rename			a4aq9 prct_plntd
+	rename			a4aq9_1 mnth_plntd
+	rename			a4aq9_2 year_plntd
 	
 	sort 			hhid prcid pltid cropid  
 	
 	mdesc 			hhid prcid pltid pltid 
 	* we have 1 obs missing pltid and cropid
+	
 	drop if			pltid ==. | prcid ==.
 	* 1 observations dropped
 
 	isid 			hhid prcid pltid cropid	
+	
+* make a variable that shows if intercropped or not
+	gen				intrcrp = 1 if a4aq8 == 2
+	replace			intrcrp = 0 if intrcrp ==.
 
+	
 ***********************************************************************
 **# 2 - percentage planted 	
 ***********************************************************************
+
 * convert area to hectares 
 	replace 		area_plntd = area_plntd * 0.404686
 	
 * create variable for percentage of plot area
-	replace 		prctg_plntd = prctg_plntd / 100
+	replace 		prct_plntd = prct_plntd / 100
 	
-	gen 			crop_area = area_plntd * prctg_plntd
-	label var 		crop_are "area planted under main crop in hectares"
+	gen 			crop_area = area_plntd * prct_plntd
+	label var 		crop_are "Area planted (ha)"
+	
 	
 ***********************************************************************
 **# 3 - merge kg conversion file and create seed quantity
 ***********************************************************************
 
 * see how many hh used traditional vs improved seed 
-	tab 			seed_type
+	tab 			seed_type, missing
 	* 6,139 used traditional
 	* 598 used improved
-	* 3,812 missing 
+	* 3,812 missing
+	* missing is mostly banana or tubers
 
 * create a variable showing used of seed 
 	gen 			seed_any = 1 if a4aq16 == 1
-	replace			seed_any = 0 if seed_any ==.
+	replace			seed_any = 0 if seed_any == .
+	tab				seed_any
 	* 63.9 % used seed
 
 * convert seed_qty to kgs 
@@ -94,8 +107,8 @@
 	describe			unit
 	label list 			a4aq11b
 	
-	gen 				seed_qty_kg =. 
-	label var			seed_qty_kg "quanity of seeds used (kg)"
+	gen 				seed_qty_kg = . 
+	label var			seed_qty_kg "Seed used (kg)"
 	
 	*kgs
 		replace 		seed_qty_kg = seed_qty if unit == 1
@@ -163,8 +176,6 @@
 	* basket 2 kg
 		replace 		seed_qty_kg = seed_qty * 2 if unit == 40
 		***  25 changes 
-			
-	
 	
 * summarize seed quantity
 	sum				seed_qty_kg
@@ -179,8 +190,8 @@
 ***********************************************************************	
 	
 * generate a variable showing seed purchase
-	gen				seed_purch = 1 if a4aq10 ==1
-	replace 		seed_purch = 0 if seed_purch ==.
+	gen				seed_purch = 1 if a4aq10 == 1
+	replace 		seed_purch = 0 if seed_purch == .
 	tab 			seed_purch
 	* 20.12% purchased seeds
 
@@ -189,41 +200,35 @@
 	
 * generate variable for seed price
 	gen 			seed_price = seed_vle / seed_qty_kg
-	label var		seed_price "price of seed per kg (shillings)"
-	
-	replace 		seed_price = seed_price/ 2860.0412
-	label var 		seed_price "price of seed per kg in 2015 USD"
+	label var		seed_price "Price of seed (shillings/kg)"
 	
 	sum				seed_price
 	count if 		seed_price == . & seed_purch == 1
 	*** 247 hh who purchased but are missing price 
 	*** 1 missing seed value
 	
-	
-***********************************************************************
-**# 5 - type of crop stand
-***********************************************************************
-
-* make a variable that shows if intercropped or not
-	gen				intrcrp_any =1 if a4aq8 == 2
-	replace			intrcrp_any = 0 if intrcrp_any ==.
-
 		
 ***********************************************************************
-**# 6 - end matter, clean up to save
+**# 5 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid prcid cropid cropid2  ///
-					pltid intrcrp_any seed_qty_kg seed_type seed_vle /// 
-					seed_price crop_area area_plntd prctg_plntd
-					
+	keep 			hhid prcid cropid pltid intrcrp seed_qty_kg ///
+						seed_type seed_vle seed_price crop_area ///
+						mnth_plntd year_plntd
 
+	lab var			seed_type "Traditional/improved"
+	lab var			seed_vle "Value of purchased seed (shilling)"
+	lab var			intrcrp "=1 if intercropped"
+					
+	isid			hhid prcid pltid cropid	
+		
+	order			hhid prcid pltid cropid	mnth_plntd year_plntd intrcrp
+	
 	compress
-	describe
-	summarize
+
 
 * save file
-	save 			"$export/2013_agsec4a_plt.dta", replace
+	save 			"$export/2013_agsec4a.dta", replace
 
 * close the log
 	log	close

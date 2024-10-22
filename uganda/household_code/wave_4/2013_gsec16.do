@@ -1,17 +1,16 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
+	* reads Uganda wave 4 hh shocks (gsec16)
 	* create indicator variables for shocks (agricultural and hh)
-	* reads Uganda wave 4 hh information (gsec16)
 
 * assumes
 	* access to raw data
-	* mdesc.ado
 
 * TO DO:
 	* done
@@ -30,6 +29,7 @@
 	cap log 		close
 	log using 		"$logout/2013_gsec16_plt", append
 	
+	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
@@ -37,42 +37,37 @@
 * import hh roster info
 	use 			"$root/hh/gsec16.dta", clear
 	
-* rename variables			
-	rename 			h16q00 shocks
-	describe 		shocks
+* rename variables
+	rename			HHID hh
+	
+* list shock types
 	label list 		h16q00
 	
-* create indicator variable for agricultural season shocks (flood, fire, drought, 
-/// irregular rains)
-
-	gen 			ag_shock = 1 if shocks == 102 | shocks == 117 | shocks == 1011 
+* create indicator variable for ag shocks 
+	gen 			ag_shock = 1 if h16q01 == 1 & (h16q00 < 108 | h16q00 > 1000)
 	replace 		ag_shock = 0 if ag_shock ==.
 
 * create indicator variable for hh shocks 
-	gen 			hh_shock = 1 if shocks == 112 | shocks == 113
+	gen 			hh_shock = 1 if h16q01 == 1 & (h16q00 > 107 & h16q00 < 1000)
 	replace 		hh_shock = 0 if hh_shock ==.
 	
-* modify format of pid so it matches pid from other files 
-	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
-	destring		hhid, replace
-	
-
-	keep 			hhid  ag_shock hh_shock
-	order 			hhid, after(ag_shock)
-	order 			ag_shock, after(hhid)
-	
-	collapse 		(max) ag_shock (max) hh_shock , by(hhid)
-	format 			hhid %16.0g
-	
+* collapse to household	
+	collapse 		(max) ag_shock hh_shock , by(hh)
 	
 	
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
+	lab var			ag_shock "=1 if agricultural shock"
+	lab var			hh_shock "=1 if household shock"
+	
+	isid			hh
+	
+	compress
 	
 * save file 
-	save 			"$export/2013_gsec16_plt.dta", replace	
+	save 			"$export/2013_gsec16.dta", replace	
 	
 * close the log
 	log	close

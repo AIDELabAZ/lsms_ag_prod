@@ -12,7 +12,8 @@
 	* previously cleaned household datasets
 
 * TO DO:
-	* everything
+	* review by jdm
+	
 
 ************************************************************************
 **# 0 - setup

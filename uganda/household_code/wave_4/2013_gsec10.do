@@ -1,17 +1,16 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 19 Oct 24
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 21 Oct 24
+* Edited by: jdm
+* Stata v.18.5
 
 * does
-	* electricity information from hh questionaire 
-	* reads Uganda wave 4 hh information (gsec10)
+	* reads Uganda wave 4 hh energy use (gsec10)
+	* cleans and outputs electricity dummy
 
 * assumes
 	* access to raw data
-	* mdesc.ado
 
 * TO DO:
 	* done
@@ -37,28 +36,23 @@
 * import hh roster info
 	use 			"$root/hh/gsec10_1.dta", clear
 	
-* rename variables			
-	rename			h10q1 electricity
-
-* modify format of hhid so it matches pid from other files 
-	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
-	destring		hhid, replace
-	
-	format 			hhid %16.0g
-	isid 			hhid 
+* rename variables
+	rename			HHID hh
 	
 * generate indicator variable for electricity
-	gen 			elec_indc = 1 if electricity == 1
-	replace			elec_indc = 0 if elec_indc ==.
+	gen 			electric = 1 if h10q1 == 1
+	replace			electric = 0 if electric ==.
+	lab var			electric "=1 if household has electricity"
 	
 
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-	keep 			hhid elec_indc
+
+	keep 			hh electric
 	
 * save file 
-	save 			"$export/2013_gsec10_plt.dta", replace	
+	save 			"$export/2013_gsec10.dta", replace	
 	
 * close the log
 	log	close
