@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Oct 24
+* Edited on: 22 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -18,7 +18,7 @@
 
 * assumes
 	* access to the raw data
-	* access to cleaned GSEC2, GSEC4, and AGSEC1
+	* access to cleaned GSEC2 and GSEC4
 	* mdesc.ado
 
 * TO DO:
@@ -109,22 +109,10 @@
 
 	gen 			two_mgmt = 1 if manage_rght_a != . & manage_rght_b != .
 	replace 		two_mgmt = 0 if two_mgmt ==.	
-	
-	
-***********************************************************************
-**# 3 - merge location data
-***********************************************************************	
-	
-* merge the location identification
-	merge m:1 		hhid using "$export/2013_agsec1"
-	*** 101 unmatched from using
-	*** 7,550 matched
-	
-	drop if			_merge != 3
-	
 
+	
 ***********************************************************************
-**# 4 - fertilizer
+**# 3 - fertilizer
 ***********************************************************************
 
 * fertilizer use
@@ -145,50 +133,11 @@
 * replace zero to missing, missing to zero, and outliers to missing
 	replace			kilo_fert = . if kilo_fert > 264
 	*** 2 outliers changed to missing
-
-* encode district to be used in imputation
-	encode 			district, gen (districtdstrng) 	
-	
-* impute missing values (only need to do four variables)
-	mi set 			wide 	// declare the data to be wide.
-	mi xtset		, clear 	// clear any xtset that may have had in place previously
-
-* impute each variable in local	
-	*** the finer geographical variables will proxy for soil quality which is a determinant of fertilizer use
-	mi register			imputed kilo_fert // identify variable to be imputed
-	sort				hhid prcid pltid, stable // sort to ensure reproducability of results
-	mi impute 			pmm kilo_fert  i.districtdstrng fert_any, add(1) rseed(245780) ///
-								noisily dots force knn(5) bootstrap					
-	mi 				unset		
-	
-* how did impute go?	
-	sum 		kilo_fert_1_ if fert_any == 1, detail
-	*** max 150, mean 20.71, min 0.2
-	
-	replace			kilo_fert = kilo_fert_1_ if fert_any == 1
-	*** 2 changed
-	
-	drop 			kilo_fert_1_ mi_miss
 	
 * record fert_any
 	replace			fert_any = 0 if fert_any == 2
 	
-* variable showing if hh purchased fertilizer
-	gen 			fert_purch_any = 1 if a3aq16 ==1
-	replace 		fert_purch_any = 0 if fert_purch_any ==. 
-	*** 1.9 % purchased fert
-		
-* calculate price of fertilizer
-	rename 			a3aq17 fert_purch
-	rename			a3aq18 fert_vle
 
-	gen 			fert_price = fert_vle / fert_purch
-	label var 		fert_price "Price of inorganic fert per kg in Shilling"
-		
-	count if 		fert_vle == . &  fert_purch_any == 1
-	* 0 observations missing value for hh who purchased fertilizer
-
-	
 ***********************************************************************
 **# 5 - pesticide & herbicide
 ***********************************************************************
@@ -286,9 +235,8 @@
 **# 7 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid hhid_pnl prcid region district subcounty ///
-					parish wgt13 ea rotate pest_any herb_any labor_days ///
-					fam_lab hrd_lab kilo_fert pltid fert_org fert_price ///
+	keep 			hhid prcid pest_any herb_any labor_days ///
+					fam_lab hrd_lab kilo_fert pltid fert_org  ///
 					manage_rght_a manage_rght_b gender_mgmt_a age_mgmt_a ///
 					edu_mgmt_a gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt
 		
@@ -302,9 +250,6 @@
 	lab var			edu_mgmt_b "=1 if second manager has formal edu"
 	lab var			two_mgmt "=1 if there is joint management"
 	lab var			prcid "Parcel ID"
-	lab var			district "District"
-	lab var			subcounty "Subcounty"
-	lab var			parish "Parish"
 	lab var			fert_org "=1 if organic fertilizer used"
 	lab var			kilo_fert "Inorganic Fertilizer (kg)"
 	lab var			pltid "Plot ID"
@@ -315,10 +260,6 @@
 	lab var			hrd_lab "Total hired labor (days)"
 
 	isid			hhid prcid pltid
-	
-	order			region district subcounty parish ea hhid hhid_pnl ///
-						wgt13 rotate prcid pltid fert_org kilo_fert fert_price ///
-						pest_any herb_any
 	
 	compress
 	

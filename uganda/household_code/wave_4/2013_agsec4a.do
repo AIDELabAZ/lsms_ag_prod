@@ -183,41 +183,16 @@
 	*** max 38,400
 	
 	mdesc 			seed_qty_kg
-	
-
-***********************************************************************
-**# 4 - create seed price 
-***********************************************************************	
-	
-* generate a variable showing seed purchase
-	gen				seed_purch = 1 if a4aq10 == 1
-	replace 		seed_purch = 0 if seed_purch == .
-	tab 			seed_purch
-	* 20.12% purchased seeds
-
-* purchase value 
-	rename 			a4aq15 seed_vle
-	
-* generate variable for seed price
-	gen 			seed_price = seed_vle / seed_qty_kg
-	label var		seed_price "Price of seed (shillings/kg)"
-	
-	sum				seed_price
-	count if 		seed_price == . & seed_purch == 1
-	*** 247 hh who purchased but are missing price 
-	*** 1 missing seed value
-	
+	* 0 missing
 		
 ***********************************************************************
-**# 5 - end matter, clean up to save
+**# 4 - end matter, clean up to save
 ***********************************************************************
 
 	keep 			hhid prcid cropid pltid intrcrp seed_qty_kg ///
-						seed_type seed_vle seed_price crop_area ///
-						mnth_plntd year_plntd
+						seed_type crop_area mnth_plntd year_plntd
 
 	lab var			seed_type "Traditional/improved"
-	lab var			seed_vle "Value of purchased seed (shilling)"
 	lab var			intrcrp "=1 if intercropped"
 					
 	isid			hhid prcid pltid cropid	
