@@ -37,15 +37,19 @@
 * import LIVESTOCK  info
 	use 			"$root/agric/AGSEC6A.dta", clear
 	
-* rename variables 
-	rename 			HHID hhid
+* order and rename variables
+	order			hh
+	drop			wgt_X
+
+	rename			hh hhid
+	rename			HHID hh
 	
 * create livestock ownership indicator 
 	gen 			lvstck = 1 if a6aq2 == 1
 	replace 		lvstck = 0 if lvstck ==.
 
 * convert to household level
-	collapse (sum)	lvstck, by(hhid)
+	collapse (sum)	lvstck, by(hhid hh)
 	
 * recode so non-zero is 1
 	replace			lvstck = 1 if lvstck > 0
@@ -57,7 +61,7 @@
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid lvstck
+	keep 			hhid hh lvstck
 	
 	lab var			lvstck "=1 if household owns livestock"
 	

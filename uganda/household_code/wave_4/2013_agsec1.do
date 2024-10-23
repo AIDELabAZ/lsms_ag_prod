@@ -6,8 +6,11 @@
 * Stata v.18.5
 
 * does
-	* reads in household Location data (2013_AGSEC1) for the 1st season
-	* cleans political geography locations
+	* reads in household Location data (2013_AGSEC1)
+	* merges in location info from GSEC1
+	* cleans
+		* political geography locations
+		* survey weights
 	* outputs file of location for merging with other ag files that lack this info
 
 * assumes
@@ -28,7 +31,7 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2013_AGSEC1_plt", append
+	log using 		"$logout/2013_GSEC1_plt", append
 
 	
 ***********************************************************************
@@ -40,25 +43,42 @@
 
 * rename variables
 	isid 			HHID
-	rename			HHID hhid
-
-	rename 			district_name district
-	rename 			subcounty_name subcounty
-	rename 			parish_name parish
-	rename 			wgt wgt13
-	rename			HHID_old hhid_pnl
-
-* drop if missing
-	drop if			district == ""
-	*** dropped 0 observations
 	
+	keep			hh HHID
+	
+	rename			HHID hhid
+	rename			hh HHID
+	rename			hhid hh
+
+* merge in GSEC1
+	merge 1:1		HHID using "$root/hh/GSEC1"
+	*** 0 unmerged in master
+	*** 624 unmerged in using - non-ag households
+	
+	drop if			_merge == 2
+	
+* drop unneeded variables
+	drop			result_code h1aq3b h1aq4b regurb sregion month day ///
+						DynID _merge
+	
+* rename other variables
+	rename			HHID hhid
+	rename			HHID_old hhid_pnl
+	rename			region admin_1
+	rename 			h1aq1a admin_2
+	rename 			h1aq3a admin_3
+	rename 			h1aq4a admin_4
+	rename			urban sector
+	rename 			wgt_X wgt13
+	rename			wgt wgt_pnl
+
 	
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hh hhid region district subcounty parish ///
-						 wgt13 hhid_pnl rotate ea 
+	order 			hhid hh hhid_pnl rotate admin_1 admin_2 admin_3 ///
+						admin_4 ea sector year wgt13 wgt_pnl
 
 	compress
 	describe

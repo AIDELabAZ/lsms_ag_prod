@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -46,15 +46,18 @@
 * import wave 4 season A rented plots
 	use 			"$root/agric/AGSEC2B.dta", clear
 		
-* rename key variables
-	rename			HHID hhid
+* order and rename variables
+	order			hh
+	drop			wgt_X
+
+	rename			hh hhid
+	rename			HHID hh
 	rename			parcelID prcid
 	rename 			a2bq4 plotsizeGPS
 	rename 			a2bq5 plotsizeSR
 	
-	describe
-	sort 			hhid prcid
-	isid 			hhid prcid
+	isid 			hh prcid
+	isid			hhid prcid
 
 * make a variable that shows the irrigation
 	gen				irr_any = 1 if a2bq16 == 1
@@ -63,8 +66,8 @@
 	*** there are 8 irrigated	
 
 * clean up ownership data to make 2 ownership variables
-	gen	long		PID = a2bq21a	
-	gen	long		PID2 = a2bq21b
+	gen	long		pid = a2bq21a	
+	gen	long		pid2 = a2bq21b
 
 * generate tenure variable based on fact that this is all rented plots
 	gen				tenure = 0
@@ -75,42 +78,42 @@
 ***********************************************************************	
 
 * merge in age and gender for owner a
-	merge m:1 		hhid PID using "$export/2013_gsec2.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
 	* 11 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 
 * merge in education for owner a	
-	merge m:1 		hhid PID using "$export/2013_gsec4.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
 	* 12 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
-	rename 			PID ownshp_rght_a
+	rename 			pid ownshp_rght_a
 	rename			gender gender_own_a
 	rename			age age_own_a
 	rename			edu edu_own_a
 	
-* rename PID for b to just PID so we can merge	
-	rename			PID2 PID
+* rename pid for b to just pid so we can merge	
+	rename			pid2 pid
 
 * merge in age and gender for owner b
-	merge m:1 		hhid PID using "$export/2013_gsec2.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
 	* 421 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 
 * merge in education for owner b	
-	merge m:1 		hhid PID using "$export/2013_gsec4.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
 	* 422 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
-	rename 			PID ownshp_rght_b
+	rename 			pid ownshp_rght_b
 	rename			gender gender_own_b
 	rename			age age_own_b
 	rename			edu edu_own_b
@@ -192,26 +195,23 @@
 
 * summarize before imputation
 	sum				plotsize
-	*** mean 0.43, min 0.02, max 6.79
-
-* encode district to be used in imputation
-	encode district, gen (districtdstrng) 	
+	*** mean 0.41, min 0.02, max 6.79
 
 * impute missing plot sizes using predictive mean matching
 	mi set 			wide // declare the data to be wide.
 	mi xtset		, clear // this is a precautinary step to clear any existing xtset
 	mi register 	imputed plotsize // identify plotsize_GPS as the variable being imputed
-	sort			region district hhid prcid, stable // sort to ensure reproducability of results
-	mi impute 		pmm plotsize i.districtdstrng selfreport, add(1) rseed(245780) noisily dots ///
+	sort			admin_1 admin_2 admin_3 admin_4 hhid prcid, stable // sort to ensure reproducability of results
+	mi impute 		pmm plotsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
 						force knn(5) bootstrap
 	mi unset
 		
 * how did imputing go?
 	sum 			plotsize_1_
-	*** mean 0.41, max 6.7, min .02
+	*** mean 0.38, max 6.8, min .02
 	
 	corr 			plotsize_1_ selfreport if plotsize == .
-	*** high correlatio, 0.91
+	*** high correlatio, 0.72
 	
 	replace 		plotsize = plotsize_1_ if plotsize == .
 	
@@ -225,24 +225,22 @@
 **# 6 - appends agsec2a
 ***********************************************************************
 
-	keep 			hhid hhid_pnl prcid region district subcounty ///
-						parish ea wgt13 plotsize irr_any rotate ///
-						ownshp_rght_a ownshp_rght_b gender_own_a ///
-						age_own_a edu_own_a gender_own_b age_own_b ///
-						edu_own_b two_own tenure
+	keep 			hhid hh hhid_pnl rotate admin_1 admin_2 admin_3 ///
+						admin_4 ea sector year wgt13 wgt_pnl prcid ea ///
+						plotsize irr_any ownshp_rght_a ownshp_rght_b ///
+						gender_own_a age_own_a edu_own_a gender_own_b ///
+						age_own_b edu_own_b two_own tenure
 						
-	lab var			ownshp_rght_a "PID for first owner"
-	lab var			ownshp_rght_b "PID for second owner"	
+	lab var			ownshp_rght_a "pid for first owner"
+	lab var			ownshp_rght_b "pid for second owner"	
 	lab var			gender_own_a "Gender of first owner"
 	lab var			age_own_a "Age of first owner"
 	lab var			edu_own_a "=1 if first owner has formal edu"
 	lab var			gender_own_b "Gender of second owner"	
 	lab var			age_own_b "Age of second owner"
-	lab var			two_own "=1 if second owner has formal edu"
+	lab var			edu_own_b "=1 if first owner has formal edu"
+	lab var			two_own "=1 if there is joint ownership"
 	lab var			prcid "Parcel ID"
-	lab var			district "District"
-	lab var			subcounty "Subcounty"
-	lab var			parish "Parish"
 
 * append owned plots
 	append			using "$export/2013_agsec2a.dta"
@@ -259,8 +257,9 @@
 					
 	isid			hhid prcid
 
-	order			region district subcounty parish ea hhid hhid_pnl ///
-						wgt13 rotate prcid tenure plotsize
+	order			hhid hh hhid_pnl rotate admin_1 admin_2 admin_3 ///
+						admin_4 ea sector year wgt13 wgt_pnl prcid ///
+						tenure plotsize
 	
 	compress
 

@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -30,6 +30,7 @@
 	cap log 		close
 	log using 		"$logout/2013_gsec4_plt", append
 	
+	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
@@ -38,21 +39,17 @@
 	use 			"$root/hh/gsec4.dta", clear
 	
 * rename variables			
-	rename			h4q7 education
+	rename			h4q7 edu
+	rename			HHID hhid
 
 * modify format of pid so it matches pid from other files 
-	rename			PID pid
-	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
-	destring		PID, replace
+	gen 			pid = substr(PID, 2, 5) + substr(PID, 8, 3)
+	destring		pid, replace
 	
-	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
-	destring		hhid, replace
+	gen 			hh = substr(hhid, 2, 5) + substr(hhid, 8,2) + substr(hhid, 11, 2)
+	destring		hh, replace
 	
-	isid 			hhid PID
-	order 			hhid, after(education)
-	order			education, after(PID)
-	
-	rename			education edu
+	isid 			hh pid
 	
 	replace			edu = 1 if edu != .
 	replace			edu = 0 if edu == .
@@ -64,7 +61,14 @@
 **# 2 - end matter, clean up to save
 ***********************************************************************
 	
-	keep 			hhid PID edu
+	keep 			hhid hh pid edu
+	
+	order			hhid hh pid edu
+	
+	lab var			hh "Household ID"
+	lab var			pid "Person ID"
+	
+	compress
 	
 * save file 
 	save 			"$export/2013_gsec4.dta", replace	

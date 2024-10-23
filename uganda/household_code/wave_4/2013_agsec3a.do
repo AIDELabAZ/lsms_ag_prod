@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 22 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -38,6 +38,7 @@
 	cap log 			close
 	log using 			"$logout/2013_agsec3a_plt", append
 	
+	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
@@ -45,21 +46,25 @@
 * import wave 4 season A
 	use 			"$root/agric/AGSEC3A.dta", clear
 	
-* rename variables 
-	rename			HHID hhid
+* order and rename variables
+	order			hh
+	drop			wgt_X
+
+	rename			hh hhid
+	rename			HHID hh
 	rename			parcelID prcid
 	rename			plotID pltid
 
 	replace			prcid = 1 if prcid == .
 	
-	sort 			hhid prcid pltid
 	isid 			hhid prcid pltid
+	isid 			hh prcid pltid
 
 * clean up ownership data to make 2 ownership variables
-	gen	long		PID = a3aq3_3
-	replace			PID = a3aq3_4a if PID == .
+	gen	long		pid = a3aq3_3
+	replace			pid = a3aq3_4a if pid == .
 	
-	gen	long		PID2 = a3aq3_4b
+	gen	long		pid2 = a3aq3_4b
 
 	
 ***********************************************************************
@@ -67,42 +72,42 @@
 ***********************************************************************	
 
 * merge in age and gender for owner a
-	merge m:1 		hhid PID using "$export/2013_gsec2.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
 	* 41 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 
 * merge in education for owner a	
-	merge m:1 		hhid PID using "$export/2013_gsec4.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
 	* 43 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
-	rename 			PID manage_rght_a
+	rename 			pid manage_rght_a
 	rename			gender gender_mgmt_a
 	rename			age age_mgmt_a
 	rename			edu edu_mgmt_a
 	
-* rename PID for b to just PID so we can merge	
-	rename			PID2 PID
+* rename pid for b to just pid so we can merge	
+	rename			pid2 pid
 
 * merge in age and gender for owner b
-	merge m:1 		hhid PID using "$export/2013_gsec2.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
 	* 3,080 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 
 * merge in education for owner b	
-	merge m:1 		hhid PID using "$export/2013_gsec4.dta"
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
 	* 3,083 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
-	rename 			PID manage_rght_b
+	rename 			pid manage_rght_b
 	rename			gender gender_mgmt_b
 	rename			age age_mgmt_b
 	rename			edu edu_mgmt_b
@@ -117,21 +122,21 @@
 
 * fertilizer use
 	rename 		a3aq13 fert_any
-	rename 		a3aq15 kilo_fert
+	rename 		a3aq15 fert_qty
 	rename		a3aq4 fert_org
 
 * replace the missing fert_any with 0
-	tab 			kilo_fert if fert_any == .
+	tab 			fert_qty if fert_any == .
 	*** no observations
 	
 	replace			fert_any = 2 if fert_any == . 
 	*** 7 changes
 			
-	sum 			kilo_fert if fert_any == 1, detail
+	sum 			fert_qty if fert_any == 1, detail
 	*** mean 28.53, min 0.2, max 1,000
 
 * replace zero to missing, missing to zero, and outliers to missing
-	replace			kilo_fert = . if kilo_fert > 264
+	replace			fert_qty = . if fert_qty > 264
 	*** 2 outliers changed to missing
 	
 * record fert_any
@@ -225,9 +230,9 @@
 	gen				hrd_lab = hired_men + hired_women
 	
 * generate labor days as the total amount of labor used on plot in person days
-	gen				labor_days = fam_lab + hrd_lab
+	gen				tot_lab = fam_lab + hrd_lab
 	
-	sum 			labor_days
+	sum 			tot_lab
 	*** mean 137.59, max 2,250, min 0	
 
 	
@@ -235,13 +240,13 @@
 **# 7 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid prcid pest_any herb_any labor_days ///
-					fam_lab hrd_lab kilo_fert pltid fert_org  ///
+	keep 			hhid prcid pest_any herb_any tot_lab ///
+					fam_lab hrd_lab fert_qty pltid fert_org  ///
 					manage_rght_a manage_rght_b gender_mgmt_a age_mgmt_a ///
 					edu_mgmt_a gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt
 		
-	lab var			manage_rght_a "PID for first manager"
-	lab var			manage_rght_b "PID for second manager"	
+	lab var			manage_rght_a "pid for first manager"
+	lab var			manage_rght_b "pid for second manager"	
 	lab var			gender_mgmt_a "Gender of first manager"
 	lab var			age_mgmt_a "Age of first manager"
 	lab var			edu_mgmt_a "=1 if first manager has formal edu"
@@ -251,11 +256,11 @@
 	lab var			two_mgmt "=1 if there is joint management"
 	lab var			prcid "Parcel ID"
 	lab var			fert_org "=1 if organic fertilizer used"
-	lab var			kilo_fert "Inorganic Fertilizer (kg)"
+	lab var			fert_qty "Inorganic Fertilizer (kg)"
 	lab var			pltid "Plot ID"
 	lab var			pest_any "=1 if pesticide used"
 	lab var			herb_any "=1 if herbicide used"
-	lab var			labor_days "Total labor (days)"
+	lab var			tot_lab "Total labor (days)"
 	lab var			fam_lab "Total family labor (days)"
 	lab var			hrd_lab "Total hired labor (days)"
 

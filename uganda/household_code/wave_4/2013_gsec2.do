@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -30,6 +30,7 @@
 	cap log 		close
 	log using 		"$logout/2013_gsec2_plt", append
 	
+	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
@@ -38,31 +39,56 @@
 	use 			"$root/hh/gsec2.dta", clear
 	
 * rename variables			
-	rename			h2q1 member_number
 	rename 			h2q3 gender
 	rename 			h2q8 age
-
+	rename			HHID hhid
+	
 * modify format of pid so it matches pid from other files 
-	rename			PID pid
-	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
-	destring		PID, replace
+	gen 			pid = substr(PID, 2, 5) + substr(PID, 8, 3)
+	destring		pid, replace
 	
-	gen 			hhid = substr(HHID, 2, 5) + substr(HHID, 8,2) + substr(HHID, 11, 2)
-	destring		hhid, replace
+	gen 			hh = substr(hhid, 2, 5) + substr(hhid, 8,2) + substr(hhid, 11, 2)
+	destring		hh, replace
 	
-	isid 			hhid PID
-	order			hhid, after(gender)
-	order			gender, after(hhid)
-	
-	keep 			hhid PID gender age 
+	isid 			hh pid 
 
 	
 ***********************************************************************
-**# 2 - end matter, clean up to save
+**# 2 - output person data for merge with ag
 ***********************************************************************
+	
+	keep 			hhid hh pid gender age
+	
+	order			hhid hh pid gender age
+	
+	lab var			hh "Household ID"
+	lab var			pid "Person ID"
+	
+	compress
 	
 * save file 
 	save 			"$export/2013_gsec2.dta", replace	
+	
+***********************************************************************
+**# 3 - create household size
+***********************************************************************
+	
+* create counting variable for household members
+	gen				hh_size = 1
+	
+* collapse to household level
+	collapse		(sum) hh_size, by(hhid hh)
+	
+	lab var			hh_size "Household size"
+	
+***********************************************************************
+**# 4 - end matter, clean up to save
+***********************************************************************
+	
+	compress
+	
+* save file 
+	save 			"$export/2013_gsec2h.dta", replace	
 	
 * close the log
 	log	close

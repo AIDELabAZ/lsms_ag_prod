@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 22 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -46,8 +46,12 @@
 * import wave 4 season 1
 	use 			"$root/agric/AGSEC5A.dta", clear
 		
-* rename variables	
-	rename 			HHID hhid
+* order and rename variables
+	order			hh
+	drop			wgt_X
+
+	rename			hh hhid
+	rename			HHID hh
 	rename 			cropID cropid
 	rename			plotID pltid
 	rename			parcelID prcid
@@ -57,16 +61,16 @@
 	*** unit is c not b
 	
 * harvest start and end dates
-	rename			a5aq6e hrv_str_month
-	rename			a5aq6e_1 hrv_str_year
-	rename			a5aq6f hrv_stp_month
-	rename			a5aq6f_1 hrv_stp_year
+	rename			a5aq6e harv_str_month
+	rename			a5aq6e_1 harv_str_year
+	rename			a5aq6f harv_stp_month
+	rename			a5aq6f_1 harv_stp_year
 	
 * two observations are missing pltid
 	*** the hhids are 163060401 and 172100401
 	*** drop this observations
 	
-	drop			if pltid ==. & (hhid == 163060401| hhid == 172100401)
+	drop			if pltid ==. & (hh == 163060401| hh == 172100401)
 	*** two observations dropped
 
 * drop observations from plots that did not harvest because crop was immature
@@ -239,13 +243,13 @@
 	drop 			_merge
 	
 * Convert harv quantity to kg
-	gen 			harvqtykg = a5aq6a* ucaconversion
-	label var		harvqtykg "quantity of crop harvested (kg)"
-	mdesc 			harvqtykg
+	gen 			harv_qty = a5aq6a* ucaconversion
+	label var		harv_qty "quantity of crop harvested (kg)"
+	mdesc 			harv_qty
 	*** 0 missing
 	
 * summarize harvest quantity
-	sum				harvqtykg
+	sum				harv_qty
 	*** mean 287, max 103,000
 	*** 1 crazy value but for onions and is consistent with amount sold
 	*** will keep for now
@@ -254,21 +258,21 @@
 **# 9 - end matter, clean up to save
 ***********************************************************************
 	
-	keep 			hhid prcid pltid Production_ID cropid hrv_str_month ///
-						hrv_str_year hrv_stp_month hrv_stp_year hh harvqtykg 
+	keep 			hhid hh prcid pltid Production_ID cropid harv_str_month ///
+						harv_str_year harv_stp_month harv_stp_year hh harv_qty 
 
 * collapse to hhid prcid pltid cropid
 * since Production_ID just accounts for different start of hrv month
-	collapse 		(sum) harvqtykg ///
-					(mean) hrv_str_month hrv_str_year hrv_stp_month hrv_stp_year, ///
+	collapse 		(sum) harv_qty ///
+					(mean) harv_str_month harv_str_year harv_stp_month harv_stp_year, ///
 						by(hh hhid prcid pltid cropid)
 	* goes from 6,359 to 5,649		
 	
-	lab var			hrv_str_month "Harvest start month"
-	lab var			hrv_str_year "Harvest start year"
-	lab var			hrv_stp_month "Harvest stp month"
-	lab var			hrv_stp_year "Harvest stop year"
-	lab var			harvqtykg "Harvest quantity (kg)"
+	lab var			harv_str_month "Harvest start month"
+	lab var			harv_str_year "Harvest start year"
+	lab var			harv_stp_month "Harvest stp month"
+	lab var			harv_stp_year "Harvest stop year"
+	lab var			harv_qty "Harvest quantity (kg)"
 		
 	isid			hhid prcid pltid cropid
 		

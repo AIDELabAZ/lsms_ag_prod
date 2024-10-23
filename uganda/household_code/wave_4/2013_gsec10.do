@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -37,7 +37,7 @@
 	use 			"$root/hh/gsec10_1.dta", clear
 	
 * rename variables
-	rename			HHID hh
+	rename			HHID hhid
 	
 * generate indicator variable for electricity
 	gen 			electric = 1 if h10q1 == 1
@@ -49,7 +49,7 @@
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hh electric
+	keep 			hhid electric
 	
 * save file 
 	save 			"$export/2013_gsec10.dta", replace	

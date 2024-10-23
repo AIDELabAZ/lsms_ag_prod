@@ -38,7 +38,7 @@
 	use 			"$root/hh/gsec16.dta", clear
 	
 * rename variables
-	rename			HHID hh
+	rename			HHID hhid
 	
 * list shock types
 	label list 		h16q00
@@ -52,7 +52,7 @@
 	replace 		hh_shock = 0 if hh_shock ==.
 	
 * collapse to household	
-	collapse 		(max) ag_shock hh_shock , by(hh)
+	collapse 		(max) ag_shock hh_shock , by(hhid)
 	
 	
 ***********************************************************************
@@ -62,7 +62,7 @@
 	lab var			ag_shock "=1 if agricultural shock"
 	lab var			hh_shock "=1 if household shock"
 	
-	isid			hh
+	isid			hhid
 	
 	compress
 	
