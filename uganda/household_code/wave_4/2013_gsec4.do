@@ -7,7 +7,8 @@
 
 * does
 	* reads Uganda wave 4 hh information (gsec4)
-	* cleans education of household member
+	* cleans househod member characteristics
+		* education
 	* outputs file for merging with plot owner (agsec2a and agsec2b)
 
 * assumes

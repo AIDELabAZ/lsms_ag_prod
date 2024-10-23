@@ -7,7 +7,9 @@
 
 * does
 	* reads Uganda wave 4 hh information (gsec2)
-	* cleans gender and age of household member
+	* cleans househod member characteristics
+		* gender
+		* age
 	* outputs file for merging with plot owner (agsec2a and agsec2b)
 
 * assumes

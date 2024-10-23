@@ -21,7 +21,7 @@
 	* access to cleaned AGSEC1
 
 * TO DO:
-	* edit by jdm
+	* done
 
 	
 ***********************************************************************
@@ -96,6 +96,10 @@
 	drop			if pltid == .
 	duplicates 		drop
 	*** zero dropped, still not unique ID
+	
+* create ag shock variable
+	gen				plt_shck = 1 if a5aq22 != .
+	replace			plt_shck = 0 if plt_shck == .
 	
 * unique identifier
 	isid 			hhid prcid pltid Production_ID cropid
@@ -259,13 +263,14 @@
 ***********************************************************************
 	
 	keep 			hhid hh prcid pltid Production_ID cropid harv_str_month ///
-						harv_str_year harv_stp_month harv_stp_year hh harv_qty 
+						harv_str_year harv_stp_month harv_stp_year hh harv_qty ///
+						plt_shck
 
 * collapse to hhid prcid pltid cropid
 * since Production_ID just accounts for different start of hrv month
 	collapse 		(sum) harv_qty ///
 					(mean) harv_str_month harv_str_year harv_stp_month harv_stp_year, ///
-						by(hh hhid prcid pltid cropid)
+						by(hh hhid prcid pltid cropid plt_shck)
 	* goes from 6,359 to 5,649		
 	
 	lab var			harv_str_month "Harvest start month"
@@ -273,6 +278,7 @@
 	lab var			harv_stp_month "Harvest stp month"
 	lab var			harv_stp_year "Harvest stop year"
 	lab var			harv_qty "Harvest quantity (kg)"
+	lab var			plt_shck "=1 if pre-harvest shock"
 		
 	isid			hhid prcid pltid cropid
 		

@@ -1,13 +1,16 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: jdm
 * Stata v.18.5
 
 * does
 	* reads Uganda wave 4 hh shocks (gsec16)
-	* create indicator variables for shocks (agricultural and hh)
+	* cleans
+		* household shock dummy
+		* agricultural shock dummy
+	* outputs household file for merging
 
 * assumes
 	* access to raw data
@@ -44,23 +47,23 @@
 	label list 		h16q00
 	
 * create indicator variable for ag shocks 
-	gen 			ag_shock = 1 if h16q01 == 1 & (h16q00 < 108 | h16q00 > 1000)
-	replace 		ag_shock = 0 if ag_shock ==.
+	gen 			ag_shck = 1 if h16q01 == 1 & (h16q00 < 108 | h16q00 > 1000)
+	replace 		ag_shck = 0 if ag_shck ==.
 
 * create indicator variable for hh shocks 
-	gen 			hh_shock = 1 if h16q01 == 1 & (h16q00 > 107 & h16q00 < 1000)
-	replace 		hh_shock = 0 if hh_shock ==.
+	gen 			hh_shck = 1 if h16q01 == 1 & (h16q00 > 107 & h16q00 < 1000)
+	replace 		hh_shck = 0 if hh_shck ==.
 	
 * collapse to household	
-	collapse 		(max) ag_shock hh_shock , by(hhid)
+	collapse 		(max) ag_shck hh_shck , by(hhid)
 	
 	
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
-	lab var			ag_shock "=1 if agricultural shock"
-	lab var			hh_shock "=1 if household shock"
+	lab var			ag_shck "=1 if agricultural shock"
+	lab var			hh_shck "=1 if household shock"
 	
 	isid			hhid
 	

@@ -7,7 +7,9 @@
 
 * does
 	* reads Uganda wave 4 hh energy use (gsec10)
-	* cleans and outputs electricity dummy
+	* cleans
+		* electricity dummy
+	* outputs household file for merging
 
 * assumes
 	* access to raw data

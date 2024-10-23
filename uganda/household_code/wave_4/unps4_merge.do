@@ -1,9 +1,9 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 13 Oct 2024
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 23 Oct 2024
+* Edited by: jdm
+* Stata v.18.5
 
 * does
 
@@ -12,7 +12,7 @@
 	* previously cleaned household datasets
 
 * TO DO:
-	* done
+	* cleaning
 	
 
 ************************************************************************
@@ -70,12 +70,12 @@
 ************************************************************************
 
 * merge in livestock data
-	merge 			m:1 hhid using "$root/2013_agsec6a.dta", generate(_sec6a) 
-	*** matched 1,748
-	*** 3,900 unmatched from master - households that do not own livestock
+	merge 			m:1 hhid using "$root/2013_agsec6.dta", generate(_sec6) 
+	*** matched 5,648
+	*** 0 unmatched from master
 	
-	drop 			if _sec6a == 2
-	*** 88 dropped - want to keep households w/o livestock
+	drop 			if _sec6 == 2
+	*** 389 dropped - want to keep households w/o livestock
 
 * merge in household size data
 	merge 			m:1 hhid using "$root/2013_gsec2h.dta", generate(_gsec2) 
