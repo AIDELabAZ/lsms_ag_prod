@@ -146,9 +146,14 @@
 * compare difference, prclsize should be > than plot_tot
 	replace			crop_area = . if (plot_tot - prclsize) > 0.01
 	
+* replace outliers at top/bottom 5 percent
+	sum 			crop_area, detail
+	replace			crop_area = . if crop_area >= `r(p95)' | crop_area <= `r(p5)'
+	* 2441 changes made
+	
 * summarize before imputation
 	sum 				crop_area, detail
-	*** mean .17, sd .17, max 2.83
+	*** mean .14, sd .10, max .42, min .025
 	
 * impute missing crop area
 	mi set 			wide 	// declare the data to be wide.
@@ -163,11 +168,11 @@
 	
 * inspect imputation 
 	sum 				crop_area_1_, detail	
-	*** mean .16, sd .18, max 2.83
+	*** mean .14, sd .10 max .42
 
 * replace the imputated variable
 	replace 			crop_area = crop_area_1_ 
-	*** 1,160 changes
+	*** 1,601 changes
 	
 	drop				mi_miss crop_area_1_
 	
@@ -194,8 +199,7 @@
 
 * replace outliers at top/bottom 5 percent
 	sum 			yield, detail
-	replace			harv_qty = . if yield >= `r(p95)'
-	replace			harv_qty = . if yield <= `r(p5)'
+	replace			harv_qty = . if yield >= `r(p95)' | yield <= `r(p5)'
 	* 298 and 282 changes made
 
 * impute missing harvqtykg
@@ -223,7 +227,7 @@
 	replace				yield = harv_qty/crop_area
 	
 	sum					yield, detail
-	*** mean 1,950, sd 3,180, max 92,664
+	*** mean 1,815, sd 2,324, max 59,305
 	
 	
 	
