@@ -80,7 +80,7 @@
 * missing cropid's also lack crop names, drop those observations
 	mdesc 			cropid
 	*** 6 observations missing
-	drop			if cropid ==.
+	drop			if cropid == .
 	** 6 obs deleted
 	
 * drop cropid is annual, other, fallow, pasture, and trees
@@ -96,6 +96,10 @@
 	drop			if pltid == .
 	duplicates 		drop
 	*** zero dropped, still not unique ID
+	
+* create missing harvest dummy
+	gen				harv_miss = 1 if a5aq6a == .
+	replace			harv_miss = 0 if harv_miss == .
 	
 * create ag shock variable
 	gen				plt_shck = 1 if a5aq22 != .
@@ -264,13 +268,13 @@
 	
 	keep 			hhid hh prcid pltid Production_ID cropid harv_str_month ///
 						harv_str_year harv_stp_month harv_stp_year hh harv_qty ///
-						plt_shck
+						plt_shck harv_miss
 
 * collapse to hhid prcid pltid cropid
 * since Production_ID just accounts for different start of hrv month
 	collapse 		(sum) harv_qty ///
 					(mean) harv_str_month harv_str_year harv_stp_month harv_stp_year, ///
-						by(hh hhid prcid pltid cropid plt_shck)
+						by(hh hhid prcid pltid cropid plt_shck harv_miss)
 	* goes from 6,359 to 5,649		
 	
 	lab var			harv_str_month "Harvest start month"
@@ -279,6 +283,7 @@
 	lab var			harv_stp_year "Harvest stop year"
 	lab var			harv_qty "Harvest quantity (kg)"
 	lab var			plt_shck "=1 if pre-harvest shock"
+	lab var			harv_miss "=1 if harvest qty missing"
 		
 	isid			hhid prcid pltid cropid
 		
