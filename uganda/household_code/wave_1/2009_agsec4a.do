@@ -1,23 +1,25 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 13 Oct 24
+* Edited on: 23 Oct 24
 * Edited by: rg
-* Stata v.18, mac
+* Stata v.18.0
 
 * does
-	* seed use
-	* reads Uganda wave 4 crops grown and types of seeds info (AGSEC4A) for the 1st season
-	* 3A - 5A are questionaires for the second planting season
-	* 3B - 5B are questionaires for the first planting season
+	* reads Uganda wave 1 crops grown and seed (2009_AGSEC4A) for the 1st season
+	* questionaire 4B is for 2nd season
+	* cleans
+		* planting date
+		* seeds
+		* crops
+	* output cleaned seed and planting date file
 
 * assumes
 	* access to raw data
 	* mdesc.ado
 
 * TO DO:
-	* seed quantity and seed price 
-	* last section
+	* everything
 	
 
 ***********************************************************************
@@ -37,15 +39,15 @@
 **# 1 - import data and rename variables
 ***********************************************************************
 
-* import wave 4 season A
-	use 			"$root/agric/AGSEC4A.dta", clear
+* import wave 1 season A
+	use 			"$root/2009_AGSEC4A.dta", clear
 	
 * rename variables	
-	rename 			HHID hhid
-	rename			parcelID prcid
+	rename 			Hhid hhid
+	rename 			A4aq2 prcid
 	rename			plotID pltid
-	rename 			cropID cropid
-	rename 			cropID_other cropid2
+	rename 			A4aq4a cropid
+
 	rename			a4aq11b unit
 	rename			a4aq11a seed_qty
 	rename 			a4aq13 seed_type
