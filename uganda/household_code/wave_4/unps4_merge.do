@@ -109,7 +109,134 @@
 	drop 			if _geovar == 2
 	*** 1,632 dropped - want to keep rotated in hh
 
-fdsfsd
+
+***********************************************************************
+**# 2 - impute crop area planted
+***********************************************************************
+
+* there are GPS measures at parcel-level 
+* however, unlike every other LSMS country there is no plot-level GPS 
+* we could use GPS parcel-level measures, which can be >>> than a plot
+* because of this often large difference, using GPS parcel would results in
+* yields much lower than they really are
+* instead we will use self-reported plot-level size, despite its problems
+* we apply this consistently to all rounds in UGA
+
+* summarize plot size
+	sum				crop_area
+	*** mean .52, max 16.9
+	
+* there are 10 values with 0 plot size yet have harvest
+* replace with parcel size
+	replace			area_plnt = prclsize if area_plnt == 0
+	replace			crop_area = area_plnt*prct_plnt if crop_area == 0
+	
+* crop area cannot be larger than parcel, convert to missing if 0.01 > than parcel
+	replace			crop_area = . if (crop_area - prclsize) > 0.01
+	*** 525 replaced
+	
+* generate counting variable for number of plots in a parcel
+	gen				plot_bi = 1
+	
+	egen			plot_cnt = sum(plot_bi), by(hhid prcid)
+
+* generate tot plot size based on area planted
+	egen			plot_tot = sum(crop_area), by(hhid prcid)
+	
+* compare difference, prclsize should be > than plot_tot
+	replace			crop_area = . if (plot_tot - prclsize) > 0.01
+	
+* summarize before imputation
+	sum 				crop_area, detail
+	*** mean .17, sd .17, max 2.83
+	
+* impute missing crop area
+	mi set 			wide 	// declare the data to be wide.
+	mi xtset		, clear 	// clear any xtset that may have had in place previously
+
+* impute harvqtykg	
+	mi register			imputed crop_area // identify harvqty variable to be imputed
+	sort				hhid prcid pltid cropid, stable // sort to ensure reproducability of results
+	mi impute 			pmm crop_area i.admin_2 i.cropid plot_cnt prclsize, add(1) rseed(245780) ///
+								noisily dots force knn(5) bootstrap					
+	mi 				unset	
+	
+* inspect imputation 
+	sum 				crop_area_1_, detail	
+	*** mean .16, sd .18, max 2.83
+
+* replace the imputated variable
+	replace 			crop_area = crop_area_1_ 
+	*** 1,160 changes
+	
+	drop				mi_miss crop_area_1_
+	
+	
+***********************************************************************
+**# 3 - impute harvest quantity
+***********************************************************************
+	
+* summarize harvest quantity prior to imputations
+	sum				harv_qty
+	*** mean 324, sd 1,806, max 103,000
+	
+* plot harvest against land
+*	twoway			(scatter harv_qty crop_area)
+	
+* one crazy outlier (103,000 kg of onion)
+	replace			harv_qty = . if harv_qty > 100000
+	
+* generate temporary yield variables
+	gen				yield = harv_qty/crop_area
+
+* plot yield against land
+*	twoway			(scatter yield crop_area)
+
+* replace outliers at top/bottom 5 percent
+	sum 			yield, detail
+	replace			harv_qty = . if yield >= `r(p95)'
+	replace			harv_qty = . if yield <= `r(p5)'
+	* 298 and 282 changes made
+
+* impute missing harvqtykg
+	mi set 			wide 	// declare the data to be wide.
+	mi xtset		, clear 	// clear any xtset that may have had in place previously
+
+* impute harvqtykg	
+	mi register			imputed harv_qty // identify harvqty variable to be imputed
+	sort				hhid prcid pltid cropid, stable // sort to ensure reproducability of results
+	mi impute 			pmm harv_qty i.admin_2 crop_area i.cropid, add(1) rseed(245780) ///
+								noisily dots force knn(5) bootstrap					
+	mi 				unset	
+	
+* inspect imputation 
+	sum 				harv_qty_1_, detail
+	*** mean 223, sd 318, max 2,310
+
+* replace the imputated variable
+	replace 			harv_qty = harv_qty_1_
+	*** 104 changes
+	
+	drop 				harv_qty_1_ mi_miss
+	
+* generate yield variable
+	replace				yield = harv_qty/crop_area
+	
+	sum					yield, detail
+	*** mean 1,950, sd 3,180, max 92,664
+	
+	
+	
+	fdfs
+	
+	
+	
+	
+	
+	
+	
+	
+	
 ************************************************************************
 **# 1b - create total farm and maize variables
 ************************************************************************

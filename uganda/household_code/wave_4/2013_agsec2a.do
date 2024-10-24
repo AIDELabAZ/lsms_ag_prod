@@ -53,8 +53,8 @@
 	rename			hh hhid
 	rename			HHID hh
 	rename			parcelID prcid
-	rename 			a2aq4 plotsizeGPS
-	rename 			a2aq5 plotsizeSR
+	rename 			a2aq4 prclsizeGPS
+	rename 			a2aq5 prclsizeSR
 	
 	isid 			hh prcid
 	isid			hhid prcid
@@ -157,75 +157,75 @@
 ***********************************************************************
 
 * summarize plot size
-	sum 			plotsizeGPS
+	sum 			prclsizeGPS
 	***	mean 1.49, max 48, min .01
 	*** no plotsizes that are zero
 	
-	sum				plotsizeSR
+	sum				prclsizeSR
 	*** mean 1.48, max 40, min .02
 
 * how many missing values are there?
-	mdesc 			plotsizeGPS
+	mdesc 			prclsizeGPS
 	*** 1,906 missing, 53% of observations
 
 * convert acres to hectares
-	gen				plotsize = plotsizeGPS*0.404686
-	label var		plotsize "Plot size (ha)"
+	gen				prclsize = prclsizeGPS*0.404686
+	label var		prclsize "Parcel size (ha)"
 	
-	gen				selfreport = plotsizeSR*0.404686
-	label var       selfreport "Plot size (ha)"
+	gen				selfreport = prclsizeSR*0.404686
+	label var       selfreport "Parcel size (ha)"
 
 * examine gps outlier values
-	sum 			plotsize, detail
+	sum 			prclsize, detail
 	*** mean 0.60, max 19.42, min 0.004, std. dev. 1.03
 	
-	sum 			plotsize if plotsize < 18, detail
+	sum 			prclsize if prclsize < 18, detail
 	*** mean 0.58, max 16.67, min 0.004, std. dev. 0.932
 	
-	list 			plotsize selfreport if plotsize > 18 & !missing(plotsize)
+	list 			prclsize selfreport if prclsize > 18 & !missing(prclsize)
 	*** gps plotsize is almost a hundred times larger self reported, which means a decimal point misplacement.
 	
 * recode outlier to be 1/100
-	replace 		plotsize = plotsize/100 if plotsize > 18
+	replace 		prclsize = prclsize/100 if prclsize > 18
 		
 * check correlation between the two
-	corr 			plotsize selfreport
+	corr 			prclsize selfreport
 	*** 0.88 correlation, high correlation between GPS and self reported
 	
 * compare GPS and self-report, and look for outliers in GPS 
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** save command as above to easily access r-class stored results 
 
 * look at GPS and self-reported observations that are > ±3 Std. Dev's from the median 
-	list			plotsize selfreport if !inrange(plotsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
-						& !missing(plotsize)
+	list			prclsize selfreport if !inrange(prclsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
+						& !missing(prclsize)
 	*** these all look good, largest size is 16 ha
 	
 * summarize before imputation
-	sum				plotsize
+	sum				prclsize
 	*** mean 0.58, max 16.67, min 0.004
 
 * impute missing plot sizes using predictive mean matching
 	mi set 			wide // declare the data to be wide.
 	mi xtset		, clear // this is a precautinary step to clear any existing xtset
-	mi register 	imputed plotsize // identify plotsize_GPS as the variable being imputed
+	mi register 	imputed prclsize // identify plotsize_GPS as the variable being imputed
 	sort			admin_1 admin_2 admin_3 admin_4 hhid prcid, stable // sort to ensure reproducability of results
-	mi impute 		pmm plotsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
+	mi impute 		pmm prclsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
 						force knn(5) bootstrap
 	mi unset
 		
 * how did imputing go?
-	sum 			plotsize_1_
+	sum 			prclsize_1_
 	*** mean 0.62, max 16.99, min 0.004
 	
-	corr 			plotsize_1_ selfreport if plotsize == .
+	corr 			prclsize_1_ selfreport if prclsize == .
 	*** strong correlation 0.87
 	
-	replace 		plotsize = plotsize_1_ if plotsize == .
+	replace 		prclsize = prclsize_1_ if prclsize == .
 	
-	drop			mi_miss plotsize_1_
+	drop			mi_miss prclsize_1_
 	
-	mdesc 			plotsize
+	mdesc 			prclsize
 	*** none missing
 
 	
@@ -235,7 +235,7 @@
 	
 	keep 			hhid hh hhid_pnl rotate admin_1 admin_2 admin_3 ///
 						admin_4 ea sector year wgt13 wgt_pnl prcid ea ///
-						plotsize irr_any ownshp_rght_a ownshp_rght_b ///
+						prclsize irr_any ownshp_rght_a ownshp_rght_b ///
 						gender_own_a age_own_a edu_own_a gender_own_b ///
 						age_own_b edu_own_b two_own tenure
 						
@@ -254,7 +254,7 @@
 	
 	order			hhid hh hhid_pnl rotate admin_1 admin_2 admin_3 ///
 						admin_4 ea sector year wgt13 wgt_pnl prcid ///
-						tenure plotsize
+						tenure prclsize
 	
 	compress
 

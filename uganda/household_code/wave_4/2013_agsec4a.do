@@ -60,7 +60,7 @@
 	rename			a4aq9_1 plnt_month
 	rename			a4aq9_2 plnt_year
 	
-	mdesc 			hhid prcid pltid pltid 
+	mdesc 			hhid prcid pltid cropid 
 	* we have 1 obs missing pltid and cropid
 	
 	drop if			pltid ==. | prcid ==.
@@ -198,10 +198,13 @@
 ***********************************************************************
 
 	keep 			hhid hh prcid cropid pltid intrcrp seed_qty ///
-						seed_type crop_area plnt_month plnt_year
+						seed_type crop_area plnt_month plnt_year ///
+						area_plnt prct_plnt 
 
 	lab var			seed_type "Traditional/improved"
 	lab var			intrcrp "=1 if intercropped"
+	lab var			area_plnt "Total area of plot planted"
+	lab var			prct_plnt "Percent planted to crop"
 					
 	isid			hhid prcid pltid cropid	
 		

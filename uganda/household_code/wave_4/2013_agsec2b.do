@@ -53,8 +53,8 @@
 	rename			hh hhid
 	rename			HHID hh
 	rename			parcelID prcid
-	rename 			a2bq4 plotsizeGPS
-	rename 			a2bq5 plotsizeSR
+	rename 			a2bq4 prclsizeGPS
+	rename 			a2bq5 prclsizeSR
 	
 	isid 			hh prcid
 	isid			hhid prcid
@@ -69,7 +69,7 @@
 	gen	long		pid = a2bq21a	
 	gen	long		pid2 = a2bq21b
 
-* generate tenure variable based on fact that this is all rented plots
+* generate tenure variable based on fact that this is all rented prcls
 	gen				tenure = 0
 	lab var			tenure "=1 if owned"
 	
@@ -151,29 +151,29 @@
 
 	
 ***********************************************************************
-**# 5 - clean plotsize
+**# 5 - clean prclsize
 ***********************************************************************
 
 * summarize plot size
-	sum 			plotsizeGPS
+	sum 			prclsizeGPS
 	***	mean 1.06, max 16.8, min .07
 	
-	sum				plotsizeSR
+	sum				prclsizeSR
 	*** mean .97, max 25, min .1
 
 * how many missing values are there?
-	mdesc 			plotsizeGPS
+	mdesc 			prclsizeGPS
 	*** 822 missing, 87% of observations
 
 * convert acres to hectares
-	gen				plotsize = plotsizeGPS*0.404686
-	label var       plotsize "Plot size (ha)"
+	gen				prclsize = prclsizeGPS*0.404686
+	label var       prclsize "Parcel size (ha)"
 	
-	gen				selfreport = plotsizeSR*0.404686
-	label var       selfreport "Plot size (ha)"
+	gen				selfreport = prclsizeSR*0.404686
+	label var       selfreport "Parcel size (ha)"
 
 * examine gps outlier values
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** mean 0.43, min 0.02, max 6.79, std. dev. .66
 	
 * examine gps outlier values
@@ -181,43 +181,43 @@
 	*** mean 0.39, min 0.04, max 10.11, std. dev. .53
 	
 * check correlation between the two
-	corr 			plotsize selfreport
+	corr 			prclsize selfreport
 	*** 0.96 correlation, high correlation between GPS and self reported
 	
 * compare GPS and self-report, and look for outliers in GPS 
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** save command as above to easily access r-class stored results 
 
 * look at GPS and self-reported observations that are > ±3 Std. Dev's from the median 
-	list			plotsize selfreport if !inrange(plotsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
-						& !missing(plotsize)
+	list			prclsize selfreport if !inrange(prclsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
+						& !missing(prclsize)
 	*** these all look good
 
 * summarize before imputation
-	sum				plotsize
+	sum				prclsize
 	*** mean 0.41, min 0.02, max 6.79
 
 * impute missing plot sizes using predictive mean matching
 	mi set 			wide // declare the data to be wide.
 	mi xtset		, clear // this is a precautinary step to clear any existing xtset
-	mi register 	imputed plotsize // identify plotsize_GPS as the variable being imputed
+	mi register 	imputed prclsize // identify prclsize_GPS as the variable being imputed
 	sort			admin_1 admin_2 admin_3 admin_4 hhid prcid, stable // sort to ensure reproducability of results
-	mi impute 		pmm plotsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
+	mi impute 		pmm prclsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
 						force knn(5) bootstrap
 	mi unset
 		
 * how did imputing go?
-	sum 			plotsize_1_
+	sum 			prclsize_1_
 	*** mean 0.38, max 6.8, min .02
 	
-	corr 			plotsize_1_ selfreport if plotsize == .
+	corr 			prclsize_1_ selfreport if prclsize == .
 	*** high correlatio, 0.72
 	
-	replace 		plotsize = plotsize_1_ if plotsize == .
+	replace 		prclsize = prclsize_1_ if prclsize == .
 	
-	drop			mi_miss plotsize_1_
+	drop			mi_miss prclsize_1_
 	
-	mdesc 			plotsize
+	mdesc 			prclsize
 	*** none missing
 
 	
@@ -227,7 +227,7 @@
 
 	keep 			hhid hh hhid_pnl rotate admin_1 admin_2 admin_3 ///
 						admin_4 ea sector year wgt13 wgt_pnl prcid ea ///
-						plotsize irr_any ownshp_rght_a ownshp_rght_b ///
+						prclsize irr_any ownshp_rght_a ownshp_rght_b ///
 						gender_own_a age_own_a edu_own_a gender_own_b ///
 						age_own_b edu_own_b two_own tenure
 						
@@ -259,7 +259,7 @@
 
 	order			hhid hh hhid_pnl rotate admin_1 admin_2 admin_3 ///
 						admin_4 ea sector year wgt13 wgt_pnl prcid ///
-						tenure plotsize
+						tenure prclsize
 	
 	compress
 
