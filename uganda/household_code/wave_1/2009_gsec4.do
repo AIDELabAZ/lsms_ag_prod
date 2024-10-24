@@ -3,18 +3,16 @@
 * Created by: rg
 * Edited on: 23 Oct 24
 * Edited by: rg
-* Stata v.18, mac
+* Stata v.18.0
 
 * does
-	* reads Uganda wave 1 hh information (gsec2)
-	* cleans household member characteristics
-		* gender
-		* age
+	* reads Uganda wave 1 hh information (gsec4)
+	* cleans househod member characteristics
+		* education
 	* outputs file for merging with plot owner (agsec2a and agsec2b)
 
 * assumes
 	* access to raw data
-	* mdesc.ado
 
 * TO DO:
 	* done
@@ -31,64 +29,54 @@
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2009_gsec2_plt", append
+	log using 		"$logout/2013_gsec4_plt", append
+	
 	
 ***********************************************************************
 **# 1 - import data and rename variables
 ***********************************************************************
 
 * import hh roster info
-	use 			"$root/2009_gsec2.dta", clear
+	use 			"$root/2009_GSEC4.dta", clear
 	
 * rename variables			
-	rename			h2q1 member_number
-	rename 			h2q3 gender
-	rename 			HHID hhid 
-	rename 			h2q8 age
+	rename			h4q7 edu
+	rename			HHID hhid
+	rename 			h4q1 member_number
 	
+	mdesc 			member_number
+	drop if 		member_number == .
+	
+	isid 			hhid member_number
+
+* modify format of pid so it matches pid from other files 
 	destring		PID, replace
 	rename 			PID pid
 	format 			pid %16.0g
 	
 	
 	isid 			hhid pid
-
-***********************************************************************
-**# 2 - output person data for merge with ag
-***********************************************************************
-	keep 			hhid pid gender member_number age
 	
-	order			hhid pid member_number gender age
+	replace			edu = 1 if edu != .
+	replace			edu = 0 if edu == .
+	
+	lab var			edu "=1 if has formal education"
+	lab values 		edu .
+	
+***********************************************************************
+**# 2 - end matter, clean up to save
+***********************************************************************
+	
+	keep 			hhid pid edu member_number
+	
+	order			hhid pid edu member_number
 	
 	lab var			pid "Person ID"
-
-* save file 
-	save 			"$export/2009_gsec2.dta", replace	
 	
-***********************************************************************
-**# 3 - create household size
-***********************************************************************
-	
-* create counting variable for household members
-	gen				hh_size = 1
-	
-* collapse to household level
-	collapse		(sum) hh_size, by(hhid)
-	
-	lab var			hh_size "Household size"
-	
-***********************************************************************
-**# 4 - end matter, clean up to save
-***********************************************************************
-	
-	compress	
+	compress
 	
 * save file 
-	save 			"$export/2009_gsec2h.dta", replace	
-	
-	
-	
-	
+	save 			"$export/2009_gsec4.dta", replace	
 	
 * close the log
 	log	close

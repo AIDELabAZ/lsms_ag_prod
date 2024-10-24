@@ -1,23 +1,27 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: ek
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 23 Oct 24
+* Edited by: rg
+* Stata v.18.0
 
 * does
-	* Crop output
-	* reads Uganda wave 1 crop output (2009_AGSEC5A) for the 1st season
-	* 3A - 5A are questionaires for the first planting season
-	* 3B - 5B are questionaires for the second planting season
+	* reads Uganda wave 4 crop output (2009_AGSEC5A) for the 1st season
+	* questionaire 5B is for 2nd season
+	* cleans
+		* harvest date
+		* crops
+		* output
+	* outputs cleaned harvest date file
 
 * assumes
 	* access to all raw data
 	* mdesc.ado
+	* access to unit conversion file
+	* access to cleaned AGSEC1
 
 * TO DO:
-	* we are only considering sold value based on the observations that were succesfully merged (line 159- 190)
-	* outcome of last imputation is changing everytime we run
+	* conversion and calculate quantity harvested
 
 
 * **********************************************************************
@@ -36,9 +40,9 @@
 	log using 			"$logout/2009_AGSEC5A_plt", append
 
 	
-* **********************************************************************
-* 1 - import data and rename variables
-* **********************************************************************
+***********************************************************************
+**# 1 - import data and rename variables
+***********************************************************************
 
 * import wave 2 season 1
 	use 			"$root/2009_AGSEC5A.dta", clear
@@ -51,9 +55,11 @@
 	rename 			A5aq6c unit_code
 	rename			A5aq6b condition_code
 	
-	sort hhid prcid pltid
+	sort 			hhid prcid pltid
 	*** cannot uniquely identify observations by hhid, prcid, or pltid 
 	*** there multiple crops on the same plot
+	
+* harvest start and end dates
 	
 * missing cropid's also lack crop names, drop those observations
 	mdesc 			cropid
@@ -80,16 +86,22 @@
 	drop			if pltid == .
 	duplicates 		drop
 	*** there is still not a unique identifier, will deal with later
+
+* create ag shock variable 
+	gen 			plt_shck = 1 if A5aq17 !=.
+	replace 		plt_shck = 0 if plt_shck ==.
 	
-	
-* **********************************************************************
-* 2 - merge kg conversion file and create harvested quantity
-* **********************************************************************
+* unique identifier 
+	isid 			hhid prcid pltid cropid
+
+***********************************************************************
+**# 2 - merge kg conversion file and create harvested quantity
+***********************************************************************
 	
 * merge in conversation file
 	merge m:1 		cropid unit condition using ///
 						"$conv/ValidCropUnitConditionCombinations.dta" 
-	*** unmatched 4195 from master, or 30% 
+	*** unmatched 3,752 from master, or 30% 
 	
 * drop from using
 	drop 			if _merge == 2

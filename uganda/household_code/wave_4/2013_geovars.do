@@ -1,8 +1,8 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 21 Oct 24
-* Edited by: jdm
+* Edited on: 23 Oct 24
+* Edited by: rg
 * Stata v.18.5
 
 * does
@@ -50,14 +50,15 @@
 
 	rename 			ssa_aez09 aez
 	rename			urban sector
-	rename			srtm_uga elevation
+	rename			srtm_uga elevat
+	rename 			dist_popcenter dist_pop
 	
 	
 ************************************************************************
 **# 2 - end matter, clean up to save
 ************************************************************************
 
-	keep 			hhid aez sector elevation sq1-sq7 dist_road dist_popcenter
+	keep 			hhid aez sector elevat sq1-sq7 dist_road dist_pop
 
 	destring		hhid, gen(hhid_pnl)
 	drop			hhid

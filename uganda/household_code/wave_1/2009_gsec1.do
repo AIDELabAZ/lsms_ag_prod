@@ -1,13 +1,16 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: alj
-* Edited by: jdm
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 23 Oct 24
+* Edited by: rg
+* Stata v.18.0, mac
 
 * does
-	* household Location data (2009_GSEC1) for the 1st season
+	* reads in household location data (2009_GSEC1) for the 1st season
+	* cleans
+		* political geography locations
+		* survey weights
+	* outputs file of location for merging with other ag files that lack this info
 
 * assumes
 	* access to all raw data
@@ -39,20 +42,22 @@
 	use 			"$root/2009_GSEC1.dta", clear
 
 * rename variables
-	isid 			HHID
-	rename 			HHID hhid
 
-	rename 			h1aq1 district
-	rename 			h1aq2b county
-	rename 			h1aq3b subcounty
-	rename 			h1aq4b parish
+	rename 			HHID hhid
+	isid 			hhid
+
+	*rename			HHID_old hhid_pnl
+	rename			region admin_1
+	rename 			h1aq1 admin_2
+	rename 			h1aq3 admin_3
+	rename 			h1aq4 admin_4
+	rename			urban sector
 	rename 			hh_status hh_status2009
 	***	district variables not labeled in this wave, just coded
 
-	tab 			region, missing
 
 * drop if missing
-	drop if			district == .
+	drop if			admin_2 == .
 	*** dropped 6 observations
 	
 	
@@ -60,15 +65,16 @@
 * 2 - end matter, clean up to save
 * **********************************************************************
 
-	keep 			hhid region district county subcounty parish ///
-						hh_status2009 wgt09wosplits wgt09
+	keep 			hhid admin_? hh_status2009 wgt09wosplits wgt09 sector
+	order 			hhid hh_status2009 admin_1 admin_2 admin_3 admin_4 ///
+					sector wgt09 wgt09wosplits
 
 	compress
 	describe
 	summarize
 
 * save file
-	save 			"$export/2009_GSEC1_plt.dta", replace
+	save 			"$export/2009_GSEC1.dta", replace
 
 
 * close the log
