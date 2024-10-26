@@ -6,7 +6,13 @@
 * Stata v.18, mac
 
 * does
-	* cleans geovars
+	* reads Uganda wave 2 geovars (UNPS_Geovars_1011)
+	* cleans and outputs geovars
+		* aez
+		* urban/rural
+		* elevation
+		* soil variables for use in index
+		* distances to road and pop center
 
 * assumes
 	* access to all raw data
@@ -41,20 +47,22 @@
 	rename 			HHID hhid
 
 	rename 			ssa_aez09 aez
-	
+	rename 			urban sector 
+	rename			srtm_uga elevat
+	rename 			dist_popcenter dist_pop	
 	
 ************************************************************************
 **# 2 - end matter, clean up to save
 ************************************************************************
 
-	keep 			hhid aez
+	keep 			hhid aez sector elevat sq1-sq7 dist_road dist_pop
 
 	compress
 	describe
 	summarize
 
 * save file
-	save 			"$export/2010_geovars_plt.dta", replace
+	save 			"$export/2010_geovars.dta", replace
 	
 * close the log
 	log	close

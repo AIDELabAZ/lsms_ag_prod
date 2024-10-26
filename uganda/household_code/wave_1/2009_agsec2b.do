@@ -6,8 +6,7 @@
 * Stata v.18.0
 
 * does
-	* reads Uganda wave 1 owned plot info (2009_AGSEC2A) for the 1st season
-	* ready to append to rented plot info (2010_AGSEC2B)
+	* reads Uganda wave 1 rented plot info (2009_AGSEC2B) for the 1st season
 	* owned plots are in A and rented plots are in B
 	* cleans
 		* plot sizes
@@ -15,7 +14,7 @@
 		* irrigation
 		* plot ownership
 	* merge in owner characteristics from gsec2 gsec4
-	* appends to 2009_AGSEC2A to output 2013_AGSEC2
+	* appends to 2009_AGSEC2A to output 2009_AGSEC2
 
 * assumes
 	* access to all raw data
@@ -72,8 +71,8 @@
 	*** there are 43 missing both member number 
 	
 	
-* generate tenure variables based on the fact that this is all owned plots
-	gen				tenure = 1 
+* generate tenure variables based on the fact that this is all rented parcels
+	gen				tenure = 0 
 	lab var 		tenure "=1 if owned"
 
 

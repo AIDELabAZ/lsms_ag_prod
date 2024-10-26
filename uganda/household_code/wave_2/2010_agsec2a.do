@@ -10,7 +10,7 @@
 	* ready to append to rented plot info (2010_AGSEC2B)
 	* owned plots are in A and rented plots are in B
 	* cleans
-		* plot sizes
+		* parcel sizes
 		* tenure
 		* irrigation
 		* plot ownership
@@ -157,119 +157,132 @@
 	
 	
 ************************************************************************
-**# 4 - clean parcel size
+**# 5 - clean parcel size
 ************************************************************************
 
 * summarize parcel size
-	sum 			plotsizeGPS
+	sum 			prclsizeGPS
 	***	mean 3.72, max 676, min .01
 	*** no plotsizes that are zero
 	
-	sum				plotsizeSR
+	sum				prclsizeSR
 	*** mean 2.18, max 100, min .01
 
 * how many missing values are there?
-	mdesc 			plotsizeGPS
+	mdesc 			prclsizeGPS
 	*** 1,073 missing, 34% of observations
 	
 * convert acres to square meters
-	gen				plotsize = plotsizeGPS*0.404686
-	label var       plotsize "Plot size (ha)"
+	gen				prclsize = prclsizeGPS*0.404686
+	label var       prclsize "Parcel size (ha)"
 	
-	gen				selfreport = plotsizeSR*0.404686
-	label var       selfreport "Plot size (ha)"
+	gen				selfreport = prclsizeSR*0.404686
+	label var       selfreport "Parcel size (ha)"
 
 * check correlation between the two
-	corr 			plotsize selfreport
+	corr 			prclsize selfreport
 	*** 0.25 correlation, reasonably good between GPS and self reported
 	
 * compare GPS and self-report, and look for outliers in GPS 
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** save command as above to easily access r-class stored results 
 
 * look at GPS and self-reported observations that are > ±3 Std. Dev's from the median 
-	list			plotsize selfreport if !inrange(plotsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
-						& !missing(plotsize)
+	list			prclsize selfreport if !inrange(prclsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
+						& !missing(prclsize)
 	*** values over 100 are clearly wrong
 	*** the ones in the 70s I am unsure about
 	*** the ones in the 30s and 40s look okay
 
-	replace			plotsize = . if plotsize > 40
+	replace			prclsize = . if prclsize > 40
 	*** 9 change made
 
 * gps on the larger side vs self-report
-	tab				plotsize if plotsize > 3, plot
+	tab				prclsize if prclsize > 3, plot
 	*** distribution has a few high values, but mostly looks reasonable
 
 * correlation for larger plots	
-	corr			plotsize selfreport if plotsize > 3 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize > 3 & !missing(prclsize)
 	*** this is really low, 0.154, compared to 2009 which was 0.616
 
 * correlation for smaller plots	
-	corr			plotsize selfreport if plotsize < .1 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize < .1 & !missing(prclsize)
 	*** this is basically the same, 0.174
 		
 * correlation for extremely small plots	
-	corr			plotsize selfreport if plotsize < .01 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize < .01 & !missing(prclsize)
 	*** this is higher, but negative, -0.403, which is strange in itself
 	
 * summarize before imputation
-	sum				plotsize
+	sum				prclsize
 	*** mean 0.956, max 35.29, min 0.004
 	
 * encode district to be used in imputation
-	encode district, gen (districtdstrng) 	
+	encode 			admin_2, gen (admin_2dstrng) 	
 
 * impute missing plot sizes using predictive mean matching
 	mi set 			wide // declare the data to be wide.
 	mi xtset		, clear // this is a precautinary step to clear any existing xtset
-	mi register 	imputed plotsize // identify plotsize_GPS as the variable being imputed
-	sort			region district hhid prcid, stable // sort to ensure reproducability of results
-	mi impute 		pmm plotsize i.districtdstrng selfreport, add(1) rseed(245780) noisily dots ///
+	mi register 	imputed prclsize // identify plotsize_GPS as the variable being imputed
+	sort		admin_1 admin_2 admin_3 admin_4 hhid prcid, stable // sort to ensure reproducability of results
+	mi impute 		pmm prclsize i.admin_2dstrng selfreport, add(1) rseed(245780) noisily dots ///
 						force knn(5) bootstrap
 	mi unset
 	
 * how did imputing go?
-	sum 			plotsize_1_
-	*** mean 1.01, max 35.29, min 0.004
+	sum 			prclsize_1_
+	*** mean 1.05, max 35.29, min 0.004
 	
-	corr 			plotsize_1_ selfreport if plotsize == .
-	*** 0.612 better correlation
+	corr 			prclsize_1_ selfreport if prclsize == .
+	*** 0.4857 ok correlation
 	
-	replace 		plotsize = plotsize_1_ if plotsize == .
+	replace 		prclsize = prclsize_1_ if prclsize == .
 	
-	drop			mi_miss plotsize_1_
+	drop			mi_miss prclsize_1_
 	
-* impute final observations that don't not have self reported
-	mi set 			wide // declare the data to be wide.
-	mi xtset		, clear // this is a precautinary step to clear any existing xtset
-	mi register 	imputed plotsize // identify plotsize_GPS as the variable being imputed
-	sort			region district hhid prcid, stable // sort to ensure reproducability of results
-	mi impute 		pmm plotsize i.districtdstrng, add(1) rseed(245780) noisily dots ///
-						force knn(5) bootstrap
-	mi unset
-	
-	replace 		plotsize = plotsize_1_ if plotsize == .
-	
-	mdesc 			plotsize
+
+	mdesc 			prclsize
 	*** none missing
 	
+	drop 			if prclsize ==.
 	
 ************************************************************************
 **# 4 - end matter, clean up to save
 ************************************************************************
 
-	keep 			hhid prcid region district county subcounty ///
-					parish hh_status2010 spitoff09_10 spitoff10_11 wgt10 ///
-					plotsize irr_any
+
+	keep 			hhid prcid admin_1 admin_2 admin_3 admin_4 ///
+					sector spitoff09_10 spitoff10_11 wgt10 hh_status2010 ///
+					prclsize irr_any ownshp_rght_a ownshp_rght_b ///
+					member_number_a member_number_b ///
+					gender_own_a age_own_a edu_own_a gender_own_b ///
+					age_own_b edu_own_b two_own tenure ea
+					
+	lab var			ownshp_rght_a "pid for first owner"
+	lab var			ownshp_rght_b "pid for second owner"	
+	lab var			gender_own_a "Gender of first owner"
+	lab var			age_own_a "Age of first owner"
+	lab var			edu_own_a "=1 if first owner has formal edu"
+	lab var			gender_own_b "Gender of second owner"	
+	lab var			age_own_b "Age of second owner"
+	lab var			edu_own_b "=1 if first owner has formal edu"
+	lab var			two_own "=1 if there is joint ownership"
+	lab var			prcid "Parcel ID"
+	lab var 		member_number_a "member number first owner"
+	lab var 		member_number_b "member number second owner"
+
+	isid			hhid prcid
+	
+	order			hhid hh_status2010 admin_1 admin_2 admin_3 ///
+						admin_4 sector wgt10  prcid ///
+						tenure prclsize
 
 	compress
 	describe
 	summarize
 
-* save file
-	save 			"$export/2010_AGSEC2A_plt.dta", replace
-
+* save file		
+	save 			"$export/2010_agsec2a.dta", replace
 
 * close the log
 	log	close

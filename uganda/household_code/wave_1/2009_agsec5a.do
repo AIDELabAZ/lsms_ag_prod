@@ -161,8 +161,8 @@
 	*** replaced 3 observations
 
 ***********************************************************************
-**# 9 - end matter, clean up to save
-***********************************************************************
+**# 3 - end matter, clean up to save
+*******c****************************************************************
 	rename 			harvqtykg harv_qty
 	keep 			hhid prcid pltid harv_qty cropid harv_miss plt_shck
 
