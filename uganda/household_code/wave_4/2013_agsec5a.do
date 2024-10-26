@@ -263,7 +263,7 @@
 	*** will keep for now
 	
 ***********************************************************************
-**# 9 - end matter, clean up to save
+**# 3 - end matter, clean up to save
 ***********************************************************************
 	
 	keep 			hhid hh prcid pltid Production_ID cropid harv_str_month ///

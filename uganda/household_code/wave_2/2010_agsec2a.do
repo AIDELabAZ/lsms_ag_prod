@@ -1,18 +1,25 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 17 Oct 24
+* Edited on: 24 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
 * does
-	* reads Uganda wave 2 owned plot info (2010_AGSEC2A) for the 1st season
+	* reads Uganda wave 2 owned plot info (2009_AGSEC2A) for the 1st season
 	* ready to append to rented plot info (2010_AGSEC2B)
 	* owned plots are in A and rented plots are in B
+	* cleans
+		* plot sizes
+		* tenure
+		* irrigation
+		* plot ownership
+	* merge in owner characteristics from gsec2 gsec4
 	* ready to be appended to 2010_AGSEC2B
 
 * assumes
-* access to all raw data
+	* access to all raw data
+	* access to cleand GSEC1, GSEC 2, and GSEC4
 	* mdesc.ado
 
 * TO DO:
@@ -43,9 +50,8 @@
 	use 			"$root/2010_AGSEC2A.dta", clear
 
 	rename 			HHID hhid
-	rename 			a2aq4 plotsizeGPS
-	rename 			a2aq5 plotsizeSR
-	rename			a2aq7 tenure
+	rename 			a2aq4 prclsizeGPS
+	rename 			a2aq5 prclsizeSR
 	
 	describe
 	sort 			hhid prcid
@@ -55,14 +61,80 @@
 	gen irr_any = 1 if a2aq20 == 1
 	replace			irr_any = 0 if irr_any == .
 	lab var			irr_any "Irrigation (=1)"
+
+* clean up ownership data to make 2 ownership variables
+
+	gen				member_number = a2aq26a
 	
+	gen 			member_number2 = a2aq26b
+	
+	count if		member_number==. & member_number2 ==.
+	*** there 19 missing both member number 
+	
+	
+* generate tenure variables based on the fact that this is all owned plots
+	gen				tenure = 1 
+	lab var 		tenure "=1 if owned"
+	
+***********************************************************************
+**# 2 - merge in ownership characteristics
+***********************************************************************	
+	
+* merge the location identification
+	merge m:1 		hhid member_number using "$export/2010_gsec2"
+	*** 28 unmatched from master
+	
+	drop 			if _merge ==2 
+	drop			_merge
+
+* merge in education for owner a 
+	merge m:1 		hhid member_number using "$export/2010_gsec4"	
+	** 210 unmatched from master 
+	drop 			if _merge ==2 
+	drop 			_merge
+
+	rename 			pid ownshp_rght_a
+	rename			member_number member_number_a
+	* or rename 	member_number ownshp_rght_a (?)
+	rename			gender gender_own_a
+	rename			age age_own_a
+	rename			edu edu_own_a
+
+* rename member_number2 so we can merge 
+	rename 			member_number2 member_number
+	
+* merge in age and gende for owner b 
+	merge m:1 		hhid member_number using "$export/2010_gsec2"
+	** 1,446 unmatched from master
+	
+	drop 			if _merge ==2 
+	drop 			_merge
+	
+* merge in education for owner b 
+	merge m:1 		hhid member_number using "$export/2010_gsec4"
+	* 1,604 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			pid ownshp_rght_b
+	rename			member_number member_number_b
+	* or rename 	member_number ownshp_rght_b (?)
+	rename			gender gender_own_b
+	rename			age age_own_b
+	rename			edu edu_own_b
+	
+* create variable for two owners
+	gen 			two_own = 1 if ownshp_rght_a !=. & ownshp_rght_b !=.
+	replace 		two_own = 0 if two_own ==.
+		
 	
 ************************************************************************
-**# 2 - merge location data
+**# 3 - merge location data
 ************************************************************************	
 	
 * merge the location identification
-	merge m:1 hhid using "$export/2010_GSEC1_plt"
+	merge m:1 hhid using "$export/2010_gsec1.dta"
 	*** 10 unmatched from master
 	*** that means 10 observations did not have location data
 	*** no option at this stage except to drop all unmatched
@@ -71,7 +143,7 @@
 	
 	
 ************************************************************************
-**# 3 - keeping cultivated land
+**# 4 - keeping cultivated land
 ************************************************************************
 
 * what was the primary use of the parcel
@@ -85,10 +157,10 @@
 	
 	
 ************************************************************************
-**# 4 - clean plotsize
+**# 4 - clean parcel size
 ************************************************************************
 
-* summarize plot size
+* summarize parcel size
 	sum 			plotsizeGPS
 	***	mean 3.72, max 676, min .01
 	*** no plotsizes that are zero

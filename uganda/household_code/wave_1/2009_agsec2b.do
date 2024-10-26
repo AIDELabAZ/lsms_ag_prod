@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 23 Oct 24
+* Edited on: 24 Oct 24
 * Edited by: rg
 * Stata v.18.0
 
@@ -49,8 +49,8 @@
 		
 	rename 			Hhid hhid
 	rename 			A2bq2 prcid
-	rename 			A2bq4 plotsizeGPS
-	rename 			A2bq5 plotsizeSR
+	rename 			A2bq4 prclsizeGPS
+	rename 			A2bq5 prclsizeSR
 
 	
 	sort 			hhid prcid
@@ -161,29 +161,29 @@
 ***********************************************************************
 
 * summarize plot size
-	sum 			plotsizeGPS
+	sum 			prclsizeGPS
 	***	mean .72, max 80.9, min 0
 	
-	sum				plotsizeSR
+	sum				prclsizeSR
 	*** mean 1.02, max 25, min 0
 
 * replace plot size = 0 with missing for imputation
-	replace			plotsizeGPS = . if plotsizeGPS == 0
-	replace			plotsizeSR = . if plotsizeSR == 0
+	replace			prclsizeGPS = . if prclsizeGPS == 0
+	replace			prclsizeSR = . if prclsizeSR == 0
 	
 * how many missing values are there?
-	mdesc 			plotsizeGPS
+	mdesc 			prclsizeGPS
 	*** 769 missing, 64.5% of observations
 
 * convert acres to hectares
-	gen				plotsize = plotsizeGPS*0.404686
-	label var       plotsize "Plot size (ha)"
+	gen				prclsize = prclsizeGPS*0.404686
+	label var       prclsize "Parcel size (ha)"
 	
-	gen				selfreport = plotsizeSR*0.404686
-	label var       selfreport "Plot size (ha)"
+	gen				selfreport = prclsizeSR*0.404686
+	label var       selfreport "Parcel size (ha)"
 
 * examine gps outlier values
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** mean 0.43, min 0, max 32.7, std. dev. 1.63
 	
 * examine gps outlier values
@@ -192,70 +192,70 @@
 	*** the self-reported 10 ha is large but not unreasonable	
 	
 * check correlation between the two
-	corr 			plotsize selfreport
+	corr 			prclsize selfreport
 	*** 0.60 correlation, weak correlation between GPS and self reported
 	
 * compare GPS and self-report, and look for outliers in GPS 
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** save command as above to easily access r-class stored results 
 
 * look at GPS and self-reported observations that are > ±3 Std. Dev's from the median 
-	list			plotsize selfreport if !inrange(plotsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
-						& !missing(plotsize)
+	list			prclsize selfreport if !inrange(prclsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
+						& !missing(prclsize)
 * divide outlier by 10
-	replace			plotsize = plotsize/10 if plotsize > 30
+	replace			prclsize = prclsize/10 if prclsize > 30
 
 * replace outlier as missing values
 	replace 		selfreport = . if selfreport > 9						
 							
 * correlation for smaller plots	
-	corr			plotsize selfreport if plotsize < .1 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize < .1 & !missing(prclsize)
 	*** correlation is negative, -0.16
 	
 * correlation for larger plots	
-	corr			plotsize selfreport if plotsize > 1 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize > 1 & !missing(prclsize)
 	*** this is pretty high, 0.40, so these look good
 
 * correlation for smaller plots	
-	corr			plotsize selfreport if plotsize < .1 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize < .1 & !missing(prclsize)
 	*** this is terrible, correlation is -0.16
 
 * correlation for extremely small plots	
-	corr			plotsize selfreport if plotsize < .01 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize < .01 & !missing(prclsize)
 	*** this is terrible, -0.38, correlation is basically zero
 
 * summarize before imputation
-	sum				plotsize
+	sum				prclsize
 	*** mean 0.36, max 4.1, min 0.004
 	
 * impute missing plot sizes using predictive mean matching
 	mi set 			wide // declare the data to be wide.
 	mi xtset		, clear // this is a precautinary step to clear any existing xtset
-	mi register 	imputed plotsize // identify plotsize_GPS as the variable being imputed
+	mi register 	imputed prclsize // identify plotsize_GPS as the variable being imputed
 	sort			admin_1 admin_2 admin_3 admin_4 hhid prcid, stable // sort to ensure reproducability of results
-	mi impute 		pmm plotsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
+	mi impute 		pmm prclsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
 						force knn(5) bootstrap
 	mi unset
 		
 * how did imputing go?
-	sum 			plotsize_1_
+	sum 			prclsize_1_
 	*** mean 0.37, max 4.11, min 0.004
 	
-	corr 			plotsize_1_ selfreport if plotsize == .
+	corr 			prclsize_1_ selfreport if prclsize == .
 	*** so-so correlation, 0.66
 	
-	replace 		plotsize = plotsize_1_ if plotsize == .
+	replace 		prclsize = prclsize_1_ if prclsize == .
 	
-	drop			mi_miss plotsize_1_
+	drop			mi_miss prclsize_1_
 	
-	mdesc 			plotsize
+	mdesc 			prclsize
 	*** two missing, both plotsize and selfreport values are missing
 	
 * drop observation
-	drop			if plotsize ==.
+	drop			if prclsize ==.
 	
 * correlation plotsize vs selfreport
-	corr 			plotsize selfreport
+	corr 			prclsize selfreport
 	*** correlation 0.64
 	
 ***********************************************************************
@@ -267,10 +267,10 @@
 	
 	keep 			hhid prcid admin_1 admin_2 admin_3 admin_4 ///
 					sector year wgt09wosplits wgt09 hh_status2009 ///
-					plotsize irr_any ownshp_rght_a ownshp_rght_b ///
+					prclsize irr_any ownshp_rght_a ownshp_rght_b ///
 					member_number_a member_number_b ///
 					gender_own_a age_own_a edu_own_a gender_own_b ///
-					age_own_b edu_own_b two_own tenure
+					age_own_b edu_own_b two_own tenure ea
 					
 	lab var			ownshp_rght_a "pid for first owner"
 	lab var			ownshp_rght_b "pid for second owner"	
@@ -289,7 +289,7 @@
 	
 	order			hhid hh_status2009 admin_1 admin_2 admin_3 ///
 						admin_4 sector year wgt09 wgt09wosplits prcid ///
-						tenure plotsize
+						tenure prclsize
 
 	compress
 	describe

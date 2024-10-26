@@ -1,7 +1,6 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
-* Created by: rg
-* Edited on: 23 Oct 24
+* Created by: 4 Oct 24
 * Edited by: rg
 * Stata v.18.0, mac
 
@@ -20,9 +19,9 @@
 	* done
 
 	
-* **********************************************************************
-* 0 - setup
-* **********************************************************************
+***********************************************************************
+**# 0 - setup
+***********************************************************************
 
 * define paths	
 	global root 	"$data/raw_lsms_data/uganda/wave_1/raw"  
@@ -34,9 +33,9 @@
 	log using 			"$logout/2009_GSEC1_plt", append
 
 	
-* **********************************************************************
-* 1 - UNPS 2009 (Wave 1) - General(?) Section 1 
-* **********************************************************************
+***********************************************************************
+**# 1 - UNPS 2009 (Wave 1) - General(?) Section 1 
+***********************************************************************
 
 * import wave 1 season 1
 	use 			"$root/2009_GSEC1.dta", clear
@@ -53,6 +52,9 @@
 	rename 			h1aq4 admin_4
 	rename			urban sector
 	rename 			hh_status hh_status2009
+	rename 			comm ea 
+	
+	destring 		ea, replace
 	***	district variables not labeled in this wave, just coded
 
 
@@ -61,13 +63,13 @@
 	*** dropped 6 observations
 	
 	
-* **********************************************************************
-* 2 - end matter, clean up to save
-* **********************************************************************
+***********************************************************************
+**# 2 - end matter, clean up to save
+***********************************************************************
 
-	keep 			hhid admin_? hh_status2009 wgt09wosplits wgt09 sector
+	keep 			hhid admin_? hh_status2009 wgt09wosplits wgt09 sector ea
 	order 			hhid hh_status2009 admin_1 admin_2 admin_3 admin_4 ///
-					sector wgt09 wgt09wosplits
+					sector wgt09 wgt09wosplits ea
 
 	compress
 	describe
