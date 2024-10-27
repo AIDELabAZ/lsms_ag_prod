@@ -22,7 +22,7 @@
 	* mdesc.ado
 
 * TO DO:
-	* complete
+	* merge in manager characteristics from gsec2 and gsec4 and beyond
 	
 
 ************************************************************************
@@ -62,12 +62,13 @@
 	format 			%16.0g a3aq3_4b
 
 * clean up ownership data to make 2 ownership variables (management)
-	gen long				pid = a3aq3_3 
-	replace			pid = a3aq3_4a if pid == .
-	
-	gen				pid2 = a3aq3_4b
-	
+	gen long 		pid =.
+	replace 		pid = a3aq3_3 
+	replace 		pid = a3aq3_4a if pid == .
 	format			%16.0g pid
+	
+	gen 			pid2=.
+	replace 		pid2 =a3aq3_4b
 	format 			%16.0g pid2
 	
 ***********************************************************************
@@ -76,14 +77,14 @@
 
 * merge in age and gender for owner a
 	merge m:1 		hhid pid using "$export/2011_gsec2.dta"
-	* 41 unmatched from master 
+	* 207 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 
 * merge in education for owner a	
-	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
-	* 43 unmatched from master 
+	merge m:1 		hhid pid using "$export/2011_gsec4.dta"
+	* 282 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -92,13 +93,15 @@
 	rename			gender gender_mgmt_a
 	rename			age age_mgmt_a
 	rename			edu edu_mgmt_a
+	rename 			member_number member_number_a
 	
 * rename pid for b to just pid so we can merge	
 	rename			pid2 pid
+	format			%16.0g pid 
 
 * merge in age and gender for owner b
-	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
-	* 3,080 unmatched from master 
+	merge m:1 		hhid pid using "$export/2011_gsec2.dta"
+	*** only matched 5  
 	
 	drop 			if _merge == 2
 	drop 			_merge
