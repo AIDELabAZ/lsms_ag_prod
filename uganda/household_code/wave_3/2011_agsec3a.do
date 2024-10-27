@@ -1,18 +1,24 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 15 Oct 24
+* Edited on: 25 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
 * does
-	* fertilizer use
-	* reads Uganda wave 3 fertilizer and pest info (2011_AGSEC3A) for the 1st season
-	* 3A - 5A are questionaires for the first planting season
-	* 3B - 5B are questionaires for the second planting season
+	* reads Uganda wave 3 post-planting inputs (2011_AGSEC3A) for the 1st season
+	* questionaire 3B is for 2nd season
+	* cleans
+		* fertilizer (inorganic and organic)
+		* pesticide and herbicide
+		* labor
+		* plot management
+	* merge in manager characteristics from gsec2 gsec4
+	* output cleaned measured input file
 
 * assumes
-	* access to all raw data
+	* access to the raw data
+	* access to cleaned GSEC2 and GSEC4
 	* mdesc.ado
 
 * TO DO:
@@ -24,9 +30,9 @@
 ************************************************************************
 
 * define paths	
-	global root 		 "$data/household_data/uganda/wave_3/raw"  
-	global export 		 "$data/household_data/uganda/wave_3/refined"
-	global logout 		 "$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_3/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_3"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 			close
@@ -36,12 +42,12 @@
 **# 1 - import data and rename variables
 ************************************************************************
 
-* import wave 2 season A
+* import wave 3 season A
 	use 			"$root/2011_AGSEC3A.dta", clear
 	
 * unlike other waves, HHID is a numeric here
-	format 			%18.0g HHID
-	tostring		HHID, gen(hhid) format(%18.0g)
+	rename 			HHID hhid
+	format 			%16.0g hhid
 	
 	rename			parcelID prcid
 	rename			plotID pltid
@@ -50,10 +56,70 @@
 	
 	sort 			hhid prcid pltid
 	isid 			hhid prcid pltid
-
 	
+	format 			%16.0g a3aq3_3
+	format			%16.0g a3aq3_4a
+	format 			%16.0g a3aq3_4b
+
+* clean up ownership data to make 2 ownership variables (management)
+	gen long				pid = a3aq3_3 
+	replace			pid = a3aq3_4a if pid == .
+	
+	gen				pid2 = a3aq3_4b
+	
+	format			%16.0g pid
+	format 			%16.0g pid2
+	
+***********************************************************************
+**# 2 - merge in manager characteristics
+***********************************************************************	
+
+* merge in age and gender for owner a
+	merge m:1 		hhid pid using "$export/2011_gsec2.dta"
+	* 41 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner a	
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
+	* 43 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			pid manage_rght_a
+	rename			gender gender_mgmt_a
+	rename			age age_mgmt_a
+	rename			edu edu_mgmt_a
+	
+* rename pid for b to just pid so we can merge	
+	rename			pid2 pid
+
+* merge in age and gender for owner b
+	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
+	* 3,080 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner b	
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
+	* 3,083 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			pid manage_rght_b
+	rename			gender gender_mgmt_b
+	rename			age age_mgmt_b
+	rename			edu edu_mgmt_b
+
+	gen 			two_mgmt = 1 if manage_rght_a != . & manage_rght_b != .
+	replace 		two_mgmt = 0 if two_mgmt ==.		
+
 ************************************************************************
-**# 2 - merge location data
+**# 3 - merge location data
 ************************************************************************	
 	
 * merge the location identification
@@ -64,7 +130,7 @@
 	
 
 ************************************************************************
-**# 3 - fertilizer, pesticide and herbicide
+**# 4 - fertilizer, pesticide and herbicide
 ************************************************************************
 
 * fertilizer use
@@ -136,7 +202,7 @@
 	
 	
 ************************************************************************
-**# 4 - pesticide & herbicide
+**# 5 - pesticide & herbicide
 ************************************************************************
 
 * pesticide & herbicide
@@ -152,7 +218,7 @@
 
 	
 ************************************************************************
-**# 5 - labor 
+**# 6 - labor 
 ************************************************************************
 	* per Palacios-Lopez et al. (2017) in Food Policy, we cap labor per activity
 	* 7 days * 13 weeks = 91 days for land prep and planting

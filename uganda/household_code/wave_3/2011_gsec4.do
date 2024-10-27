@@ -6,7 +6,7 @@
 * Stata v.18.0
 
 * does
-	* reads Uganda wave 1 hh information (gsec4)
+	* reads Uganda wave 3 hh information (gsec4)
 	* cleans househod member characteristics
 		* education
 	* outputs file for merging with plot owner (agsec2a and agsec2b)
@@ -23,13 +23,13 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/raw_lsms_data/uganda/wave_1/raw"  
-	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_1"
+	global root 	"$data/raw_lsms_data/uganda/wave_3/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_3"
 	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2013_gsec4_plt", append
+	log using 		"$logout/2011_gsec4_plt", append
 	
 	
 ***********************************************************************
@@ -37,25 +37,24 @@
 ***********************************************************************
 
 * import hh roster info
-	use 			"$root/2009_GSEC4.dta", clear
+	use 			"$root/GSEC4.dta", clear
 	
 * rename variables			
 	rename			h4q7 edu
 	rename			HHID hhid
-	rename 			h4q1 member_number
+	rename 			PID pid
+	rename 			h2q1 member_number
 	
-	mdesc 			member_number
-	drop if 		member_number == .
+	destring 		hhid, replace
+	format 			%16.0g hhid
 	
-	isid 			hhid member_number
+	duplicates 		drop hhid pid, force
+	isid 			hhid pid
 
 * modify format of pid so it matches pid from other files 
-	destring		PID, replace
-	rename 			PID pid
+	destring		pid, replace
 	format 			pid %16.0g
 	
-	
-	isid 			hhid pid
 	
 	replace			edu = 1 if edu != .
 	replace			edu = 0 if edu == .
@@ -73,10 +72,15 @@
 	
 	lab var			pid "Person ID"
 	
+	duplicates 		drop hhid pid, force 
+	*** 45 duplicates
+	
+	isid 			hhid pid
+	
 	compress
 	
 * save file 
-	save 			"$export/2009_gsec4.dta", replace	
+	save 			"$export/2011_gsec4.dta", replace	
 	
 * close the log
 	log	close
