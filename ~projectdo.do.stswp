@@ -41,7 +41,7 @@ if `"`c(username)'"' == "jdmichler" {
 		global 		data	"C:/Users/jdmichler/OneDrive - University of Arizona/weather_and_agriculture"
     }
 if `"`c(username)'"' == "aljos" {
-        global 		code  	"C:/Users/aljos/git/weather_and_agriculture/lsms_ag_prod"
+        global 		code  	"C:/Users/aljos/git/weather_and_agriculture/lsms"
 		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture"
 		
     }	
