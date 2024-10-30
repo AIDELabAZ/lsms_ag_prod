@@ -1,12 +1,12 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 23 Oct 24
+* Edited on: 29 Oct 24
 * Edited by: rg
 * Stata v.18.0
 
 * does
-	* reads Uganda wave 1 livestock rosters (2009_AGSEC6A_1, 6B_1, 6C_1)
+	* reads Uganda wave 3 livestock rosters (2011_AGSEC6A, 6B, 6C)
 	* cleans indicators for ownership of
 		* cattle and pack animals
 		* small animals
@@ -25,8 +25,8 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/raw_lsms_data/uganda/wave_1/raw"  
-	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_1"
+	global root 	"$data/raw_lsms_data/uganda/wave_3/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_3"
 	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
@@ -39,27 +39,29 @@
 ***********************************************************************
 
 * import livestock info
-	use 			"$root/2009_AGSEC6A.dta", clear
+	use 			"$root/AGSEC6A.dta", clear
 	
 * order and rename variables
-	rename			Hhid hhid
-	rename			A6aq4 lvstck
+	rename			HHID hhid
+	format 			%16.0g hhid
+	rename			a6aq2 lvstck
 	
 * recode so non-zero is 1
 	replace			lvstck = 0 if lvstck == 2
 
-	keep 			hhid  lvstck
+	keep 			hhid lvstck
 	
 	lab var			lvstck "=1 if household owns livestock"
 	
-	collapse 		(max) lvstck, by(hhid)
+	sort 			hhid lvstck
+	duplicates 		drop hhid, force
 	
 	isid			hhid
 	
 	compress
 	
 * save file 
-	save 			"$export/2009_agsec6a.dta", replace	
+	save 			"$export/2011_agsec6a.dta", replace	
 
 	
 ***********************************************************************
@@ -67,27 +69,31 @@
 ***********************************************************************
 
 * import small animal info
-	use 			"$root/2009_AGSEC6B.dta", clear
+	use 			"$root/AGSEC6B.dta", clear
 	
 * order and rename variables
-	rename			Hhid hhid
-	rename			A6bq4 sanml
+	rename			HHID hhid
+	format 			%16.0g hhid
+	rename			a6bq2 sanml
+
 	
 * recode so non-zero is 1
 	replace			sanml = 0 if sanml == 2
 
-	keep 			hhid hh sanml
+	keep 			hhid  sanml
 	
 	lab var			sanml "=1 if household owns small animals"
 	
-	collapse 		(max) sanml, by(hhid)
+	sort 			hhid sanml
+	duplicates 		drop hhid, force
+	
 	
 	isid			hhid
 	
 	compress
 	
 * save file 
-	save 			"$export/2009_agsec6b.dta", replace
+	save 			"$export/2011_agsec6b.dta", replace
 
 	
 ***********************************************************************
@@ -95,20 +101,22 @@
 ***********************************************************************
 
 * import poultry info
-	use 			"$root/2009_AGSEC6C.dta", clear
+	use 			"$root/AGSEC6C.dta", clear
 	
 * order and rename variables
-	rename			Hhid hhid
-	rename			A6cq4 pltry
+	rename			HHID hhid
+	format 			%16.0g hhid
+	rename			a6cq2 pltry
 	
 * recode so non-zero is 1
 	replace			pltry = 0 if pltry == 2
 
-	keep 			hhid hh pltry
+	keep 			hhid pltry
 	
 	lab var			pltry "=1 if household owns poultry"
 	
-	collapse 		(max) pltry, by(hhid)
+	sort 			hhid pltry
+	duplicates 		drop hhid, force
 	
 	isid			hhid
 	
@@ -119,40 +127,36 @@
 ***********************************************************************
 
 * merge in livestock
-	merge 1:1		hhid using "$export/2009_agsec6a.dta"
-	* 831 not merged from master
+	merge 1:1		hhid using "$export/2011_agsec6a.dta"
+	* 1,291 merged
 	
-	drop			if _merge == 2
 	drop			_merge
 
 * merge in small animals
-	merge 1:1		hhid using "$export/2009_agsec6b.dta"
-	* 436 not matched from master
+	merge 1:1		hhid using "$export/2011_agsec6b.dta"
+	* 1,342 merged
 	
-	drop			if _merge == 2
 	drop			_merge
 	
 ***********************************************************************
 **# 5 - end matter, clean up to save
 ***********************************************************************
 		
-	erase			"$export/2009_agsec6a.dta"
-	erase			"$export/2009_agsec6b.dta"
+	erase			"$export/2011_agsec6a.dta"
+	erase			"$export/2011_agsec6b.dta"
 	
 		
 	isid			hhid
 
-	order			hhid hh lvstck sanml 
+	order			hhid  lvstck sanml 
 	
 	compress
 
 * save file
-	save 			"$export/2009_agsec6.dta", replace
+	save 			"$export/2011_agsec6.dta", replace
 	
 * close the log
 	log	close
-
-/* END */
 	
 
 
