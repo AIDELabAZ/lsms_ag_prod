@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 25 Oct 24
+* Edited on: 29 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -22,7 +22,7 @@
 	* mdesc.ado
 
 * TO DO:
-	* merge in manager characteristics from gsec2 and gsec4 and beyond
+	* done
 	
 
 ************************************************************************
@@ -67,9 +67,10 @@
 	replace 		pid = a3aq3_4a if pid == .
 	format			%16.0g pid
 	
-	gen 			pid2=.
-	replace 		pid2 =a3aq3_4b
-	format 			%16.0g pid2
+	rename 			a3aq3_4b pid2
+	order 			pid2, after(pid)
+	
+
 	
 ***********************************************************************
 **# 2 - merge in manager characteristics
@@ -97,18 +98,18 @@
 	
 * rename pid for b to just pid so we can merge	
 	rename			pid2 pid
-	format			%16.0g pid 
+
 
 * merge in age and gender for owner b
 	merge m:1 		hhid pid using "$export/2011_gsec2.dta"
-	*** only matched 5  
+	*** 3,407 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 
 * merge in education for owner b	
-	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
-	* 3,083 unmatched from master 
+	merge m:1 		hhid pid using "$export/2011_gsec4.dta"
+	* 3,531 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -120,88 +121,33 @@
 
 	gen 			two_mgmt = 1 if manage_rght_a != . & manage_rght_b != .
 	replace 		two_mgmt = 0 if two_mgmt ==.		
-
+	
+	
 ************************************************************************
-**# 3 - merge location data
-************************************************************************	
-	
-* merge the location identification
-	merge m:1 		hhid using "$export/2011_GSEC1_plt"
-	*** 1054 unmatched from master
-	
-	drop if			_merge != 3
-	
-
-************************************************************************
-**# 4 - fertilizer, pesticide and herbicide
+**# 3 - fertilizer
 ************************************************************************
 
 * fertilizer use
 	rename 		a3aq13 fert_any
-	rename 		a3aq15 kilo_fert
-	
-* make a variable that shows  organic fertilizer use
-	gen				forg_any =1 if a3aq4 == 1
-	replace			forg_any = 0 if forg_any ==.
-	*** only 5.18 percent used organic fert
+	rename 		a3aq15 fert_qty
+	rename		a3aq4 fert_org
 
-		
 * replace the missing fert_any with 0
-	tab 			kilo_fert if fert_any == .
+	tab 			fert_qty if fert_any == .
 	*** no observations
 	
 	replace			fert_any = 2 if fert_any == . 
 	*** 5 changes
 			
-	sum 			kilo_fert if fert_any == 1, detail
-	*** 34.41, min 0.25, max 800
+	sum 			fert_qty if fert_any == 1, detail
+	*** mean 33.6, min 0.2, max 8000
 
-* replace zero to missing, missing to zero, and outliers to mizzing
-	replace			kilo_fert = . if kilo_fert > 264
+* replace zero to missing, missing to zero, and outliers to missing
+	replace			fert_qty = . if fert_qty > 264
 	*** 3 outliers changed to missing
-
-* encode district to be used in imputation
-	encode 			district, gen (districtdstrng) 	
-	
-* impute missing values (only need to do four variables)
-	mi set 			wide 	// declare the data to be wide.
-	mi xtset		, clear 	// clear any xtset that may have had in place previously
-
-* impute each variable in local	
-	*** the finer geographical variables will proxy for soil quality which is a determinant of fertilizer use
-	mi register			imputed kilo_fert // identify variable to be imputed
-	sort				hhid prcid pltid, stable // sort to ensure reproducability of results
-	mi impute 			pmm kilo_fert  i.districtdstrng fert_any, add(1) rseed(245780) ///
-								noisily dots force knn(5) bootstrap					
-	mi 				unset		
-	
-* how did impute go?	
-	sum 		kilo_fert_1_ if fert_any == 1, detail
-	*** max 200, mean 23.83, min 0.25
-	
-	replace			kilo_fert = kilo_fert_1_ if fert_any == 1
-	*** 3 changed
-	
-	drop 			kilo_fert_1_ mi_miss
 	
 * record fert_any
 	replace			fert_any = 0 if fert_any == 2
-
-* variable showing if hh purchased fertilizer
-
-	gen 			fert_purch_any = 1 if a3aq16 ==1
-	replace 		fert_purch_any = 0 if fert_purch_any ==. 
-	*** 1.68 % purchased fert
-		
-* calculate price of fertilizer
-	rename 			a3aq17 kfert_purch
-	rename			a3aq18 vle_fert_purch
-	
-	gen				fert_price = vle_fert_purch/kfert_purch
-	label var 		fert_price "price per kilo (shillings)"
-	
-	count if 		fert_price== . &  fert_purch_any == 1
-	* 0 observations missing price for hh who purchased fertilizer
 	
 	
 ************************************************************************
@@ -210,7 +156,7 @@
 
 * pesticide & herbicide
 	tab 		a3aq22
-	*** 5.08 percent of the sample used pesticide or herbicide
+	*** 4.978 percent of the sample used pesticide or herbicide
 	tab 		a3aq23
 	
 	gen 		pest_any = 1 if a3aq23 != . & a3aq23 != 4 & a3aq23 != 96
@@ -242,14 +188,14 @@
 	*** family labor is from 0 - 12 people
 	
 	sum 			a3aq32, detail
-	*** mean 32.8, min 1, max 300
+	*** mean 32.9, min 1, max 300
 	*** don't need to impute any values
 	
 * fam lab = number of family members who worked on the farm*days they worked	
 	gen 			fam_lab = a3aq31*a3aq32
 	replace			fam_lab = 0 if fam_lab == .
 	sum				fam_lab
-	*** max 3000, mean 9780, min 0
+	*** max 3000, mean 98.40, min 0
 	
 * hired labor 
 * hired men days
@@ -261,7 +207,7 @@
 * hired women days
 	rename			a3aq35b hired_women 
 		
-* make a binary if they had hired_men
+* make a binary if they had hired_women
 	gen 			women = 1 if hired_women != . & hired_women != 0
 	
 * impute hired labor all at once
@@ -276,31 +222,50 @@
 	replace			hired_women = 365 if hired_women > 365
 	*** no changes made
 	
-* generate labor days as the total amount of labor used on plot in person days
-	gen				labor_days = fam_lab + hired_men + hired_women
+* generate hired labor days
+	gen				hrd_lab = hired_men + hired_women
 	
-	sum 			labor_days
-	*** mean 101.45, max 3080, min 0	
-
-* change format of hhid for merging purposes (merging file)
-
-	drop 			hhid 
-	rename 			HHID hhid
+* generate labor days as the total amount of labor used on plot in person days
+	gen				tot_lab = fam_lab + hrd_lab
+	
+	sum 			tot_lab
+	*** mean 102, max 3,080, min 0
 	
 ************************************************************************
 **# 6 - end matter, clean up to save
 ************************************************************************
 
-	keep hhid prcid region district subcounty pltid fert_any kilo_fert labor_days region ///
-		district county subcounty parish pest_any herb_any parish wgt11  ///
-		forg_any fert_price
+	keep 			hhid prcid pest_any herb_any tot_lab ///
+					fam_lab hrd_lab fert_qty pltid fert_org  ///
+					manage_rght_a manage_rght_b gender_mgmt_a age_mgmt_a ///
+					edu_mgmt_a gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt
+		
+	lab var			manage_rght_a "pid for first manager"
+	lab var			manage_rght_b "pid for second manager"	
+	lab var			gender_mgmt_a "Gender of first manager"
+	lab var			age_mgmt_a "Age of first manager"
+	lab var			edu_mgmt_a "=1 if first manager has formal edu"
+	lab var			gender_mgmt_b "Gender of second manager"	
+	lab var			age_mgmt_b "Age of second manager"
+	lab var			edu_mgmt_b "=1 if second manager has formal edu"
+	lab var			two_mgmt "=1 if there is joint management"
+	lab var			prcid "Parcel ID"
+	lab var			fert_org "=1 if organic fertilizer used"
+	lab var			fert_qty "Inorganic Fertilizer (kg)"
+	lab var			pltid "Plot ID"
+	lab var			pest_any "=1 if pesticide used"
+	lab var			herb_any "=1 if herbicide used"
+	lab var			tot_lab "Total labor (days)"
+	lab var			fam_lab "Total family labor (days)"
+	lab var			hrd_lab "Total hired labor (days)"
 
+	isid			hhid prcid pltid
+	
 	compress
-	describe
-	summarize
+
 
 * save file
-	save 			"$export/2011_AGSEC3A_plt.dta", replace
+	save 			"$export/2011_agsec3a.dta", replace
 	
 * close the log
 	log	close

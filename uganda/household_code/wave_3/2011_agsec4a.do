@@ -1,22 +1,25 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 15 Oct 24
+* Edited on: 29 Oct 24
 * Edited by: rg
 * Stata v.18, mac
 
 * does
-	* seed use
-	* reads Uganda wave 3 crops grown and types of seeds info (AGSEC4A) for the 1st season
-	* 3A - 5A are questionaires for the first planting season
-	* 3B - 5B are questionaires for the second planting season
+	* reads Uganda wave 3 crops grown and seed (2011_AGSEC4A) for the 1st season
+	* questionaire 4B is for 2nd season
+	* cleans
+		* planting date
+		* seeds
+		* crops
+	* output cleaned seed and planting date file
 
 * assumes
 	* access to raw data
 	* mdesc.ado
 
 * TO DO:
-	* done
+	* find the unique identifier
 	
 
 ***********************************************************************
@@ -24,9 +27,9 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/household_data/uganda/wave_3/raw"  
-	global export 	"$data/household_data/uganda/wave_3/refined"
-	global logout 	"$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_3/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_3"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
@@ -46,171 +49,185 @@
 	rename 			cropID cropid
 	rename 			Crop_Other1 cropid2
 	rename			a4aq11b unit
-	rename			a4aq11a seed_qty
+	rename			a4aq11a seed
 	rename 			a4aq13 seed_type
+	rename 			a4aq7 area_plnt
+	rename			a4aq9 prct_plnt
+	rename			Crop_Planted_Month plnt_month
+	rename			Crop_Planted_Year plnt_year
 	
 * change format 
 	format			hhid %16.0g
 	sort 			hhid prcid pltid cropid  
 	
-	mdesc 			hhid prcid pltid pltid 
+	mdesc 			hhid prcid pltid prcid 
 	* we have 5 obs missing pltid and cropid
-	drop if			pltid ==. | prcid ==.
-	* 1 observations dropped
+	drop if			pltid ==.
+	* 5 observations dropped
 
+	*isid 			hhid prcid pltid cropid	 
+	*** these variables are not a unique identifier
+	
+* make a variable that shows if intercropped or not
+	gen				intrcrp = 1 if a4aq8 == 2
+	replace			intrcrp = 0 if intrcrp ==.
 
-	duplicates 		drop hhid prcid pltid cropid, force
-	*** these variables did not uniquely identify obs
-
-	isid 			hhid prcid pltid cropid	 
-
+* drop cropid is annual, other, fallow, pasture, and trees
+	drop 			if cropid > 699
+	*** 2,479 observations deleted 
 	
 ***********************************************************************
-**# 2 - merge kg conversion file and create seed quantity
+**# 2 - percentage planted 	
+***********************************************************************
+	
+* convert area to hectares 
+	replace 		area_plnt = area_plnt * 0.404686
+	
+* create variable for percentage of plot area 
+	replace			prct_plnt = prct_plnt / 100
+	
+	gen 			crop_area = area_plnt * prct_plnt
+	label var		crop_area "Area planted (ha)"
+
+
+
+***********************************************************************
+**# 3 - merge kg conversion file and create seed quantity
 ***********************************************************************
 
 * see how many hh used traditional vs improved seed 
-	tab 			seed_type
-	* 6,197 used traditional
-	* 738 used improved
-	* 3,989 missing 
+	tab 			seed_type, missing 
+	* 6,035 used traditional
+	* 705 used improved
+	* 1,714 missing
+	* missing is mostly tubers
 
 * create a variable showing used of seed 
 	gen 			seed_any = 1 if a4aq3 == 1
 	replace			seed_any = 0 if seed_any ==.
-	* 63.52 % used seed
+	tab 			seed_any
+	* 67.42 % used seed
 
 * convert seed_qty to kgs 
 	tab					unit
 	describe			unit
 	label list 			L_Unit_Code
 	
-	gen 				seed_qty_kg =. 
-	label var			seed_qty_kg "quanity of seeds used (kg)"
+	gen 				seed_qty = .
+	label var			seed_qty "Seed used (kg)"
 	
 	*kgs
-		replace 		seed_qty_kg = seed_qty if unit == 1
-		*** 4,268  changes
+		replace 		seed_qty = seed if unit == 1
+		*** 4,219  changes
 		count if 		unit == 1 & seed_qty ==1 
-		*** 377 observations  
+		*** 369 observations  
 		
 	* grams 
-		replace 		seed_qty_kg = seed_qty/1000 if unit == 2 
-		*** 63 changes 
+		replace 		seed_qty= seed/1000 if unit == 2 
+		*** 55 changes 
 		*** check values, observations less than 1kg
 		
 	* sack 120 kgs
-		replace			seed_qty_kg = seed_qty * 120 if unit == 9
+		replace			seed_qty = seed * 120 if unit == 9
 		*** 124 changes  
 		
 	* sack 100 kgs 
-		replace 		seed_qty_kg = seed_qty * 100 if unit == 10
+		replace 		seed_qty = seed * 100 if unit == 10
 		*** 236 changes 
 		
 	* sack 80 kgs 
-		replace 		seed_qty_kg = seed_qty * 80 if unit == 11
+		replace 		seed_qty = seed * 80 if unit == 11
 		***  52 changes 	
 
 	* sack 50 kgs 
-		replace 		seed_qty_kg = seed_qty * 50 if unit == 12
+		replace 		seed_qty = seed * 50 if unit == 12
 		***  52 changes 
 		
 	* Tin 20 lts
-		replace 		seed_qty_kg = seed_qty * 20 if unit == 20
+		replace 		seed_qty = seed * 20 if unit == 20
 		***  71 changes 	
 
 	* Tins 5 lts 
-		replace 		seed_qty_kg = seed_qty * 5 if unit == 21
+		replace 		seed_qty = seed * 5 if unit == 21
 		***  14 changes 
 		
 	* plastic basin 15 lts 
-		replace 		seed_qty_kg = seed_qty * 15 if unit == 22
+		replace 		seed_qty = seed * 15 if unit == 22
 		***  282 changes
 		
 	* kimbo/cowboy/blueland tin (2kg)
-		replace 		seed_qty_kg = seed_qty * 2 if unit == 29
+		replace 		seed_qty = seed * 2 if unit == 29
 		***  96 changes 
 		
 	* kimbo/cowboy/blueland tin (1kg)
-		replace 		seed_qty_kg = seed_qty * 1 if unit == 30
-		***  54 changes 
+		replace 		seed_qty = seed * 1 if unit == 30
+		***  52 changes 
 
 	* kimbo/cowboy/blueland tin (0.5kg)
-		replace 		seed_qty_kg = seed_qty * 0.5 if unit == 31
-		***  681 changes 
+		replace 		seed_qty = seed * 0.5 if unit == 31
+		***  668 changes 
 		
 	* basket 20 kg
-		replace 		seed_qty_kg = seed_qty * 20 if unit == 37
+		replace 		seed_qty = seed * 20 if unit == 37
 		***  33 changes 
 
 	* basket 10 kg
-		replace 		seed_qty_kg = seed_qty * 10 if unit == 38
+		replace 		seed_qty = seed * 10 if unit == 38
 		***  7 changes 
 		
 	* basket 5 kg
-		replace 		seed_qty_kg = seed_qty * 5 if unit == 39
+		replace 		seed_qty = seed * 5 if unit == 39
 		***  12 changes 
 
 	* basket 2 kg
-		replace 		seed_qty_kg = seed_qty * 2 if unit == 40
-		***  22 changes 
+		replace 		seed_qty = seed * 2 if unit == 40
+		***  21 changes 
 			
 	
 	
 * summarize seed quantity
-	sum				seed_qty_kg
+	sum				seed_qty
 	*** min 0.000001 
 	*** max 33,330
 	
-	mdesc 			seed_qty_kg
+	mdesc 			seed_qty
+	*** 2,462 missing 
 	
-
-***********************************************************************
-**# 3 - create seed price 
-***********************************************************************	
+	tab 			seed_qty if seed_any == 0
+	*** no quanty if hh did not use seed
 	
-* generate a variable showing seed purchase
-	gen				seed_purch = 1 if a4aq10 ==1
-	replace 		seed_purch = 0 if seed_purch ==.
-	tab 			seed_purch
-	* 22.82% purchased seeds
-
-* purchase value 
-	rename 			a4aq15 seed_vle
-	
-* generate variable for seed price
-	gen 			seed_price = seed_vle / seed_qty_kg
-	label var		seed_price "price of seed per kg (shillings)"
-	
-	sum				seed_price
-	count if 		seed_price == . & seed_purch == 1
-	*** 178 hh who purchased but are missing price 
-	*** 1 missing seed value
-	
-	
-***********************************************************************
-**# 4 - type of crop stand
-***********************************************************************
-
-* make a variable that shows if intercropped or not
-	gen				intrcrp_any =1 if a4aq8 == 2
-	replace			intrcrp_any = 0 if intrcrp_any ==.
-
 		
 ***********************************************************************
-**# 5 - end matter, clean up to save
+**# 4 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid prcid cropid cropid2  ///
-					pltid intrcrp_any seed_qty_kg seed_type seed_vle seed_price
+	keep 			hhid prcid cropid pltid intrcrp seed_qty ///
+						seed_type crop_area plnt_month plnt_year ///
+						area_plnt prct_plnt 
 
+	lab var			seed_type "Traditional/improved"
+	lab var			intrcrp "=1 if intercropped"
+	lab var			area_plnt "Total area of plot planted"
+	lab var			prct_plnt "Percent planted to crop"
+					
+					
+	collapse		(sum) seed_qty /// 
+					(mean) plnt_month plnt_year, ///
+					by (hhid prcid cropid pltid intrcrp seed_type crop_area /// 
+					area_plnt prct_plnt)
+					
+	duplicates 		drop hhid prcid pltid cropid, force
+	
+	isid			hhid prcid pltid cropid	
+		
+	order			hhid prcid pltid cropid  plnt_month plnt_year intrcrp
+	
 	compress
-	describe
-	summarize
+
 
 * save file
-	save 			"$export/2011_agsec4a_plt.dta", replace
-
+	save 			"$export/2011_agsec4a.dta", replace
+	
 * close the log
 	log	close
 

@@ -116,7 +116,7 @@
 	label var			seed_qty "Seed used (kg)"
 	
 	*kgs
-		replace 		seed_qty = seed
+		replace 		seed_qty = seed if unit == 1
 		*** 4,144  changes
 		count if 		unit == 1 & seed ==1 
 		*** 388 observations  
