@@ -1,12 +1,12 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 23 Oct 24
+* Edited on: 31 Oct 24
 * Edited by: rg
-* Stata v.18.0
+* Stata v.18.0, mac
 
 * does
-	* reads Uganda wave 1 hh information (gsec4)
+	* reads Uganda wave 5 hh information (gsec4)
 	* cleans househod member characteristics
 		* education
 	* outputs file for merging with plot owner (agsec2a and agsec2b)
@@ -23,13 +23,13 @@
 ***********************************************************************
 
 * define paths	
-	global root 	"$data/raw_lsms_data/uganda/wave_1/raw"  
-	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_1"
+	global root 	"$data/raw_lsms_data/uganda/wave_5/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_5"
 	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
-	log using 		"$logout/2013_gsec4_plt", append
+	log using 		"$logout/2015_gsec4_plt", append
 	
 	
 ***********************************************************************
@@ -37,28 +37,24 @@
 ***********************************************************************
 
 * import hh roster info
-	use 			"$root/2009_GSEC4.dta", clear
+	use 			"$root/hh/gsec4.dta", clear
 	
 * rename variables			
 	rename			h4q7 edu
-	rename			HHID hhid
-	rename 			h4q1 member_number
 	
-	mdesc 			member_number
-	drop if 		member_number == .
-	
-	isid 			hhid member_number
-
 * modify format of pid so it matches pid from other files 
+	gen 			PID = substr(pid, 2, 5) + substr(pid, 8, 3)
 	destring		PID, replace
-	rename 			PID pid
-	format 			pid %16.0g
 	
+	drop 			pid
+	rename 			PID pid
 	
 	isid 			hhid pid
 	
-	replace			edu = 1 if edu != .
-	replace			edu = 0 if edu == .
+* creae education variable
+	
+	replace			edu = 1 if edu != . & edu !=99
+	replace			edu = 0 if edu == .| edu ==99
 	
 	lab var			edu "=1 if has formal education"
 	lab values 		edu .
@@ -67,16 +63,16 @@
 **# 2 - end matter, clean up to save
 ***********************************************************************
 	
-	keep 			hhid pid edu member_number
+	keep 			hhid pid edu 
 	
-	order			hhid pid edu member_number
+	order			hhid pid edu 
 	
 	lab var			pid "Person ID"
 	
 	compress
 	
 * save file 
-	save 			"$export/2009_gsec4.dta", replace	
+	save 			"$export/2015_gsec4.dta", replace	
 	
 * close the log
 	log	close

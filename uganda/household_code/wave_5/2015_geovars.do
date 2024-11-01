@@ -1,12 +1,19 @@
-* Project: WB Weather
-* Created on: Feb 2024
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
 * Created by: rg
-* Edited on: 12 April 24
+* Edited on: 31 Oct 24
 * Edited by: rg
-* Stata v.18, mac
+* Stata v.18.0, mac
 
 * does
-	* cleans geovars
+	* reads Uganda wave 3 geovars (Geovars_1112)
+	* this wave (5) is missing geovars
+	* cleans and outputs geovars
+		* aez
+		* urban/rural
+		* elevation
+		* soil variables for use in index
+		* distances to road and pop center
 
 * assumes
 	* customsave.ado
@@ -15,14 +22,14 @@
 	* done
 
 	
-* **********************************************************************
-* 0 - setup
-* **********************************************************************
+***********************************************************************
+**# 0 - setup
+***********************************************************************
 
 * define paths	
-	global root 		"$data/household_data/uganda/wave_3/raw"  
-	global export 		"$data/household_data/uganda/wave_5/refined"
-	global logout 		"$data/household_data/uganda/logs"
+	global root 		"$data/raw_lsms_data/uganda/wave_3/raw"  
+	global export 		"$data/lsms_ag_prod_data/refined_data/uganda/wave_5"
+	global logout 		"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 			close
@@ -42,17 +49,23 @@
 	rename 			HHID hhid
 
 	rename 			ssa_aez09 aez
+	rename			urban sector
+	rename			srtm_uga elevat
+	rename 			dist_popcenter dist_pop
 	
 	
-* **********************************************************************
-* 2 - end matter, clean up to save
-* **********************************************************************
+************************************************************************
+**# 2 - end matter, clean up to save
+************************************************************************
 
-	keep 			hhid aez
+	keep 			hhid aez sector elevat sq1-sq7 dist_road dist_pop
 
+	destring		hhid, gen(hhid_pnl)
+	format %16.0g 	hhid_pnl
+	
+	isid			hhid_pnl
+	
 	compress
-	describe
-	summarize
 
 * save file
 	save			"$export/2015_geovars.dta", replace

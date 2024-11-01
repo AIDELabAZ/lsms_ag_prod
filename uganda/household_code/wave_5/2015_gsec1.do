@@ -1,12 +1,17 @@
-* Project: WB Weather
-* Created on: Feb 2024
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
 * Created by: rg
-* Edited on: 18 Feb 24
+* Edited on: 31 Oct 24
 * Edited by: rg
-* Stata v.18, mac
+* Stata v.18.0, mac
 
 * does
-	* household Location data (2015_GSEC1) for the 1st season
+	* reads in household Location data (2015_GSEC1)
+	* cleans
+		* political geography locations
+		* survey weights
+	* outputs file of location for merging with other ag files that lack this info
+
 
 * assumes
 	* access to raw data
@@ -21,9 +26,9 @@
 ***********************************************************************
 
 * define paths	
-	global root 	 "$data/household_data/uganda/wave_5/raw"  
-	global export 	 "$data/household_data/uganda/wave_5/refined"
-	global logout 	 "$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_5/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_5"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap log 		close
@@ -40,17 +45,18 @@
 * rename variables
 	isid 			HHID
 	rename 			HHID hhid
-	
-	drop 			district
-	rename 			district_name district
-	rename 			subcounty_name subcounty
-	rename 			parish_name parish
+	 			
+	rename 			region admin_1
+	rename 			district admin_2
+	rename 			scounty_code admin_3
+	rename 			parish_code admin_4
 	rename 			hwgt_W5 wgt15
+	rename 			urban sector
 
-	tab 			region, missing
+	tab 			admin_1, missing
 
 * drop if missing
-	drop if			district == ""
+	drop if			admin_2 == .
 	*** dropped 0 observations
 	
 	
@@ -58,9 +64,10 @@
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hh hhid region district subcounty parish ///
-						wgt15 hwgt_W4_W5 rotate ea
-
+	keep 			hh hhid admin_? wgt15 hwgt_W4_W5 rotate ea sector
+						
+	order 			hhid hh  admin_1 admin_2 admin_3 ///
+						admin_4 ea sector wgt15 hwgt_W4_W5
 	compress
 	describe
 	summarize

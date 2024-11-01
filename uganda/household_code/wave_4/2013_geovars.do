@@ -3,7 +3,7 @@
 * Created by: rg
 * Edited on: 23 Oct 24
 * Edited by: rg
-* Stata v.18.5
+* Stata v.18.0, mac
 
 * does
 	* reads Uganda wave 3 geovars (Geovars_1112)

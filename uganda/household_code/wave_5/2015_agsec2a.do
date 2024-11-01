@@ -1,15 +1,20 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 20 Sep 2024
+* Edited on: 31 Oct 2024
 * Edited by: rg
 * Stata v.18, mac
 
 * does
 	* reads Uganda wave 5 owned plot info (2015_AGSEC2A) for the 1st season
-	* ready to append to rented plot info (2015_AGSEC2B)
 	* owned plots are in A and rented plots are in B
-	* ready to be appended to 2015_AGSEC2B to make 2015_AGSEC2
+	* cleans
+		* plot sizes
+		* tenure
+		* irrigation
+		* plot ownership
+	* merge in owner characteristics from gsec2 gsec4
+	* output is ready to be appended to 2015_AGSEC2B to make 2015_AGSEC2
 
 * assumes
 	* access to the raw data
@@ -23,9 +28,9 @@
 ***********************************************************************
 
 * define paths	
-	global 	root 		"$data/household_data/uganda/wave_5/raw"  
-	global  export 		"$data/household_data/uganda/wave_5/refined"
-	global 	logout 		"$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_5/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_5"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 
 
 * open log	
@@ -38,13 +43,12 @@
 ***********************************************************************
 
 * import wave 5 season A
-	use "$root/agric/AGSEC2A.dta", clear
+	use 			"$root/agric/AGSEC2A.dta", clear
 		
 	rename			HHID hhid
 	rename			parcelID prcid
-	rename 			a2aq4 plotsizeGPS
-	rename 			a2aq5 plotsizeSR
-	rename			a2aq7 tenure
+	rename 			a2aq4 prclsizeGPS
+	rename 			a2aq5 prclsizeSR
 	
 	describe
 	sort 			hhid prcid
@@ -56,9 +60,70 @@
 	lab var			irr_any "Irrigation (=1)"
 	*** there are 39 observations irrigated
 
+* clean up ownership data to make 2 ownership variables
+	gen	long		pid = a2aq26a
+	replace			pid = a2aq24a if pid == .
+	
+	gen	long		pid2 = a2aq26b
+	replace			pid2 = a2aq24b if pid2 == .
+	
+* generate tenure variable based on fact that this is all owned plots
+	gen				tenure = 1
+	lab var			tenure "=1 if owned"
 
 ***********************************************************************
-**# 2 - merge location data
+**# 2 - merge in ownership characteristics
+***********************************************************************	
+
+* merge in age and gender for owner a
+	merge m:1 		hhid pid using "$export/2015_gsec2.dta"
+	* 161 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner a	
+	merge m:1 		hhid pid  using "$export/2015_gsec4.dta"
+	* 175 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			pid ownshp_rght_a
+	rename			gender gender_own_a
+	rename			age age_own_a
+	rename			edu edu_own_a
+	
+* rename PID for b to just PID so we can merge	
+	rename			pid2 pid
+
+* merge in age and gender for owner b
+	merge m:1 		hhid pid using "$export/2015_gsec2.dta"
+	* 1,859 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner b	
+	merge m:1 		hhid pid using "$export/2015_gsec4.dta"
+	* 1,880 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			pid ownshp_rght_b
+	rename			gender gender_own_b
+	rename			age age_own_b
+	rename			edu edu_own_b
+
+* generate a variable reflecting two owners
+	gen 			two_own = 1 if ownshp_rght_a != . & ownshp_rght_b != .
+	replace 		two_own = 0 if two_own==.	
+	
+		
+
+***********************************************************************
+**# 3 - merge location data
 ***********************************************************************	
 	
 * merge the location identification
@@ -71,7 +136,7 @@
 	
 	
 ************************************************************************
-**# 3 - keeping cultivated land
+**# 4 - keeping cultivated land
 ************************************************************************
 
 * what was the primary use of the parcel
@@ -86,40 +151,40 @@
 
 	
 ***********************************************************************
-**# 4 - clean plotsize
+**# 4 - clean parcel size
 ***********************************************************************
 
-* summarize plot size
-	sum 			plotsizeGPS
+* summarize parce size
+	sum 			prclsizeGPS
 	***	mean 1.56, max 158, min 0
 	*** only 1 plotsize = 0
 	
-	sum				plotsizeSR
+	sum				prclsizeSR
 	*** mean 1.51, max 300, min .01
 
 * how many missing values are there?
-	mdesc 			plotsizeGPS
+	mdesc 			prclsizeGPS
 	*** 2,141 missing, 61.2% of observations
 
 * convert acres to hectares
-	gen				plotsize = plotsizeGPS*0.404686
-	label var       plotsize "Plot size (ha)"
+	gen				prclsize = prclsizeGPS*0.404686
+	label var       prclsize "Parcel size (ha)"
 	
-	gen				selfreport = plotsizeSR*0.404686
-	label var       selfreport "Plot size (ha)"
+	gen				selfreport = prclsizeSR*0.404686
+	label var       selfreport "Parcel size (ha)"
 
 * examine gps outlier values
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** mean 0.63, min 0, max 63.94, std. dev. 1.88
 	
-	sum				plotsize if plotsize < 60, detail
+	sum				prclsize if prclsize < 60, detail
 	*** mean 0.585, max 9.3, min 0, std. dev 0.75
 	
-	list			plotsize selfreport if plotsize > 60 & !missing(plotsize)
+	list			prclsize selfreport if prclsize > 60 & !missing(prclsize)
 	*** gps plotsize is a hundred times larger self reported, which means a decimal point misplacement.
 	
 * recode outlier to be 1/100
-	replace			plotsize = plotsize/100 if plotsize > 60
+	replace			prclsize = prclsize/100 if prclsize > 60
 	
 	sum 			selfreport, detail
 	*** mean 0.61, max 121, min 0.004
@@ -127,70 +192,67 @@
 	sum				selfreport if selfreport < 60, detail
 	*** mean 0.576, max 20.2, min 0.004
 	
-	list			plotsize selfreport if selfreport > 60 & !missing(selfreport)
+	list			prclsize selfreport if selfreport > 60 & !missing(selfreport)
 	*** self reported value of 121 hectares seems unreasonable.
-	*** plotsize value is missing for this observation.
+	*** prclsize value is missing for this observation.
 	** dividing by a 100 makes it a more reasonable plotsize
 	
-	replace 		selfreport = selfreport/100 if selfreport > 60 & plotsize == . 
+	replace 		selfreport = selfreport/100 if selfreport > 60 & prclsize == . 
 	
 * check correlation between the two
-	corr 			plotsize selfreport
+	corr 			prclsize selfreport
 	*** 0.88 correlation, high correlation between GPS and self reported
 	
 * compare GPS and self-report, and look for outliers in GPS 
-	sum				plotsize, detail
+	sum				prclsize, detail
 	*** save command as above to easily access r-class stored results 
 
 * look at GPS and self-reported observations that are > ±3 Std. Dev's from the median 
-	list			plotsize selfreport if !inrange(plotsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
-						& !missing(plotsize)
+	list			prclsize selfreport if !inrange(prclsize,`r(p50)'-(3*`r(sd)'),`r(p50)'+(3*`r(sd)')) ///
+						& !missing(prclsize)
 	*** these all look good, largest size is 9 ha
 	
 * gps on the larger side vs self-report
-	tab				plotsize if plotsize > 3, plot
+	tab				prclsize if prclsize > 3, plot
 	*** distribution looks reasonable
 
 * correlation for larger plots	
-	corr			plotsize selfreport if plotsize > 3 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize > 3 & !missing(prclsize)
 	*** this is very high, 0.83, so these look good
 
 * correlation for smaller plots	
-	corr			plotsize selfreport if plotsize < .1 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize < .1 & !missing(prclsize)
 	*** correlation is negative, -0.108
 		
 * correlation for extremely small plots	
-	corr			plotsize selfreport if plotsize < .01 & !missing(plotsize)
+	corr			prclsize selfreport if prclsize < .01 & !missing(prclsize)
 	*** correlation is negative, -0.728
 	
 * summarize before imputation
-	sum				plotsize
-	*** mean 0.585, max 9.3, min 0
-	
-* encode district to be used in imputation
-	encode district, gen (districtdstrng) 	
+	sum				prclsize
+	*** mean 0.585, max 9.3, min 0	
 
 * impute missing plot sizes using predictive mean matching
 	mi set 			wide // declare the data to be wide.
 	mi xtset		, clear // this is a precautinary step to clear any existing xtset
-	mi register 	imputed plotsize // identify plotsize_GPS as the variable being imputed
-	sort			region district hhid prcid, stable // sort to ensure reproducability of results
-	mi impute 		pmm plotsize i.districtdstrng selfreport, add(1) rseed(245780) noisily dots ///
+	mi register 	imputed prclsize // identify plotsize_GPS as the variable being imputed
+	sort			admin_1 admin_2 admin_3 admin_4 hhid prcid, stable // sort to ensure reproducability of results
+	mi impute 		pmm prclsize i.admin_2 selfreport, add(1) rseed(245780) noisily dots ///
 						force knn(5) bootstrap
 	mi unset
 		
 * how did imputing go?
-	sum 			plotsize_1_
+	sum 			prclsize_1_
 	*** mean 0.59, max 9.3, min 0
 	
-	corr 			plotsize_1_ selfreport if plotsize == .
-	*** strong correlation, 0.83
+	corr 			prclsize_1_ selfreport if prclsize == .
+	*** strong correlation, 0.81
 	
-	replace 		plotsize = plotsize_1_ if plotsize == .
+	replace 		prclsize = prclsize_1_ if prclsize == .
 	
-	drop			mi_miss plotsize_1_
+	drop			mi_miss prclsize_1_
 	
-	mdesc 			plotsize
+	mdesc 			prclsize
 	*** none missing
 
 	
@@ -198,17 +260,35 @@
 **# 4 - end matter, clean up to save
 ***********************************************************************
 	
-	keep 			hhid hh_agric prcid region district subcounty ///
-					parish  wgt15 hwgt_W4_W5 ///
-					plotsize irr_any ea tenure rotate
-					
+	keep 			hhid hh_agric prcid admin_?  wgt15 hwgt_W4_W5 ///
+					prclsize irr_any ea rotate ownshp_rght_a ownshp_rght_b ///
+						gender_own_a age_own_a edu_own_a gender_own_b ///
+						age_own_b edu_own_b two_own tenure sector
+
+	lab var			ownshp_rght_a "pid for first owner"
+	lab var			ownshp_rght_b "pid for second owner"	
+	lab var			gender_own_a "Gender of first owner"
+	lab var			age_own_a "Age of first owner"
+	lab var			edu_own_a "=1 if first owner has formal edu"
+	lab var			gender_own_b "Gender of second owner"	
+	lab var			age_own_b "Age of second owner"
+	lab var			edu_own_b "=1 if first owner has formal edu"
+	lab var			two_own "=1 if there is joint ownership"
+	lab var			prcid "Parcel ID"
+	
+	
 	isid			hhid prcid
+	
+	order			hhid hh_agric rotate admin_1 admin_2 admin_3 ///
+						admin_4 ea sector wgt15 hwgt_W4_W5 prcid ///
+						tenure prclsize	
+	
 	compress
 	describe
 	summarize
 
 * save file
-	save 			"$export/2015_agsec2a_plt.dta", replace
+	save 			"$export/2015_agsec2a.dta", replace
 
 * close the log
 	log	close
