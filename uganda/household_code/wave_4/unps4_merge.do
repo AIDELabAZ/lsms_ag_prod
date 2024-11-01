@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 23 Oct 2024
+* Edited on: 1 Nov 2024
 * Edited by: jdm
 * Stata v.18.5
 
@@ -123,17 +123,16 @@
 * we apply this consistently to all rounds in UGA
 
 * summarize plot size
-	sum				crop_area
-	*** mean .52, max 16.9
+	sum				crop_area, detail
+	*** mean .20, max 24
+	
+* plot distribution
+*	kdensity		crop_area
 	
 * there are 10 values with 0 plot size yet have harvest
 * replace with parcel size
 	replace			area_plnt = prclsize if area_plnt == 0
 	replace			crop_area = area_plnt*prct_plnt if crop_area == 0
-	
-* crop area cannot be larger than parcel, convert to missing if 0.01 > than parcel
-	replace			crop_area = . if (crop_area - prclsize) > 0.01
-	*** 525 replaced
 	
 * generate counting variable for number of plots in a parcel
 	gen				plot_bi = 1
@@ -142,18 +141,15 @@
 
 * generate tot plot size based on area planted
 	egen			plot_tot = sum(crop_area), by(hhid prcid)
-	
-* compare difference, prclsize should be > than plot_tot
-	replace			crop_area = . if (plot_tot - prclsize) > 0.01
-	
+		
 * replace outliers at top/bottom 5 percent
 	sum 			crop_area, detail
-	replace			crop_area = . if crop_area >= `r(p95)' | crop_area <= `r(p5)'
-	* 2441 changes made
+	replace			crop_area = . if crop_area > `r(p95)' | crop_area < `r(p5)'
+	* 492 changes made
 	
 * summarize before imputation
 	sum 				crop_area, detail
-	*** mean .14, sd .10, max .42, min .025
+	*** mean .16, sd .13, max .61, min .03
 	
 * impute missing crop area
 	mi set 			wide 	// declare the data to be wide.
@@ -168,11 +164,14 @@
 	
 * inspect imputation 
 	sum 				crop_area_1_, detail	
-	*** mean .14, sd .10 max .42
+	*** mean .17, sd .13 max .61
 
 * replace the imputated variable
 	replace 			crop_area = crop_area_1_ 
-	*** 1,601 changes
+	*** 492 changes
+
+* plot new distribution
+	kdensity		crop_area
 	
 	drop				mi_miss crop_area_1_
 	
@@ -182,7 +181,7 @@
 ***********************************************************************
 	
 * summarize harvest quantity prior to imputations
-	sum				harv_qty
+	sum				harv_qty, detail
 	*** mean 324, sd 1,806, max 103,000
 	
 * plot harvest against land
@@ -199,8 +198,8 @@
 
 * replace outliers at top/bottom 5 percent
 	sum 			yield, detail
-	replace			harv_qty = . if yield >= `r(p95)' | yield <= `r(p5)'
-	* 298 and 282 changes made
+	replace			harv_qty = . if yield > `r(p95)' | yield < `r(p5)'
+	* 565 changes made
 
 * impute missing harvqtykg
 	mi set 			wide 	// declare the data to be wide.
@@ -215,11 +214,14 @@
 	
 * inspect imputation 
 	sum 				harv_qty_1_, detail
-	*** mean 223, sd 318, max 2,310
+	*** mean 210, sd 302, max 4,111
 
 * replace the imputated variable
 	replace 			harv_qty = harv_qty_1_
 	*** 104 changes
+
+* plot harvest against land
+*	twoway			(scatter harv_qty crop_area)
 	
 	drop 				harv_qty_1_ mi_miss
 	
@@ -227,17 +229,61 @@
 	replace				yield = harv_qty/crop_area
 	
 	sum					yield, detail
-	*** mean 1,815, sd 2,324, max 59,305
+	*** mean 1,540, sd 1,756, max 19,096
+
+	
+***********************************************************************
+**# 4 - impute fertilizer quantity
+***********************************************************************
+	
+* summarize fertilizer quantity prior to imputations
+	sum				fert_qty, detail
+	*** mean 324, sd 1,806, max 103,000
+	
+* plot harvest against land
+*	twoway			(scatter fert_qty crop_area)
+	*** none of this looks crazy
+	
+* because we want to not impose on the data
+* and because all these values seem plausible
+* we are not imputing anyting for this wave
 	
 	
+***********************************************************************
+**# 5 - impute labor quantity
+***********************************************************************
 	
-	fdfs
+* summarize fertilizer quantity prior to imputations
+	sum				tot_lab, detail
+	*** mean 154, sd 179, max 1,676
 	
+* plot harvest against land
+*	twoway			(scatter tot_lab crop_area)	
+	*** none of this looks crazy
 	
+* because we want to not impose on the data
+* and because all these values seem plausible
+* we are not imputing anyting for this wave	
 	
-	
-	
-	
+
+***********************************************************************
+**# 6 - restructure variables to make them regression ready
+***********************************************************************
+
+* generate crop type groups
+	gen				crop = 1 if cropid == 112 // barley
+	replace			crop = 2 if cropid == 210 | cropid == 221 | ///
+						cropid == 222 | cropid == 223 | cropid == 224 | ///
+						cropid == 310 | cropid == 320 // beans/peas/lentils/peanuts
+	replace			crop = 3 if cropid == 130 // maize
+	replace			crop = 4 if cropid == 141 // millet
+	replace			crop = 5 if cropid ==  // nuts
+	replace			crop = 6 if cropid ==  // other
+	replace			crop = 7 if cropid == 120 // rice
+	replace			crop = 8 if cropid == 150 // sorghum
+	replace			crop = 9 if cropid == 610 |cropid == 620 |cropid == 630 | ///
+						cropid == 640 | cropid == 650 // tubers/root crops
+	replace			crop = 10 if cropid == 111 // wheat
 	
 	
 	
