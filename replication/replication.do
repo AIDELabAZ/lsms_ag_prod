@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: jdm
-* Edited on: 21 Oct 24
+* Edited on: 1 Nov 24
 * Edited by:jdm
 * Stata v.18.5
 
@@ -34,6 +34,17 @@
 
 * import data
 	import 			delimited "$root/LSMS_mega_panel_ARCHIVE090822.csv", clear
+
+	compress
+	
+	
+* saving production dataset
+	save		"$export/lsms_mega_panel.dta", replace
+
+	
+***********************************************************************
+**# 2 - run replication
+***********************************************************************
 	
 * generate log yield
 	gen				ln_yield = asinh(harvest_value_cp/plot_area)
