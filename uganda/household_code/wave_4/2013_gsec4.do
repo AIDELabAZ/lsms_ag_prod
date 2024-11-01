@@ -52,7 +52,7 @@
 	
 	isid 			hh pid
 	
-	replace			edu = 1 if edu != .
+	replace			edu = 1 if edu != . 
 	replace			edu = 0 if edu == .
 	
 	lab var			edu "=1 if has formal education"
