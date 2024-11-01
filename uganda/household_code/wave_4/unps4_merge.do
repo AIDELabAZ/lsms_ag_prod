@@ -334,8 +334,24 @@
 	drop			cropid area_plnt prct_plnt _sec4a _sec3a _sec2 _sec6 _gsec2 ///
 						_gsec10 _gsec16 _geovar plot_bi plot_cnt plot_tot
 
-	collapse (sum)		
+	collapse (sum)		harv_qty crop_area yield intrcrp seed_qty seed_type ///
+						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
+						irr_any pest_any herb_any harv_miss plt_shck ///
+			(mean)		plnt_month harv_str_month harv_stp_month, ///
+						by(pltid prcid hhid hh hhid_pnl country admin_1 admin_2 ///
+						admin_3 admin_4 ea survey wave year wgt13 wgt_pnl ///
+						rotate prclsize crop plnt_year  ///
+						harv_str_year harv_stp_year ///
+						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
+						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
+						manage_rght_a gender_mgmt_a age_mgmt_a edu_mgmt_a ///
+						manage_rght_b gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt ///
+						sector hh_size lvstck sanml pltry electric ag_shock ///
+						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
+						sq4 sq5 sq6 sq7)
+						*** 30 duplicates
 						
+						fdsfds
 	compress
 	
 * saving production dataset
