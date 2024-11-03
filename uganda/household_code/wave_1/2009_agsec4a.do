@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 24 Oct 24
+* Edited on: 2 Nov 24
 * Edited by: rg
 * Stata v.18.0
 
@@ -48,6 +48,7 @@
 	rename			A4aq4 pltid
 	rename 			A4aq6 cropid
 	rename 			A4aq8 area_plnt
+	rename			A4aq9 prct_plnt
 
 	rename			A4aq11 seed_vle
 	rename 			A4aq13 seed_type
@@ -86,13 +87,23 @@
 * convert area to hectares 
 	replace 		area_plnt = area_plnt * 0.404686
 	
-		
+* create variable for percentage of plot area
+	tab 			prct_plnt
+	*** there is a value greater than a 100
+	
+	replace 		prct_plnt = 1 if prct_plnt ==500 
+	replace 		prct_plnt = prct_plnt / 100
+	
+	gen 			crop_area = area_plnt * prct_plnt
+	label var 		crop_area "Area planted (ha)"
+	
+	
 ***********************************************************************
 **# 3 - end matter, clean up to save
 ***********************************************************************
 
 	keep 			hhid prcid cropid pltid intrcrp_any /// 
-					seed_vle area_plnt seed_type
+					seed_vle area_plnt seed_type crop_area prct_plnt
 	
 	lab var			seed_type "Traditional/improved"
 	lab var			intrcrp "=1 if intercropped"

@@ -104,7 +104,7 @@
 * merge in geovars data
 	merge 			m:1 hhid_pnl using "$root/2015_geovars.dta", generate(_geovar) 
 	*** matched 3,257 matched
-	*** 2,391 unmatched from master - most are rotated in hh (2,213)
+	*** 2,391 unmatched from master 
 	
 	drop 			if _geovar == 2
 	*** 1,632 dropped - want to keep rotated in hh

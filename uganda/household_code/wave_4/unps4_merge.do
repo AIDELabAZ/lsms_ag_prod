@@ -5,11 +5,12 @@
 * Edited by: jdm
 * Stata v.18.5
 
-* merges together all cleaned data sets
-* imputs area planted to crops
-* imputs harvest quantity
-* generates variables to identify crop, country, wave
-* outputs cleaned plot-crop data for merging with weather data
+* does 
+	* merges together all cleaned data sets
+	* imputs area planted to crops
+	* imputs harvest quantity
+	* generates variables to identify crop, country, wave
+	* outputs cleaned plot-crop data for merging with weather data
 
 * assumes
 	* previously cleaned household datasets
@@ -225,7 +226,7 @@
 	*** 104 changes
 
 * plot harvest against land
-*	twoway			(scatter harv_qty crop_area)
+	twoway			(scatter harv_qty crop_area)
 	
 	drop 				harv_qty_1_ mi_miss
 	

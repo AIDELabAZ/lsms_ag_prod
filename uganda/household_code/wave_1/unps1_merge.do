@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 24 Oct 2024
+* Edited on: 2 Nov 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -115,43 +115,239 @@
 * yields much lower than they really are
 * instead we will use self-reported plot-level size, despite its problems
 * we apply this consistently to all rounds in UGA
+
+* summarize plot size
+	sum				crop_area, detail
+	*** mean .15, max 20
 	
+* plot distribution
+*	kdensity		crop_area
+	
+* there are 11 values with 0 plot size yet have harvest
+* replace with parcel size
+	replace			area_plnt = prclsize if area_plnt == 0
+	replace			crop_area = area_plnt*prct_plnt if crop_area == 0
+	
+* generate counting variable for number of plots in a parcel
+	gen				plot_bi = 1
+	
+	egen			plot_cnt = sum(plot_bi), by(hhid prcid)
+
+* generate tot plot size based on area planted
+	egen			plot_tot = sum(crop_area), by(hhid prcid)
+		
+* replace outliers at top/bottom 5 percent
+	sum 			crop_area, detail
+	replace			crop_area = . if crop_area > `r(p95)' | crop_area < `r(p5)'
+	* 605 changes made
+	
+* summarize before imputation
+	sum 				crop_area, detail
+	*** mean .12, sd .09, max .48, min .008
+	
+* impute missing crop area
+	mi set 			wide 	// declare the data to be wide.
+	mi xtset		, clear 	// clear any xtset that may have had in place previously
+
+* impute harvqtykg	
+	mi register			imputed crop_area // identify harvqty variable to be imputed
+	sort				hhid prcid pltid cropid, stable // sort to ensure reproducability of results
+	mi impute 			pmm crop_area i.admin_2 i.cropid plot_cnt prclsize, add(1) rseed(245780) ///
+								noisily dots force knn(5) bootstrap					
+	mi 				unset	
+	
+* inspect imputation 
+	sum 				crop_area_1_, detail	
+	*** mean .11, sd .09 max .61
+
+* replace the imputated variable
+	replace 			crop_area = crop_area_1_ 
+	*** 5,272 changes
+
+* plot new distribution
+*	kdensity		crop_area
+	
+	drop				mi_miss crop_area_1_
 	
 	
 ***********************************************************************
 **# 3 - impute harvest quantity
 ***********************************************************************
 	
+* summarize harvest quantity prior to imputations
+	sum				harv_qty, detail
+	*** mean 363, sd 1,512, max 75,6000
+	
+* plot harvest against land
+*	twoway			(scatter harv_qty crop_area)
+	
+* one outlier
+	replace			harv_qty = . if harv_qty > 70000
+	
+* generate temporary yield variables
+	gen				yield = harv_qty/crop_area
 
+* plot yield against land
+*	twoway			(scatter yield crop_area)
+
+* replace outliers at top/bottom 5 percent
+	sum 			yield, detail
+	replace			harv_qty = . if yield > `r(p95)' | yield < `r(p5)'
+	* 537 changes made
+
+* impute missing harvqtykg
+	mi set 			wide 	// declare the data to be wide.
+	mi xtset		, clear 	// clear any xtset that may have had in place previously
+
+* impute harvqtykg	
+	mi register			imputed harv_qty // identify harvqty variable to be imputed
+	sort				hhid prcid pltid cropid, stable // sort to ensure reproducability of results
+	mi impute 			pmm harv_qty i.admin_2 crop_area i.cropid, add(1) rseed(245780) ///
+								noisily dots force knn(5) bootstrap					
+	mi 				unset	
 	
+* inspect imputation 
+	sum 				harv_qty_1_, detail
+	*** mean 217, sd 480, max 8,500
+
+* replace the imputated variable
+	replace 			harv_qty = harv_qty_1_
+	*** 538 changes
+
+* plot harvest against land
+*	twoway			(scatter harv_qty crop_area)
 	
+	drop 				harv_qty_1_ mi_miss
 	
+* generate yield variable
+	replace				yield = harv_qty/crop_area
+	lab var				yield "Yield (kg/ha)"
 	
-	
-aaaaa
+	sum					yield, detail
+	*** mean 2,886, sd 8,272, max 355,213
+
 	
 ***********************************************************************
-**# 1b - create total farm and maize variables
+**# 4 - impute fertilizer quantity
+***********************************************************************
+	
+* summarize fertilizer quantity prior to imputations
+	sum				fert_qty, detail
+	*** mean 324, sd 1,806, max 103,000
+	
+* plot harvest against land
+*	twoway			(scatter fert_qty crop_area)
+	*** none of this looks crazy
+	
+* because we want to not impose on the data
+* and because all these values seem plausible
+* we are not imputing anyting for this wave
+	
+	
+***********************************************************************
+**# 5 - impute labor quantity
+***********************************************************************
+	
+* summarize fertilizer quantity prior to imputations
+	sum				tot_lab, detail
+	*** mean 154, sd 179, max 1,676
+	
+* plot harvest against land
+*	twoway			(scatter tot_lab crop_area)	
+	*** none of this looks crazy
+	
+* because we want to not impose on the data
+* and because all these values seem plausible
+* we are not imputing anyting for this wave	
+	
+
+***********************************************************************
+**# 6 - restructure variables to make them regression ready
 ***********************************************************************
 
-* rename some variables
-	rename 			cropvalue vl_hrv
-	rename			kilo_fert fert
-	rename			labor_days labordays
+* generate crop type groups
+	gen				crop = 1 if cropid == 112 // barley
+	replace			crop = 2 if cropid == 210 | cropid == 221 | ///
+						cropid == 222 | cropid == 223 | cropid == 224 | ///
+						cropid == 310 | cropid == 320 // beans/peas/lentils/peanuts
+	replace			crop = 3 if cropid == 130 // maize
+	replace			crop = 4 if cropid == 141 // millet
+	replace			crop = 5 if cropid == 330 | cropid == 340 // nuts
+	replace			crop = 6 if cropid > 399 & cropid < 600  // other
+	replace			crop = 7 if cropid == 120 // rice
+	replace			crop = 8 if cropid == 150 // sorghum
+	replace			crop = 9 if cropid == 610 |cropid == 620 |cropid == 630 | ///
+						cropid == 640 | cropid == 650 // tubers/root crops
+	replace			crop = 10 if cropid == 111 // wheat
 
-* generate mz_variables
-	gen				mz_lnd = plotsize	if cropid == 130
-	gen				mz_lab = labordays	if cropid == 130
-	gen				mz_frt = fert		if cropid == 130
-	gen				mz_pst = pest_any	if cropid == 130
-	gen				mz_hrb = herb_any	if cropid == 130
-	gen				mz_irr = irr_any	if cropid == 130
-	gen 			mz_hrv = vl_hrv		if cropid == 130
-	gen 			mz_damaged = 1 		if cropid == 130 & vl_hrv == 0
+* attach labels
+	lab define 		crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+						4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
+						8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
+	lab values 		crop crop
+	lab var			crop "Crop group"
 	
-	isid 			hhid prcid pltid cropid
+* generate survey/wave identifiers
+	gen				country = 7
+	lab define 		country 1 "Ethiopia" 2 "Malawi" 3 "Mali" ///
+						4 "Niger" 5 "Nigeria" 6 "Tanzania" 7 "Uganda", replace
+	lab values 		country country
+	lab var			country "Country"
 	
+	gen				survey = "UNPS 2013 - 2014"
+	lab var			survey "Survey country/wave"
 	
+	gen				wave = 4
+	lab var			wave "Survey wave"
+	
+
+***********************************************************************
+**# 7 - end matter
+***********************************************************************
+	
+* order variables
+	order			pltid prcid hhid hh hhid_pnl country admin_1 admin_2 ///
+						admin_3 admin_4 ea survey wave year wgt13 wgt_pnl ///
+						rotate prclsize crop plnt_month plnt_year harv_str_month ///
+						harv_str_year harv_stp_month harv_stp_year ///
+						harv_qty crop_area yield intrcrp seed_qty seed_type ///
+						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
+						irr_any pest_any herb_any harv_miss plt_shck ///
+						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
+						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
+						manage_rght_a gender_mgmt_a age_mgmt_a edu_mgmt_a ///
+						manage_rght_b gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt ///
+						sector hh_size lvstck sanml pltry electric ag_shock ///
+						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
+						sq4 sq5 sq6 sq7
+						
+	drop			cropid area_plnt prct_plnt _sec4a _sec3a _sec2 _sec6 _gsec2 ///
+						_gsec10 _gsec16 _geovar plot_bi plot_cnt plot_tot
+
+	collapse (sum)		harv_qty crop_area yield intrcrp seed_qty seed_type ///
+						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
+						irr_any pest_any herb_any harv_miss plt_shck ///
+			(mean)		plnt_month harv_str_month harv_stp_month, ///
+						by(pltid prcid hhid hh hhid_pnl country admin_1 admin_2 ///
+						admin_3 admin_4 ea survey wave year wgt13 wgt_pnl ///
+						rotate prclsize crop plnt_year  ///
+						harv_str_year harv_stp_year ///
+						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
+						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
+						manage_rght_a gender_mgmt_a age_mgmt_a edu_mgmt_a ///
+						manage_rght_b gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt ///
+						sector hh_size lvstck sanml pltry electric ag_shock ///
+						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
+						sq4 sq5 sq6 sq7)
+						*** 30 duplicates
+						
+						fdsfds
+	compress
+	
+* saving production dataset
+	save				"$export/hhfinal_unps1.dta", replace
+
+
 * close the log
 	log	close
 

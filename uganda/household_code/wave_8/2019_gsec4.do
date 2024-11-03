@@ -2,24 +2,22 @@
 * Created on: Oct 2024
 * Created by: rg
 * Edited on: 2 Nov 24
-* Edited by: jdm
+* Edited by: rg
 * Stata v.18.0, mac
 
 * does
-	* reads in household Location data (2019_GSEC1)
-	* cleans
-		* political geography locations
-		* survey weights
-	* outputs file of location for merging with other ag files that lack this info
+	* reads Uganda wave 8 hh information (gsec4)
+	* cleans househod member characteristics
+		* education
+	* outputs file for merging with plot owner (agsec2a and agsec2b)
 
 * assumes
-	* access to raw data 
-	* mdesc.ado
+	* access to raw data
 
 * TO DO:
 	* done
-
 	
+
 ***********************************************************************
 **# 0 - setup
 ***********************************************************************
@@ -30,51 +28,50 @@
 	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
-	cap 			log 	close
-	log 			using 	"$logout/2019_GSEC1", append
-
+	cap log 		close
+	log using 		"$logout/2019_gsec4", append
+	
 	
 ***********************************************************************
-**# 1 - UNPS 2019 (Wave 8) - General(?) Section 1 
+**# 1 - import data and rename variables
 ***********************************************************************
 
-* import wave 8 season 1
-	use				"$root/hh/GSEC1", clear
-
-	isid 			hhid
+* import hh roster info
+	use 			"$root/hh/gsec4.dta", clear
 	
-* rename variables
-	rename			hhidold hh
-	rename 			region 	admin_1
-	rename 			dc_2018 admin_2
-	rename 			sc_2018 admin_3
-	rename 			pc_2018 admin_4
-	rename 			wgt wgt19
-	rename 			urban sector
+* rename variables			
+	rename			s4q07 edu
+	describe 		edu
+	label list 		s4q07
 
-
-	tab 			admin_1, missing
-
-	drop if 		admin_1 == .	
-	*** 3 observations deleted
+	isid 			hh pid
 	
-* drop if missing
-	drop if			admin_2 == .
-	*** dropped 0 observations
+	replace			edu = 1 if edu != . & edu !=98
+	replace			edu = 0 if edu == . | edu == 98
 	
+	lab var			edu "=1 if has formal education"
+	lab values 		edu .
 	
 ***********************************************************************
 **# 2 - end matter, clean up to save
 ***********************************************************************
-
-	keep 			hhid hh admin_? wgt19 year sector
+	
+	keep 			hhid  pid edu
+	
+	order			hhid  pid edu
+	
+	lab var			pid "Person ID"
+	
 	compress
-	describe
-
-* save file
-	save		"$export/2019_gsec1.dta", replace 
-
+	
+* save file 
+	save 			"$export/2018_gsec4.dta", replace	
+	
 * close the log
 	log	close
 
-/* END */	
+/* END */
+	
+
+
+	

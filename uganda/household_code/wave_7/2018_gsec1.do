@@ -1,12 +1,17 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: themacfreezie
-* Edited on: 3 June 24
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Oct 2024
+* Created by: rg
+* Edited on: 2 Nov 24
+* Edited by: rg
+* Stata v.18.0, mac
 
 * does
-	* household Location data (2018_GSEC1) for the 1st season
+	* reads in household Location data (2018_AGSEC1)
+	* merges in location info from GSEC1
+	* cleans
+		* political geography locations
+		* survey weights
+	* outputs file of location for merging with other ag files that lack this info
 
 * assumes
 	* access to raw data 
@@ -17,23 +22,23 @@
 	* needs to be adapted for use in cleaning wave 7
 
 	
-* **********************************************************************
-* 0 - setup
-* **********************************************************************
+***********************************************************************
+**# 0 - setup
+***********************************************************************
 
 * define paths	
-	global 			root 	"$data/household_data/uganda/wave_7/raw"  
-	global 			export 	"$data/household_data/uganda/wave_7/refined"
-	global 			logout 	"$data/household_data/uganda/logs"
+	global root 	"$data/raw_lsms_data/uganda/wave_7/raw"  
+	global export 	"$data/lsms_ag_prod_data/refined_data/uganda/wave_7"
+	global logout 	"$data/lsms_ag_prod_data/refined_data/uganda/logs"
 	
 * open log	
 	cap 			log 	close
 	log 			using 	"$logout/2018_GSEC1", append
 
 	
-* **********************************************************************
-* 1 - UNPS 2011 (Wave 3) - General(?) Section 1 
-* **********************************************************************
+***********************************************************************
+**# 1 - UNPS 2011 (Wave 3) - General(?) Section 1 
+***********************************************************************
 
 * import wave 7 season 1
 	use				"$root/hh/GSEC1", clear
@@ -41,29 +46,29 @@
 * rename variables
 	isid 			hhid
 	rename			hhid hh_7_8
-	rename			t0_hhid HHID
-
-	rename 			distirct_name district
-	rename 			county_name county
-	rename 			subcounty_name subcounty
-	rename 			parish_name parish
+	rename			t0_hhid hhid
+	
+	rename			region admin_1
+	rename 			district_code admin_2
+	rename 			subcounty_code admin_3
+	rename 			parish_code admin_4
 	rename 			hwgt_wc wgt18
+	rename			urban sector
 
-	tab 			region, missing
+	tab 			admin_1, missing
 
 * drop if missing
-	drop if			district == ""
+	drop if			admin_2 == .
 	*** dropped 0 observations
 	
 	replace				year = 2018
 	
-* **********************************************************************
-* 2 - end matter, clean up to save
-* **********************************************************************
+***********************************************************************
+**# 2 - end matter, clean up to save
+***********************************************************************
 
-	keep 			hh_7_8 HHID year region district county subcounty parish ///
-						wgt18 subreg
-
+	keep 			hh_7_8 hhid year admin_? sector wgt18
+	
 	compress
 	describe
 	summarize
