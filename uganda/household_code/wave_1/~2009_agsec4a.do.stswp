@@ -90,11 +90,15 @@
 	*** there is a value greater than a 100
 	
 	replace 		prct_plnt = 1 if prct_plnt ==500 
+	replace 		prct_plnt = 1 if A4aq7 == 1
 	*** this is the only value not between 0 and 100 
 	replace 		prct_plnt = prct_plnt / 100
 	
 	gen 			crop_area = area_plnt * prct_plnt
 	label var 		crop_area "Area planted (ha)"
+	tab 			crop_area, missing
+	sort 			crop_area area_plnt
+	*** 442 missing values 
 	
 	
 ***********************************************************************
