@@ -89,9 +89,15 @@
 	tab 			prct_plnt
 	*** there is a value greater than a 100
 	
-	replace 		prct_plnt = 1 if prct_plnt ==500 
+	replace 		prct_plnt = 0.5 if prct_plnt ==500 
 	*** this is the only value not between 0 and 100 
+	replace 		prct_plnt = 1 if A4aq7 == 1
 	replace 		prct_plnt = prct_plnt / 100
+	
+	drop 			if cropid > 690
+	*** ... 
+	drop			if prct_plnt == . | area_plnt == . 
+	*** 277 dropped
 	
 	gen 			crop_area = area_plnt * prct_plnt
 	label var 		crop_area "Area planted (ha)"
