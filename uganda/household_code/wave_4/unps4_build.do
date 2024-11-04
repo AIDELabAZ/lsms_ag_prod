@@ -8,14 +8,14 @@
 * does
 	* merges weather data into unps4 household data
 	* does this for north and south seperately
+	* outputs complete wave 4 plot-crop data for building panel
 
 * assumes
-	* cleaned GHSY3 data
-	* processed wave 3 weather data
-	* customsave.ado
+	* cleaned unps4 data
+	* processed wave 4 weather data
 
 * TO DO:
-	* review by jdm
+	* done
 
 	
 * **********************************************************************
@@ -43,6 +43,11 @@
 *keep northern	
 	keep if		season == 1
 	
+* rename hhid to match weather data
+	rename		hh HHID
+	rename		hhid hh
+	rename		HHID hhid
+	
 * generate variable to record data source
 	gen 		data = "unps4"
 	lab var 	data "Data Source"
@@ -54,7 +59,7 @@
 	foreach 	file in `fileList' {	
 	
 		* merge weather data with household data
-			merge 	1:1 hh using "$rootw/`file'"	
+			merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -129,7 +134,7 @@
 	foreach 	file in `fileList' {	
 	
 	* merge weather data with household data
-		merge 	1:1 hh using "$rootw/`file'"	
+		merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -187,7 +192,7 @@
 }
 
 * save file
-	isid				hh
+	isid				hh pltid prcid crop
 	
 	qui: compress
 	
@@ -203,6 +208,11 @@
 
 * drop northern regions
 	keep if		season == 0
+
+* rename hhid to match weather data
+	rename		hh HHID
+	rename		hhid hh
+	rename		HHID hhid
 	
 * generate variable to record data source
 	gen 		data = "unps4"
@@ -215,7 +225,7 @@
 	foreach 	file in `fileList' {	
 	
 		* merge weather data with household data
-			merge 	1:1 hh using "$rootw/`file'"	
+			merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -290,7 +300,7 @@
 	foreach 	file in `fileList' {	
 	
 	* merge weather data with household data
-		merge 	1:1 hh using "$rootw/`file'"	
+		merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -348,7 +358,7 @@
 }
 
 * save file
-	isid				hh
+	isid				hh pltid prcid crop
 	
 	qui: compress
 	
