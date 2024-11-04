@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 1 Nov 2024
+* Edited on: 4 Nov 2024
 * Edited by: jdm
 * Stata v.18.5
 
@@ -16,8 +16,7 @@
 	* previously cleaned household datasets
 
 * TO DO:
-	* need to sort out planting and harvesting dates
-	* collapse to plot-crop level
+	* done
 	
 
 ************************************************************************
@@ -226,7 +225,7 @@
 	*** 104 changes
 
 * plot harvest against land
-	twoway			(scatter harv_qty crop_area)
+*	twoway			(scatter harv_qty crop_area)
 	
 	drop 				harv_qty_1_ mi_miss
 	
@@ -313,14 +312,66 @@
 	
 
 ***********************************************************************
-**# 7 - end matter
+**# 7 - harvest month
 ***********************************************************************
+
+* collapse to plot-crop level
+	collapse (sum)		harv_qty crop_area intrcrp seed_qty seed_type ///
+						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
+						irr_any pest_any herb_any harv_miss plt_shck ///
+			(mean)		plnt_month harv_str_month harv_stp_month plnt_year  ///
+						harv_str_year harv_stp_year, ///
+						by(pltid prcid hhid hh hhid_pnl country admin_1 admin_2 ///
+						admin_3 admin_4 ea survey wave year wgt13 wgt_pnl ///
+						rotate prclsize crop ///
+						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
+						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
+						manage_rght_a gender_mgmt_a age_mgmt_a edu_mgmt_a ///
+						manage_rght_b gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt ///
+						sector hh_size lvstck sanml pltry electric ag_shock ///
+						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
+						sq4 sq5 sq6 sq7)
+
+* generate yield variable
+	gen					yield = harv_qty/crop_area
+	lab var				yield "Yield (kg/ha)"
 	
+	sum					yield, detail
+	*** mean 1,545, sd 1,752, max 19,096
+
+* generate average planting month for district
+	egen			plnt = mean(plnt_month), by(admin_2)						
+
+* round to nearest integer
+	replace			plnt = round(plnt,1)
+	lab var			plnt "Start of planting month"	
+	
+* generate average harvest month for district
+	egen			harv = mean(harv_str_month), by(admin_2)
+	
+* round to nearest integer
+	replace			harv = round(harv,1)
+	lab var			harv "Start of harvest month"					
+
+* create "north"/"south" dummy
+	gen				season = 0 if harv == 6 | harv == 7
+	replace			season = 1 if season == .
+	lab def			season 0 "South" 1 "North"
+	lab val			season season
+	lab var			season "South/North season"
+	
+* drop month/year
+	drop			plnt_month plnt_year harv_str_month ///
+						harv_str_year harv_stp_month harv_stp_year
+	
+***********************************************************************
+**# 8 - end matter
+***********************************************************************
+
 * order variables
 	order			pltid prcid hhid hh hhid_pnl country admin_1 admin_2 ///
 						admin_3 admin_4 ea survey wave year wgt13 wgt_pnl ///
-						rotate prclsize crop plnt_month plnt_year harv_str_month ///
-						harv_str_year harv_stp_month harv_stp_year ///
+						rotate prclsize crop season ///
 						harv_qty crop_area yield intrcrp seed_qty seed_type ///
 						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
 						irr_any pest_any herb_any harv_miss plt_shck ///
@@ -330,29 +381,27 @@
 						manage_rght_b gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt ///
 						sector hh_size lvstck sanml pltry electric ag_shock ///
 						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
-						sq4 sq5 sq6 sq7
+						sq4 sq5 sq6 sq7							
+	
+	lab var				harv_qty "Harvest quantity (kg)"
+	lab var				crop_area "Area planted (ha)"
+	lab var				intrcrp "=1 if intercropped"
+	lab var				seed_qty "Seed used (kg)"
+	lab var				seed_type "Traditional/improved"
+	lab var				fert_qty "Inorganic Fertilizer (kg)"
+	lab var				fert_org "=1 if organic fertilizer used"
+	lab var				fam_lab "Total family labor (days)"
+	lab var				hrd_lab "Total hired labor (days)"
+	lab var				tot_lab "Total labor (days)"
+	lab var				tenure "=1 if owned"
+	lab var				irr_any "=1 if irrigated"
+	lab var				pest_any "=1 if pesticide used"
+	lab var				herb_any "=1 if herbicide used"
+	lab var				harv_miss "=1 if harvest qty missing"
+	lab var				plt_shck	"=1 if pre-harvest shock"
 						
-	drop			cropid area_plnt prct_plnt _sec4a _sec3a _sec2 _sec6 _gsec2 ///
-						_gsec10 _gsec16 _geovar plot_bi plot_cnt plot_tot
-
-	collapse (sum)		harv_qty crop_area yield intrcrp seed_qty seed_type ///
-						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
-						irr_any pest_any herb_any harv_miss plt_shck ///
-			(mean)		plnt_month harv_str_month harv_stp_month, ///
-						by(pltid prcid hhid hh hhid_pnl country admin_1 admin_2 ///
-						admin_3 admin_4 ea survey wave year wgt13 wgt_pnl ///
-						rotate prclsize crop plnt_year  ///
-						harv_str_year harv_stp_year ///
-						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
-						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
-						manage_rght_a gender_mgmt_a age_mgmt_a edu_mgmt_a ///
-						manage_rght_b gender_mgmt_b age_mgmt_b edu_mgmt_b two_mgmt ///
-						sector hh_size lvstck sanml pltry electric ag_shock ///
-						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
-						sq4 sq5 sq6 sq7)
-						*** 30 duplicates
+	isid				pltid prcid hhid crop
 						
-						fdsfds
 	compress
 	
 * saving production dataset

@@ -1,9 +1,9 @@
 * Project: WB Weather
 * Created on: Aug 2020
 * Created by: jdm
-* Edited on: 24 May 24
+* Edited on: 4 Nov 24
 * Edited by: jdm
-* Stata v.18
+* Stata v.18.5
 
 * does
 	* merges weather data into unps4 household data
@@ -24,9 +24,9 @@
 
 * define paths
 	global 	rootw  		"$data/weather_data/uganda/wave_4/refined/unpsy4_up"  
-	global  rooth 		"$data/household_data/uganda/wave_4/refined"
-	global  export 		"$data/merged_data/uganda/wave_4"
-	global 	logout 		"$data/merged_data/uganda/logs"
+	global  rooth 		"$data/lsms_ag_prod_data/refined_data/uganda/wave_4"
+	global  export 		"$data/lsms_ag_prod_data/merged_data/uganda/wave_4"
+	global 	logout 		"$data/lsms_ag_prod_data/merged_data/uganda/logs"
 
 * open log	
 	cap log close
