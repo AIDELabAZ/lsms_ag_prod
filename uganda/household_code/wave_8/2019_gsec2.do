@@ -1,8 +1,8 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 23 Oct 24
-* Edited by: jdm
+* Edited on: 4 Nov 24
+* Edited by: rg
 * Stata v.18.5
 
 * does
@@ -61,7 +61,8 @@
 	compress
 	
 * save file 
-	save 			"$export/2018_gsec2.dta", replace	
+	save 			"$export/2019_gsec2.dta", replace	
+
 	
 ***********************************************************************
 **# 3 - create household size
@@ -82,7 +83,7 @@
 	compress
 	
 * save file 
-	save 			"$export/2018_gsec2h.dta", replace	
+	save 			"$export/2019_gsec2h.dta", replace	
 	
 * close the log
 	log	close

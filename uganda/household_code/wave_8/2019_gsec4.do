@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 2 Nov 24
+* Edited on: 4 Nov 24
 * Edited by: rg
 * Stata v.18.0, mac
 
@@ -65,7 +65,7 @@
 	compress
 	
 * save file 
-	save 			"$export/2018_gsec4.dta", replace	
+	save 			"$export/2019_gsec4.dta", replace	
 	
 * close the log
 	log	close
