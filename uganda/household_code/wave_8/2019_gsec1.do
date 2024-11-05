@@ -42,6 +42,7 @@
 	use				"$root/hh/GSEC1", clear
 
 	isid 			hhid
+	rename 			hhidold hhid_7_8
 	
 * rename variables
 	rename			hhidold hh
@@ -67,12 +68,12 @@
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid hh admin_? wgt19 year sector
+	keep 			hhid hhid_7_8 admin_? wgt19 year sector
 	compress
 	describe
 
 * save file
-	save		"$export/2019_gsec1.dta", replace 
+	save			"$export/2019_gsec1.dta", replace 
 
 * close the log
 	log	close
