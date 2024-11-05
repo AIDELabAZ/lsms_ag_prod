@@ -147,20 +147,26 @@
 					harv_str_year1 harv_str_year2 harv_stp_month1 harv_stp_month2 /// 
 					harv_stp_year1 harv_stp_year2 harv_qty ///
 						plt_shck1 plt_shck2 harv_miss1 harv_miss2
+						
+	*** QUESTION DO YOU KNOW WHAT THE CONDITIONS ARE? 					
+						
+* reshape to have same structure as previous rounds			
+	reshape			long harv_str_month harv_stp_month harv_stp_year harv_str_year harv_miss plt_shck, i(hhid prcid pltid cropid harv_qty) j(num) 
+	**** 6078 to 12156
+							
+* collapse to hhid prcid pltid cropid
+	collapse 		(sum) harv_qty ///
+					(mean) harv_str_month harv_str_year harv_stp_month harv_stp_year, ///
+						by(hh hhid prcid pltid cropid plt_shck harv_miss)
+	* goes from 12156 to 6099						
 
-	lab var			harv_str_month1 "Harvest start month condition 1"
-	lab var			harv_str_year1 "Harvest start year condition 1"
-	lab var			harv_stp_month1 "Harvest stp month condition 1"
-	lab var			harv_stp_year1 "Harvest stop year condition 1"
+	lab var			harv_str_month "Harvest start month"
+	lab var			harv_str_year "Harvest start year"
+	lab var			harv_stp_month "Harvest stp month"
+	lab var			harv_stp_year "Harvest stop year"
 	lab var			harv_qty "Harvest quantity (kg)"
-	lab var			plt_shck1 "=1 if pre-harvest shock condition 1"
-	lab var			harv_miss1 "=1 if harvest qty missing condition 1"
-	lab var			harv_str_month2 "Harvest start month condition 2"
-	lab var			harv_str_year2 "Harvest start year condition 2"
-	lab var			harv_stp_month2 "Harvest stp month condition 2"
-	lab var			harv_stp_year2 "Harvest stop year condition 2"
-	lab var			plt_shck2 "=1 if pre-harvest shock condition 2"
-	lab var			harv_miss2 "=1 if harvest qty missing condition 2"
+	lab var			plt_shck "=1 if pre-harvest shock"
+	lab var			harv_miss "=1 if harvest qty missing"
 	isid			hhid prcid pltid cropid
 		
 	compress
