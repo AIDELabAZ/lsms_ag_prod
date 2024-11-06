@@ -7,13 +7,13 @@
 * Stata v.18.5 
 
 * does
-	* cleans crop plot size (gps and self-report)
+	* cleans basic information 
 
 * assumes
 	* access to MWI 6 raw data - PANEL
 	
 * TO DO:
-	* everything 
+	* done  
 
 * **********************************************************************
 * 0 - setup
