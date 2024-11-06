@@ -1,20 +1,22 @@
-* Project: WB Weather
+* Project: LSMS_ag_prod 
 * Created on: March 2024
 * Created by: alj
-* Edited on: 3 June 2024
+* Edited on: 6 November 2024
+*** A VERY BAD DAY 
 * Edited by: alj 
-* Stata v.18
+* Stata v.18.5 
 
 * does
 	* cleans crop price / sales information 
 	* directly follow from rs_plot code - by JB
+	* adapting based on rg / jdm code from uganda - wave 4 
 
 * assumes
 	* access to MWI W6 raw data
 	* access to previous files include g, i, c, d 
 	
 * TO DO:
-	* done 
+	* EVERYTHING  
 
 * **********************************************************************
 * 0 - setup
