@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 24 Oct 24
+* Edited on: 5 Nov 24
 * Edited by: rg
 * Stata v.18.0
 
@@ -21,7 +21,7 @@
 	* access to cleaned GSEC1
 
 * TO DO:
-	* conversion and calculate quantity harvested
+	* done
 
 
 ***********************************************************************
@@ -72,16 +72,15 @@
 	*** dropped 1494 observations
 
 * drop cropid is other, fallow, pasture, and trees
-	drop 			if cropid > 880
-	*** 497 observations dropped
+	drop 			if cropid > 699
+	*** 3,222 observations dropped
+	
+	drop 			if cropid == 530
+	*** 60 observations deleted (tobacco)
 	
 * replace harvests with 99999 with a 0, 99999 is code for missing
 	replace 		A5aq6a = 0 if A5aq6a == 99999
-	*** 1277 changed to zero
-	
-* replace missing cropharvests with 0
-	replace 		A5aq6a = 0 if A5aq6a == .
-	*** 234 changed to zero
+	*** 1,034 changed to zero
 
 * missing prcid and pltid don't allow for unique id, drop missing
 	drop			if prcid == .
@@ -98,7 +97,6 @@
 	replace 		plt_shck = 0 if plt_shck ==.
 	
 
-
 ***********************************************************************
 **# 2 - merge kg conversion file and create harvested quantity
 ***********************************************************************
@@ -106,14 +104,14 @@
 * merge in conversation file
 	merge m:1 		cropid unit condition using ///
 						"$conv/ValidCropUnitConditionCombinations.dta" 
-	*** unmatched 3,752 from master, or 30% 
+	*** unmatched 3,155 from master
 	
 * drop from using
 	drop 			if _merge == 2
 
 * how many unmatched had a harvest of 0
 	tab 			A5aq6a if _merge == 1
-	*** 86%, 3217, have a harvest of 0
+	*** 86%, 2,597, have a harvest of 0
 	
 * how many unmatched because they used "other" to categorize the state of harvest?
 	tab 			condition if _merge == 1
@@ -124,46 +122,37 @@
 
 * replace ucaconversion to 1 if the harvest is 0
 	replace 		ucaconversion = 1 if A5aq6a == 0
-	*** 3221 changes
+	*** 2,597 changes
 
 * some matched do not have ucaconversions, will use medconversion
 	replace 		ucaconversion = medconversion if _merge == 3 & ucaconversion == .
 	mdesc 			ucaconversion
-	*** 4% missing, 535 missing
+	*** 5.31% missing, 558 missing
 	
 * Drop the variables still missing ucaconversion
 	drop 			if ucaconversion == .
-	*** 535 dropped
+	*** 558 dropped
 	
 	drop 			_merge
 	
-	tab				cropname
-	*** beans are the most numerous crop being 18% of crops planted
-	***	maize is the second highest being 17%
-	*** maize will be main crop following most other countries in the study
-	
-* replace missing harvest quantity to 0
-	replace 		A5aq6a = 0 if A5aq6a == .
-	*** no changes
-	
 * Convert harv quantity to kg
-	gen 			harvqtykg = A5aq6a*ucaconversion
-	label var		harvqtykg "quantity of crop harvested (kg)"
-	mdesc 			harvqtykg
+	gen 			harv_qty = A5aq6a*ucaconversion
+	label var		harv_qty "quantity of crop harvested (kg)"
+	mdesc 			harv_qty
 	*** all converted
 
 * summarize harvest quantity
-	sum				harvqtykg
+	sum				harv_qty
 	*** three crazy values, replace with missing
 	*** values are not consistent with the amount sold
 	
-	replace			harvqtykg = . if harvqtykg > 100000
+	replace			harv_qty = . if harv_qty > 100000
 	*** replaced 3 observations
 
 ***********************************************************************
 **# 3 - end matter, clean up to save
 *******c****************************************************************
-	rename 			harvqtykg harv_qty
+
 	keep 			hhid prcid pltid harv_qty cropid harv_miss plt_shck
 
 * collapse to hhid prcid pltid cropid

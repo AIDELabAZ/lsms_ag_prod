@@ -2,7 +2,7 @@
 * Created on: Sep 2024
 * Created by: rg
 * Edited on: 4 Nov 2024
-* Edited by: jdm
+* Edited by: rg
 * Stata v.18.5
 
 * does 
@@ -131,7 +131,7 @@
 	*** mean .20, max 24
 	
 * plot distribution
-*	kdensity		crop_area
+	*kdensity		crop_area
 	
 * there are 10 values with 0 plot size yet have harvest
 * replace with parcel size
@@ -175,7 +175,7 @@
 	*** 492 changes
 
 * plot new distribution
-*	kdensity		crop_area
+	*kdensity		crop_area
 	
 	drop				mi_miss crop_area_1_
 	
@@ -189,7 +189,7 @@
 	*** mean 324, sd 1,806, max 103,000
 	
 * plot harvest against land
-*	twoway			(scatter harv_qty crop_area)
+	twoway			(scatter harv_qty crop_area)
 	
 * one crazy outlier (103,000 kg of onion)
 	replace			harv_qty = . if harv_qty > 100000
@@ -198,7 +198,7 @@
 	gen				yield = harv_qty/crop_area
 
 * plot yield against land
-*	twoway			(scatter yield crop_area)
+	twoway			(scatter yield crop_area)
 
 * replace outliers at top/bottom 5 percent
 	sum 			yield, detail
@@ -225,7 +225,7 @@
 	*** 104 changes
 
 * plot harvest against land
-*	twoway			(scatter harv_qty crop_area)
+	twoway			(scatter harv_qty crop_area)
 	
 	drop 				harv_qty_1_ mi_miss
 	
@@ -243,10 +243,10 @@
 	
 * summarize fertilizer quantity prior to imputations
 	sum				fert_qty, detail
-	*** mean 324, sd 1,806, max 103,000
+	*** mean 18, sd 24, max 130
 	
 * plot harvest against land
-*	twoway			(scatter fert_qty crop_area)
+	twoway			(scatter fert_qty crop_area)
 	*** none of this looks crazy
 	
 * because we want to not impose on the data
@@ -263,7 +263,7 @@
 	*** mean 154, sd 179, max 1,676
 	
 * plot harvest against land
-*	twoway			(scatter tot_lab crop_area)	
+	twoway			(scatter tot_lab crop_area)	
 	*** none of this looks crazy
 	
 * because we want to not impose on the data

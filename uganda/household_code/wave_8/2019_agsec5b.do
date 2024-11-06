@@ -50,22 +50,22 @@
 * rename variables	
 	rename 			cropID cropid
 	rename			parcelID prcid
-	rename 			s5bq06b_1 unit1
+	rename 			s5bq06b_1 unit
 	rename 			s5bq06b_2 unit2
-	rename			s5bq06c_1 condition1
+	rename			s5bq06c_1 condition
 	rename			s5bq06c_2 condition2
-	rename			s5bq06d_1 conversion1
+	rename			s5bq06d_1 conversion
 	rename			s5bq06d_2 conversion2
 	recast 			str32 hhid
 
 * harvest start and end dates
-	rename			s5bq06e_1 harv_str_month1
-	rename			s5bq06a_1_1 harv_str_year1
-	rename			s5bq06f_1 harv_stp_month1
-	rename			s5bq06f_1_1 harv_stp_year1
+	rename			s5bq06e_1 harv_str_month
+	rename			s5bq06e_1_1 harv_str_year
+	rename			s5bq06f_1 harv_stp_month
+	rename			s5bq06f_1_1 harv_stp_year
 	
 	rename			s5bq06e_2 harv_str_month2
-	rename			s5bq06a_1_2 harv_str_year2
+	rename			s5bq06e_1_2 harv_str_year2
 	rename			s5bq06f_2 harv_stp_month2
 	rename			s5bq06f_1_2 harv_stp_year2
 	
@@ -94,15 +94,15 @@
 	*** 4,871 changed to zero
 
 * create missing harvest dummy
-	gen				harv_miss1 = 1 if s5bq06a_1 == .
-	replace			harv_miss1 = 0 if harv_miss1 == .
+	gen				harv_miss = 1 if s5bq06a_1 == .
+	replace			harv_miss = 0 if harv_miss == .
 	
 	gen				harv_miss2 = 1 if s5bq06a_2 == .
 	replace			harv_miss2 = 0 if harv_miss2 == .
 	
 * create ag shock variable
-	gen				plt_shck1 = 1 if s5bq17_1 != .
-	replace			plt_shck1 = 0 if s5bq17_1 == .
+	gen				plt_shck = 1 if s5bq17_1 != .
+	replace			plt_shck = 0 if s5bq17_1 == .
 	
 	gen				plt_shck2 = 1 if s5bq17_2 != .
 	replace			plt_shck2 = 0 if s5bq17_2 == .
@@ -117,7 +117,7 @@
 * coffee has 3 identifications in this file, but only one in conversion file 
 	replace 		cropid = 810 if cropid == 811
 	replace 		cropid = 810 if cropid == 812
-	replace			conversion1 = 0 if conversion1 == .
+	replace			conversion = 0 if conversion == .
 	replace			conversion2 = 0 if conversion2 == .
 	
 	tab cropid
@@ -129,7 +129,7 @@
 * Convert harv quantity to kg
 	*** harvest quantity is in a variety of measurements and in two conditions
 	*** convert quantity to kg for both conditions and add
-	gen 			harv_qty = s5bq06a_1*conversion1 + s5bq06a_2*conversion2
+	gen 			harv_qty = s5bq06a_1*conversion + s5bq06a_2*conversion2
 	label var		harv_qty "quantity of crop harvested (kg)"
 	mdesc 			harv_qty
 	*** all converted
@@ -143,17 +143,13 @@
 **# 3 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid prcid pltid cropid harv_str_month1 harv_str_month2 ///
-					harv_str_year1 harv_str_year2 harv_stp_month1 harv_stp_month2 /// 
-					harv_stp_year1 harv_stp_year2 harv_qty ///
-						plt_shck1 plt_shck2 harv_miss1 harv_miss2
+	keep 			hhid prcid pltid cropid harv_str_month ///
+					harv_str_year harv_stp_month  /// 
+					harv_stp_year  harv_qty ///
+						plt_shck harv_miss
 						
 	*** QUESTION DO YOU KNOW WHAT THE CONDITIONS ARE? 					
-						
-* reshape to have same structure as previous rounds			
-	reshape			long harv_str_month harv_stp_month harv_stp_year harv_str_year harv_miss plt_shck, i(hhid prcid pltid cropid harv_qty) j(num) 
-	**** 6078 to 12156
-							
+													
 * collapse to hhid prcid pltid cropid
 	collapse 		(sum) harv_qty ///
 					(mean) harv_str_month harv_str_year harv_stp_month harv_stp_year, ///

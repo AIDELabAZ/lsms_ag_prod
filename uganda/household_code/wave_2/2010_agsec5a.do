@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 25 Oct 24
+* Edited on: 5 Nov 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -158,42 +158,37 @@
 	*** 381 observations dropped
 	
 	drop _merge
-	
-	tab			cropid
-	*** beans are the most numerous crop being 16.69% of crops planted
-	***	maize is the second highest being 15.72%
-	*** maize will be main crop following most other countries in the study
-	
-* Convert harv quantity to kg
-	*** harvest quantity is in a variety of measurements
-	*** included in the file are the conversions from other measurements to kg
-	
-* replace missing harvest quantity to 0
-	replace 		a5aq6a = 0 if a5aq6a == .
-	*** no changes
+
+* drop crops > 699 and tobacco 
+	drop 			if cropid > 699
+	drop 			if cropid == 530
 	
 * Convert harv quantity to kg
-	gen 			harvqtykg = a5aq6a*ucaconversion
-	label var		harvqtykg "quantity of crop harvested (kg)"
-	mdesc 			harvqtykg
-	*** all converted
+	gen 			harv_qty = a5aq6a* ucaconversion
+	label var		harv_qty "quantity of crop harvested (kg)"
+	mdesc 			harv_qty
+	*** 8 missing
 	
-* summarize maize quantity harvest
-	sum				harvqtykg if cropid == 130
-	*** 275 mean, 62500 max
+	drop 			if harv_qty ==.
+	
+* summarize harvest quantity
+	sum				harv_qty
+	*** mean 288, max 70,215
+	*** 1 crazy value but for onions and is consistent with amount sold
+	*** will keep for now	
 	
 ************************************************************************
 **# 3 - end matter, clean up to save
 ************************************************************************
 
-	rename 			harvqtykg harv_qty
-	keep 			hhid prcid pltid harv_qty cropid harv_miss plt_shck
+	keep 			hhid prcid pltid harv_qty cropid harv_miss plt_shck ///
+					harv_str_month harv_stp_month
 
 * collapse to hhid prcid pltid cropid
 * since Production_ID just accounts for different start of hrv month
-	collapse 		(sum) harv_qty, ///
+	collapse 		(sum) harv_qty (mean) harv_str_month harv_stp_month , ///
 						by( hhid prcid pltid cropid plt_shck harv_miss)
-	* goes from 11,122 to 9,624		
+	* goes from 8,278 to 7,362	
 
 	lab var			plt_shck "=1 if pre-harvest shock"
 	lab var			harv_miss "=1 if harvest qty missing"

@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 2 Nov 24
+* Edited on: 5 Nov 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -89,8 +89,19 @@
 	tab 			prct_plnt
 	*** no values greater than a 100
 	
-	replace 		prct_plnt = 1 if prct_plnt ==500 
 	replace 		prct_plnt = prct_plnt / 100
+	
+	replace 		prct_plnt = 1 if a4aq7 == 1
+	*** 5,327 changes 
+	
+	drop 			if cropid > 699
+	*** 3,269 
+	
+	drop 			if cropid == 530
+	*** 36 observations dropped (tobacco)
+	
+	drop			if prct_plnt == . | area_plnt == . 
+	*** 93 observations dropped
 	
 	gen 			crop_area = area_plnt * prct_plnt
 	label var 		crop_area "Area planted (ha)"

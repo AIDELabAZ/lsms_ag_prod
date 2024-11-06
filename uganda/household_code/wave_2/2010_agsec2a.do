@@ -6,7 +6,7 @@
 * Stata v.18, mac
 
 * does
-	* reads Uganda wave 2 owned plot info (2009_AGSEC2A) for the 1st season
+	* reads Uganda wave 2 owned plot info (2010_AGSEC2A) for the 1st season
 	* ready to append to rented plot info (2010_AGSEC2B)
 	* owned plots are in A and rented plots are in B
 	* cleans
