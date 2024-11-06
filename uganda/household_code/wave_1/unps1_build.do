@@ -1,8 +1,8 @@
 * Project: WB Weather
 * Created on: Aug 2020
 * Created by: ek
-* Edited on: 23 May 2024
-* Edited by: jdm
+* Edited on: 6 November 2024
+* Edited by: alj
 * Stata v.18
 
 * does
@@ -15,6 +15,7 @@
 
 * TO DO:
 	* complete
+	* look for *** to see where I think we need to change things
 
 	
 * **********************************************************************
@@ -42,6 +43,10 @@
 *keep northern	
 	keep if		season == 1
 	
+*** MAYBE CHANGES NEEDED HERE *** 
+*** DID WE HAVE A SEASON ISSUE WITH W1? I THINK WE'RE OKAY???
+* LOOK TO LINE 46 IN W4	
+	
 * generate variable to record data source
 	gen 		data = "unps1"
 	lab var 	data "Data Source"
@@ -53,7 +58,10 @@
 	foreach 	file in `fileList' {	
 	
 		* merge weather data with household data
-			merge 	1:1 hhid using "$rootw/`file'"	
+			merge 	1:1 hhid using "$rootw/`file'"		
+			
+*** MAYBE CHANGES NEEDED HERE*** 
+*** NEED TO CHANGE ALL THE 1:1 TO M:1 *** 			
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -129,6 +137,9 @@
 	
 	* merge weather data with household data
 		merge 	1:1 hhid using "$rootw/`file'"	
+		
+		*** MAYBE CHANGES NEEDED HERE*** 
+		*** 1:1 TO M:1 AGAIN *** 
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -215,6 +226,9 @@
 	
 		* merge weather data with household data
 			merge 	1:1 hhid using "$rootw/`file'"	
+			
+		*** MAYBE CHANGES NEEDED HERE*** 
+		*** 1:1 TO M:1 AGAIN *** 
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -290,6 +304,9 @@
 	
 	* merge weather data with household data
 		merge 	1:1 hhid using "$rootw/`file'"	
+		
+		*** MAYBE CHANGES NEEDED HERE*** 
+		*** 1:1 TO M:1 AGAIN *** 
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
