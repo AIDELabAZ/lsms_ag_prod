@@ -1,12 +1,13 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 29 Oct 24
+* Edited on: 6 Nov 24
 * Edited by: rg
 * Stata v.18.0
 
 * does
-	* reads Uganda wave 3 livestock rosters (2011_AGSEC6A, 6B, 6C)
+	* reads Uganda wave 3 livestock rosters (2011_AGSEC1)
+	* this can also be found in agsec6a,b, and c
 	* cleans indicators for ownership of
 		* cattle and pack animals
 		* small animals
@@ -39,116 +40,36 @@
 ***********************************************************************
 
 * import livestock info
-	use 			"$root/AGSEC6A.dta", clear
+	use 			"$root/AGSEC1.dta", clear
 	
 * order and rename variables
 	rename			HHID hhid
 	format 			%16.0g hhid
-	rename			a6aq2 lvstck
+
+	
+***********************************************************************
+**# 1 - import livestock data and rename variables
+***********************************************************************
+	
+* order and rename variables
+	rename 			a6aq1 lvstck
+	rename			a6bq1 sanml
+	rename 			a6cq1 pltry
 	
 * recode so non-zero is 1
 	replace			lvstck = 0 if lvstck == 2
-
-	keep 			hhid lvstck
-	
 	lab var			lvstck "=1 if household owns livestock"
 	
-	sort 			hhid lvstck
-	duplicates 		drop hhid, force
-	
-	isid			hhid
-	
-	compress
-	
-* save file 
-	save 			"$export/2011_agsec6a.dta", replace	
-
-	
-***********************************************************************
-**# 2 - import small animal data and rename variables
-***********************************************************************
-
-* import small animal info
-	use 			"$root/AGSEC6B.dta", clear
-	
-* order and rename variables
-	rename			HHID hhid
-	format 			%16.0g hhid
-	rename			a6bq2 sanml
-
-	
-* recode so non-zero is 1
-	replace			sanml = 0 if sanml == 2
-
-	keep 			hhid  sanml
-	
+	replace			sanml = 0 if sanml == 2	
 	lab var			sanml "=1 if household owns small animals"
 	
-	sort 			hhid sanml
-	duplicates 		drop hhid, force
-	
-	
-	isid			hhid
-	
-	compress
-	
-* save file 
-	save 			"$export/2011_agsec6b.dta", replace
-
-	
-***********************************************************************
-**# 3 - import poultry data and rename variables
-***********************************************************************
-
-* import poultry info
-	use 			"$root/AGSEC6C.dta", clear
-	
-* order and rename variables
-	rename			HHID hhid
-	format 			%16.0g hhid
-	rename			a6cq2 pltry
-	
-* recode so non-zero is 1
-	replace			pltry = 0 if pltry == 2
-
-	keep 			hhid pltry
-	
+	replace			sanml = 0 if sanml == 2	
 	lab var			pltry "=1 if household owns poultry"
 	
-	sort 			hhid pltry
-	duplicates 		drop hhid, force
+	keep 			hhid lvstck sanml pltry
 	
 	isid			hhid
-	
-	compress
-	
-***********************************************************************
-**# 4 - merge in other two files
-***********************************************************************
-
-* merge in livestock
-	merge 1:1		hhid using "$export/2011_agsec6a.dta"
-	* 1,291 merged
-	
-	drop			_merge
-
-* merge in small animals
-	merge 1:1		hhid using "$export/2011_agsec6b.dta"
-	* 1,342 merged
-	
-	drop			_merge
-	
-***********************************************************************
-**# 5 - end matter, clean up to save
-***********************************************************************
-		
-	erase			"$export/2011_agsec6a.dta"
-	erase			"$export/2011_agsec6b.dta"
-	
-		
-	isid			hhid
-
-	order			hhid  lvstck sanml 
+	order			hhid hh lvstck sanml 
 	
 	compress
 

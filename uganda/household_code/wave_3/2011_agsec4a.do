@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 29 Oct 24
+* Edited on: 6 Nov 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -76,6 +76,9 @@
 	drop 			if cropid > 699
 	*** 2,479 observations deleted 
 	
+	drop 			if cropid == 530
+	*** 25 observations dropped
+	
 ***********************************************************************
 **# 2 - percentage planted 	
 ***********************************************************************
@@ -86,10 +89,21 @@
 * create variable for percentage of plot area 
 	replace			prct_plnt = prct_plnt / 100
 	
+	replace 		prct_plnt = 1 if a4aq8 ==1
+	
+	mdesc 			prct_plnt
+	*** there are 5 obs missing percentage and type of stand
+	
+	drop if 		prct_plnt ==. 
+	*** 5 observations dropped
+	
 	gen 			crop_area = area_plnt * prct_plnt
 	label var		crop_area "Area planted (ha)"
-
-
+	*** really small crop areas. seed quantity used makes sense
+	
+	mdesc 			crop_area
+	*** zero observations missing 
+	
 
 ***********************************************************************
 **# 3 - merge kg conversion file and create seed quantity

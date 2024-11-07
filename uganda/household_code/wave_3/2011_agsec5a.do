@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 15 Oct 24
+* Edited on: 6 nov 24
 * Edited by: rg
 * Stata v.18, mac
 
@@ -80,10 +80,6 @@
 * replace harvests with 99999 with a 0, 99999 is code for missing
 	replace 		a5aq6a = 0 if a5aq6a == 99999
 	*** 0 changed to zero
-	
-* replace missing cropharvests with 0
-	replace 		a5aq6a = 0 if a5aq6a == .
-	*** 8 changed to zero
 
 * missing prcid and pltid don't allow for unique id, drop missing
 	drop			if prcid == .
@@ -183,7 +179,10 @@
 ************************************************************************
 **# 3 - end matter, clean up to save
 ************************************************************************
-
+* drop tobacco 
+	drop 			if cropid == 530
+	*** 25 obs dropped
+	
 	keep 			hhid prcid pltid productionID cropid harv_str_month ///
 					 harv_stp_month  harv_qty plt_shck harv_miss
 
