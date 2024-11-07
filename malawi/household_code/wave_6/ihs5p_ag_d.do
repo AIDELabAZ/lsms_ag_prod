@@ -299,7 +299,7 @@
 	rename 			ag_d01 id_code 
 
 * merge in age and gender for decision maker a 
-	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_b_19.dta"
+	merge m:1 		y4_hhid id_code using "$export/hh_mod_b_19.dta"
 	* ?  unmatched from master 
 	
 	adfa
