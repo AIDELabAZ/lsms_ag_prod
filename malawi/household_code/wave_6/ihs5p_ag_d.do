@@ -1,8 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: March 2024
 * Created by: alj
-* Edited on: 6 November 2024
-*** A VERY BAD DAY 
+* Edited on: 7 November 2024
 * Edited by: alj 
 * Stata v.18.5 
 * does
@@ -13,7 +12,8 @@
 	* access to MWI W6 raw data
 	
 * TO DO:
-	* done
+	* do we need value of fert per ha? 
+	* PATHWAYS FUCKED AT LINE 302
 	
 * **********************************************************************
 * 0 - setup
@@ -24,7 +24,7 @@
 	loc		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
 	loc		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
 	loc 	temp 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/tmp"
-
+	
 * open log
 	cap 	log			close
 	log 	using 		"`logout'/mwi_ag_mod_d_19", append
@@ -37,7 +37,6 @@
 * load data
 	use 			"`root'/ag_mod_d_19.dta", clear
 
-	
 	describe 
 	sort 			y4_hhid gardenid plotid 	
 	capture 		: noisily : isid y4_hhid gardenid plotid
@@ -131,6 +130,9 @@
 			
 	sum 			fert_qty if fert_any == 1, detail
 	*** mean 60.50, min 0.5, max 5,000
+	
+	
+	**** DO I NEED FERT VALUE? 
 	
 * **********************************************************************
 * 5 - irrigation
@@ -262,27 +264,46 @@
 		summarize 		labordays, detail
 		list 			y4_hhid plotid famlbrdays hirelbrdays if labordays>300
 		*** 15, issues mostly in familydays
-
+		
+		
+* value of hired non harvest labor
+		gen 			malepay_nh = ag_d47a1 * ag_d47b1 
+		gen 			femalepay_nh = ag_d47a2 * ag_d47b2
+		gen 			childpay_nh = ag_d47a3 * ag_d47b3 
+		egen			value_hired_nh = rowtotal (malepay_nh femalepay_nh childpay_nh)
+		
+* value of hired harvest labor 
+		gen 			malepay_h = ag_d48a1 * ag_d48b1 
+		gen 			femalepay_h = ag_d48a2 * ag_d48b2
+		gen 			childpay_h = ag_d48a3 * ag_d48b3 
+		egen			value_hired_h = rowtotal (malepay_h femalepay_h childpay_h)
+		
+* total value of hired labor 
+		egen 			value_hired = rowtotal (value_hired_nh value_hired_h)
+		tabstat			value_hired
+		*** 1203.22 mean (will convert later but its about $1.50)
+		
 * outlier checks without add'l information
 		label 			variable labordays		"days of labor on plot" 
 
 * hire labor dummy
 	generate 			hirelabor_any = (hirelbrdays>0)
 	label 				variable hirelabor_any	"any labor hired on plot" 
-	
-* add value of hired labor here
-	adgaadsg
-	ag_d47c ag_d48c 
-	
-
 		
 ***********************************************************************
 ** 8 - merge in manager characteristics
 ***********************************************************************	
 
-* merge in age and gender for owner a
-	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
+* need to rename decision maker variables, in and order - will do four merges as we ask for four members 
+* these include ag_d01 ag_d01_1 ag_d01_2a ag_d01_2b
+* wtf is this numbering system 
+	rename 			ag_d01 id_code 
+
+* merge in age and gender for decision maker 1 
+	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_b_19.dta"
 	* 41 unmatched from master 
+	
+	adfa
 	
 	drop 			if _merge == 2
 	drop 			_merge

@@ -25,7 +25,7 @@
 
 * open log
 	cap 	log			close
-	log 	using 		"`logout'/mwi_hh_mod_a19", append
+	log 	using 		"`logout'/mwi_hh_mod_b19", append
 
 * **********************************************************************
 * 1 - clean plot area 
