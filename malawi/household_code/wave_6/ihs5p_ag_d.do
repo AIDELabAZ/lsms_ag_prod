@@ -8,13 +8,12 @@
 * does
 	* cleans crop price / sales information 
 	* directly follow from ag_d code - by JB
-	*** plot tenure included in that file and not here
 	
 * assumes
 	* access to MWI W6 raw data
 	
 * TO DO:
-	* everything
+	* done
 	
 * **********************************************************************
 * 0 - setup
@@ -47,17 +46,13 @@
 	*** none
 
 * **********************************************************************
-* 2 -  cash crop
-* **********************************************************************
-	 
-	egen 			crop_cash = anymatch(ag_d20a ag_d20b ag_d20c ag_d20d ag_d20e), values(5/10 37/39 47) 
-	label 			variable crop_cash	"plot is planted withcash crops (tobacco, cotton, sunflower, paprika, sugar cane)"
-
-	* pretty sure we want to drop tobacco 
-	
+* 2 -  drop tobacco 
+* **********************************************************************	
 	egen 			tobacco =  anymatch(ag_d20a ag_d20b ag_d20c ag_d20d ag_d20e), values(5/10) 
 	drop			if tobacco == 1
 	*** 223 observations 
+	
+	*** also drop trees? not seeing trees ... 
 	
 * **********************************************************************
 * 3 - soil and erosion and slope and wetlands
@@ -280,11 +275,58 @@
 	ag_d47c ag_d48c 
 	
 
-* the cover crop and tillage questions are not available in IHS3
-* not included here in line with that
+		
+***********************************************************************
+** 8 - merge in manager characteristics
+***********************************************************************	
+
+* merge in age and gender for owner a
+	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
+	* 41 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner a	
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
+	* 43 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			pid manage_rght_a
+	rename			gender gender_mgmt_a
+	rename			age age_mgmt_a
+	rename			edu edu_mgmt_a
+	
+* rename pid for b to just pid so we can merge	
+	rename			pid2 pid
+
+* merge in age and gender for owner b
+	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
+	* 3,080 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for owner b	
+	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
+	* 3,083 unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			pid manage_rght_b
+	rename			gender gender_mgmt_b
+	rename			age age_mgmt_b
+	rename			edu edu_mgmt_b
+
+	gen 			two_mgmt = 1 if manage_rght_a != . & manage_rght_b != .
+	replace 		two_mgmt = 0 if two_mgmt ==.	
 
 
-*** ANNA STOP HERE UPDATE FROM HERE DOWN **** 
+	
+	
 
 * **********************************************************************
 * 8 - end matter, clean up to save
