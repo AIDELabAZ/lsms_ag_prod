@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 31 Oct 2024
+* Edited on: 6 Nov 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -76,6 +76,9 @@
 	drop 			if cropid > 699
 	*** 2,099 observations deleted 
 	
+	drop			if cropid == 530
+	*** 32 observations dropped 
+	
 	
 ***********************************************************************
 **# 2 - percentage planted 	
@@ -86,6 +89,17 @@
 	
 * create variable for percentage of plot area
 	replace 		prct_plnt = prct_plnt / 100
+	
+	replace 		prct_plnt = 1 if a4bq8 == 1
+	
+	mdesc 			prct_plnt
+	*** 224 missing prct_plnt
+	
+	mdesc 			a4bq8 
+	*** 170 missing type of crop stand 
+	
+	drop 			if a4bq8 ==. | prct_plnt ==. | area_plnt == .
+	*** 226 observations dropped
 	
 	gen 			crop_area = area_plnt * prct_plnt
 	label var 		crop_area "Area planted (ha)"	

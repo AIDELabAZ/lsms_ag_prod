@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 31 Oct 24
+* Edited on: 6 Nov 24
 * Edited by: rg
 * Stata v.18.0, mac
 
@@ -21,7 +21,7 @@
 	* access to cleaned AGSEC1
 
 * TO DO:
-	* done
+	* tfor months, there are values > 12
 
 	
 ***********************************************************************
@@ -222,10 +222,9 @@
 	sum				harv_qty
 	*** mean 252, max 90,000
 	
+	drop 			if cropid == 530
+	*** 28 observatinos dropped (tobacco)
 	
-***********************************************************************
-**# 3 - end matter, clean up to save
-***********************************************************************
 
 ***********************************************************************
 **# 3 - end matter, clean up to save

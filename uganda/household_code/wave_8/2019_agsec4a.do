@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 23 Oct 24
+* Edited on: 6 Nov 24
 * Edited by: jdm
 * Stata v.18.5
 
@@ -72,19 +72,23 @@
 	drop 			if cropid > 699
 	*** 2,351 observations deleted 
 	
+	drop 			if cropid ==530
+	*** 31 obs dropped
+	
+	
 ***********************************************************************
 **# 2 - percentage planted 	
 ***********************************************************************
 
 * convert area to hectares 
 	replace 		area_plnt = area_plnt * 0.404686
-	
-* there are obs that reported pure stand but don't have a prct_plnt
-	replace 		prct_plnt =1 if s4bq08 ==1
-	*** 7,001 changes
 		
 * create variable for percentage of plot area
 	replace 		prct_plnt = prct_plnt / 100
+	
+* there are obs that reported pure stand but don't have a prct_plnt
+	replace 		prct_plnt =1 if s4bq08 ==1
+	*** 3,461 changes
 	
 	gen 			crop_area = area_plnt * prct_plnt
 	label var 		crop_area "Area planted (ha)"
@@ -101,8 +105,8 @@
 
 * see how many hh used traditional vs improved seed 
 	tab 			seed_type, missing
-	* 5,867 used traditional
-	* 410 used improved
+	* 5,855 used traditional
+	* 391 used improved
 	* 692 missing
 
 * create a variable showing used of seed 
@@ -127,7 +131,7 @@
 		
 	* grams 
 		replace 		seed_qty = seed/1000 if unit == 2 
-		*** 51 changes 
+		*** 47 changes 
 		*** check values, observations with 1,2,8, 0.25 grams
 		
 	* sack 120 kgs
@@ -136,7 +140,7 @@
 		
 	* sack 100 kgs 
 		replace 		seed_qty = seed * 100 if unit == 10
-		*** 708 changes 
+		*** 707 changes 
 		
 	* sack 80 kgs 
 		replace 		seed_qty = seed * 80 if unit == 11
