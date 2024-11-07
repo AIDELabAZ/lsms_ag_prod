@@ -298,7 +298,7 @@
 * wtf is this numbering system 
 	rename 			ag_d01 id_code 
 
-* merge in age and gender for decision maker 1 
+* merge in age and gender for decision maker a 
 	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_b_19.dta"
 	* ?  unmatched from master 
 	
@@ -307,17 +307,33 @@
 	drop 			if _merge == 2
 	drop 			_merge
 	
-	rename 			id_code managera
-	rename 			ag_d01_1 id_code 
-	
 	rename 			gender gender_mgmt_a
 	rename 			age age_mgmt_a
 	
-*** NEED TO ADD EDUCATION 
+* merge in education for decision maker a 
+	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
+	* ?  unmatched from master 
+	
+	rename			edu educ_mgmt_a
+	
+	drop 			if _merge == 2
+	drop 			_merge
 
+	rename 			id_code managera
+	rename 			ag_d01_1 id_code
+	
 * merge in age and gender 	
 	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_b_19.dta"
 	* ? unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+* merge in education for decision maker b 
+	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
+	* ?  unmatched from master 
+	
+	rename 			educ educ_mgmt_b
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -328,11 +344,18 @@
 	rename 			gender gender_mgmt_b
 	rename 			age age_mgmt_b 
 	
-*** NEED TO ADD EDUCATION 	
-
 * merge in age and gender for manager c 
 	merge m:1 		hhid pid using "$`export'/hh_mod_b_19.dta"
 	* ? unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	* merge in education for decision maker c 
+	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
+	* ?  unmatched from master 
+	
+	rename 			educ educ_mgmt_c
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -343,11 +366,19 @@
 	rename 			gender gender_mgmt_c
 	rename 			age age_mgmt_c
 	
-*** NEED TO ADD EDUCATION 	
 	
 * merge in age and gender for manager d 	
 	merge m:1 		hhid pid using "$`export'/hh_mod_b_19.dta"
 	* ? unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+
+* merge in education for decision maker b 
+	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
+	* ?  unmatched from master 
+	
+	rename 			educ educ_mgmt_d
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -356,9 +387,7 @@
 	
 	rename 			gender gender_mgmt_d
 	rename 			age age_mgmt_d 
-	
-*** NEED TO ADD EDUCATION 	
-		
+			
 	gen 			two_mgmt = 1 if managera != . & managerb != .
 	replace 		two_mgmt = 0 if two_mgmt ==.	
 
