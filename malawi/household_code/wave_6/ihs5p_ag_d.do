@@ -43,7 +43,6 @@
 	sort 			y4_hhid gardenid plotid 	
 	capture 		: noisily : isid y4_hhid gardenid plotid
 	*** some are missing?
-**# Bookmark #1
 	duplicates 		report y4_hhid gardenid plotid 
 	*** none
 
@@ -115,8 +114,28 @@
 
 	drop 			fert_inorg1 fert_inorg2 fert_inorg_kg1 fert_inorg_kg2
 	
+* fert any 	
+	rename 			ag_d39d fert_qty1
+	rename			ag_d39j fert_qty2
+	generate		fert_any = 1 if fert_qty1 != . 
+	replace 		fert_any = 0 if fert_qty1 == 0 
+	replace			fert_any = 1 if fert_qty2 != . 
+	replace 		fert_any = 0 if fert_qty2 == 0
+	tab 			fert_any 
+	*** 47 percent use some nonzero amount of fertilizer 
 	
-	*** THIS IS NOT THE CORRECT VARIABLE FOR FERTILIZER 
+* fert kgs 
+	egen 			fert_qty = rowtotal(fert_qty1 fert_qty2)
+
+* replace the missing fert_any with 0
+	tab 			fert_qty if fert_any == .
+	*** no observations
+	
+	replace			fert_any = 2 if fert_any == . 
+	*** 0 changes
+			
+	sum 			fert_qty if fert_any == 1, detail
+	*** mean 60.50, min 0.5, max 5,000
 	
 * **********************************************************************
 * 5 - irrigation
