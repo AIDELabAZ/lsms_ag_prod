@@ -12,8 +12,8 @@
 	* access to MWI W6 raw data
 	
 * TO DO:
-	* do we need value of fert per ha? 
 	* PATHWAYS FUCKED AT LINE 302
+	* need to add education at line 317
 	
 * **********************************************************************
 * 0 - setup
@@ -130,9 +130,6 @@
 			
 	sum 			fert_qty if fert_any == 1, detail
 	*** mean 60.50, min 0.5, max 5,000
-	
-	
-	**** DO I NEED FERT VALUE? 
 	
 * **********************************************************************
 * 5 - irrigation
@@ -281,7 +278,9 @@
 * total value of hired labor 
 		egen 			value_hired = rowtotal (value_hired_nh value_hired_h)
 		tabstat			value_hired
-		*** 1203.22 mean (will convert later but its about $1.50)
+		*** 1203.22 mean (will convert later but its about $1.50
+		
+	*** DON'T NEED THIS	
 		
 * outlier checks without add'l information
 		label 			variable labordays		"days of labor on plot" 
@@ -301,63 +300,83 @@
 
 * merge in age and gender for decision maker 1 
 	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_b_19.dta"
-	* 41 unmatched from master 
+	* ?  unmatched from master 
 	
 	adfa
 	
 	drop 			if _merge == 2
 	drop 			_merge
+	
+	rename 			id_code managera
+	rename 			ag_d01_1 id_code 
+	
+	rename 			gender gender_mgmt_a
+	rename 			age age_mgmt_a
+	
+*** NEED TO ADD EDUCATION 
 
-* merge in education for owner a	
-	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
-	* 43 unmatched from master 
+* merge in age and gender 	
+	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_b_19.dta"
+	* ? unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
-	rename 			pid manage_rght_a
-	rename			gender gender_mgmt_a
-	rename			age age_mgmt_a
-	rename			edu edu_mgmt_a
+	rename 			id_code managerb
+	rename 			ag_d01_2a managerc
 	
-* rename pid for b to just pid so we can merge	
-	rename			pid2 pid
-
-* merge in age and gender for owner b
-	merge m:1 		hhid pid using "$export/2013_gsec2.dta"
-	* 3,080 unmatched from master 
+	rename 			gender gender_mgmt_b
+	rename 			age age_mgmt_b 
 	
-	drop 			if _merge == 2
-	drop 			_merge
+*** NEED TO ADD EDUCATION 	
 
-* merge in education for owner b	
-	merge m:1 		hhid pid using "$export/2013_gsec4.dta"
-	* 3,083 unmatched from master 
+* merge in age and gender for manager c 
+	merge m:1 		hhid pid using "$`export'/hh_mod_b_19.dta"
+	* ? unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
-	rename 			pid manage_rght_b
-	rename			gender gender_mgmt_b
-	rename			age age_mgmt_b
-	rename			edu edu_mgmt_b
-
-	gen 			two_mgmt = 1 if manage_rght_a != . & manage_rght_b != .
+	rename 			id_code managerc
+	rename 			ag_d01_2b id_code 
+	
+	rename 			gender gender_mgmt_c
+	rename 			age age_mgmt_c
+	
+*** NEED TO ADD EDUCATION 	
+	
+* merge in age and gender for manager d 	
+	merge m:1 		hhid pid using "$`export'/hh_mod_b_19.dta"
+	* ? unmatched from master 
+	
+	drop 			if _merge == 2
+	drop 			_merge
+	
+	rename 			id_code managerd
+	
+	rename 			gender gender_mgmt_d
+	rename 			age age_mgmt_d 
+	
+*** NEED TO ADD EDUCATION 	
+		
+	gen 			two_mgmt = 1 if managera != . & managerb != .
 	replace 		two_mgmt = 0 if two_mgmt ==.	
 
-
-	
-	
+	gen				multi_mgmt = 1 if managera != . & managerb != . & managerc != . & managerd != .
+	replace 		multi_mgmt = 0 if multi_mgmt == . 
 
 * **********************************************************************
 * 8 - end matter, clean up to save
 * **********************************************************************
 
-	keep  			y4_hhid plotid gardenid crop_cash soiltype swc_* slope dambo irrigation_any fert_inorg_any ///
-						fert_inorg_n insecticide_any herbicide_any fungicide_any pesticide_any labordays hirelabor_any fert_inorg_kg
-	order 			y4_hhid plotid gardenid crop_cash soiltype swc_* slope dambo irrigation_any fert_inorg_any ///
-						fert_inorg_n insecticide_any herbicide_any fungicide_any pesticide_any labordays hirelabor_any fert_inorg_kg
-
+	keep  			y4_hhid plotid gardenid irrigation_any fert_any fert_qty fert_org ///
+						 insecticide_any herbicide_any fungicide_any pesticide_any labordays hirelabor_any ///
+						 managera managerb managerc managerd gender_mgmt_a gender_mgmt_b gender_mgmt_c gender_mgmt_d /// 
+						 age_mgmt_a age_mgmt_b age_mgmt_c age_mgmt_d educ_mgmt_a educ_mgmt_b educ_mgmt_c educ_mgmt_d 
+	order 			y4_hhid plotid gardenid irrigation_any fert_any fert_qty fert_org ///
+						 insecticide_any herbicide_any fungicide_any pesticide_any labordays hirelabor_any ///
+						 managera managerb managerc managerd gender_mgmt_a gender_mgmt_b gender_mgmt_c gender_mgmt_d /// 
+						 age_mgmt_a age_mgmt_b age_mgmt_c age_mgmt_d educ_mgmt_a educ_mgmt_b educ_mgmt_c educ_mgmt_d 
 	compress
 	describe
 	summarize 
