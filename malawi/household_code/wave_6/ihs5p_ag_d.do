@@ -1,10 +1,10 @@
-* Project: WB Weather
+* Project: LSMS_ag_prod 
 * Created on: March 2024
 * Created by: alj
-* Edited on: 17 june 2024
+* Edited on: 6 November 2024
+*** A VERY BAD DAY 
 * Edited by: alj 
-* Stata v.18
-
+* Stata v.18.5 
 * does
 	* cleans crop price / sales information 
 	* directly follow from ag_d code - by JB
@@ -14,19 +14,17 @@
 	* access to MWI W6 raw data
 	
 * TO DO:
-	* done 
-	
-	* generally complete 
+	* everything
 	
 * **********************************************************************
 * 0 - setup
 * **********************************************************************
 
 * define paths
-	loc		root 	= 	"$data/household_data/malawi/wave_6/raw"	
-	loc		export 	= 	"$data/household_data/malawi/wave_6/refined"
-	loc		logout 	= 	"$data/household_data/malawi/logs"
-	loc 	temp 	= 	"$data/household_data/malawi/wave_6/tmp"
+	loc		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
+	loc		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
+	loc		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
+	loc 	temp 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/tmp"
 
 * open log
 	cap 	log			close
@@ -45,6 +43,7 @@
 	sort 			y4_hhid gardenid plotid 	
 	capture 		: noisily : isid y4_hhid gardenid plotid
 	*** some are missing?
+**# Bookmark #1
 	duplicates 		report y4_hhid gardenid plotid 
 	*** none
 
@@ -54,6 +53,12 @@
 	 
 	egen 			crop_cash = anymatch(ag_d20a ag_d20b ag_d20c ag_d20d ag_d20e), values(5/10 37/39 47) 
 	label 			variable crop_cash	"plot is planted withcash crops (tobacco, cotton, sunflower, paprika, sugar cane)"
+
+	* pretty sure we want to drop tobacco 
+	
+	egen 			tobacco =  anymatch(ag_d20a ag_d20b ag_d20c ag_d20d ag_d20e), values(5/10) 
+	drop			if tobacco == 1
+	*** 223 observations 
 	
 * **********************************************************************
 * 3 - soil and erosion and slope and wetlands
@@ -61,87 +66,19 @@
 
 * bring in spatial variables for merge merge to conversion factor database
 	merge m:1 y4_hhid using "`root'/hh_mod_a_filt_19.dta", keepusing(region district reside) assert(2 3) keep(3) nogenerate
-	*** (all) 5570 matched
-
-* soil type of plot 
-	tab 			ag_d21, missing
-	*** 26 missing
-	*** 259 other 
-	recode 			ag_d21 (4=1) if inlist(ag_d21_oth,"BETWEEN MCHENGA AND MAKANDE","BETWEEN SANDY AND MAKANDE","DAMBO SAND""MAKANDE AND MCHENGA","MAKANDE AND SANDY")
-	recode 			ag_d21 (4=2) if inlist(ag_d21_oth,"LOAM & SANDY SOIL","LOAM AND SANDY SOIL","LOAM SOIL")
-	generate 		soiltype = ag_d21 
-	label 			define soiltype 1 "Sandy" 2 "Between sandy & clay" 3 "Clay"
-	label 			values soiltype soiltype
-	label 			variable soiltype "predominant soil type of plot" 
-* need to impute missing - use region
-	bysort 			region : egen modesoil = mode(soiltype), minmode
-	replace 		soiltype = modesoil if missing(soiltype)
-	*** 26 changes made 
-	drop 			modesoil
+	*** (all) 5347 matched
 	
-* erosion control 
-	tab 			ag_d25a, missing
-	tab				ag_d25_oth
-	recode 			ag_d25a (9=1) if inlist(ag_d25_oth,"NO SOIL EROSION CONTROL")
-	recode 			ag_d25a (9=3) if inlist(ag_d25_oth,"BOX RIDGES","RIDGES")
-	recode 			ag_d25a (9=5) if inlist(ag_d25_oth,"PLANTED ELEPHANT GRASS","PLANTED GRASS SUGAR CANE","PLANTED KAPINGA","PLANTED KHONJE (SISAL)","PLANTED OTHER GRASS","PLANTED SISAL")
-	recode 			ag_d25a (9=6) if inlist(ag_d25_oth,"PLANTED BAMBOO")
-	recode 			ag_d25a (9=8) if inlist(ag_d25_oth,"WATER CHAINS","WATER WAY")
-	list 			ag_d25a ag_d25b ag_d25_oth if ag_d25_oth == "BOX RIDGES AND ELEPHANT GRASS"
-	recode 			ag_d25a (9=3) if ag_d25_oth =="BOX RIDGES AND ELEPHANT GRASS"
-	recode 			ag_d25b (9=5) if ag_d25_oth =="BOX RIDGES AND ELEPHANT GRASS"
-	recode 			ag_d25b (9=5) if inlist(ag_d25_oth,"PLANTED ELEPHANT GRASS","PLANTED SISAL")
-	***  no changes made in this process 
-	
-* make dummies for various erosion control structures 
-	egen 			swc_terrace = anymatch(ag_d25a ag_d25b), values(2)
-	label 			variable swc_terrace		"Plot has terraces to control erosion" 
-	egen 			swc_bund_ec = anymatch(ag_d25a ag_d25b), values(3)
-	label 			variable swc_bund_ec		"Plot has bunds to control erosion"
-	egen 			swc_bund_wh = anymatch(ag_d25a ag_d25b), values(7)
-	label 			variable swc_bund_wh		"Plot has bunds to harvest water"
-
-* differentiation between bunds on basis of their intended use may be an overly fine distinction for some analyses 
-	egen 			swc_bund_any = anymatch(ag_d25a ag_d25b), values(3 7)
-	label 			variable swc_bund_any "plot has bunds"
-	egen 			swc_gabion = anymatch(ag_d25a ag_d25b), values(4)
-	label 			variable swc_gabion	"plot has gabions/sandbags to control erosion"
-	egen 			swc_vetiver = anymatch(ag_d25a ag_d25b), values(5)
-	label 			variable swc_vetiver "plot has vetiver grass to control erosion"
-	egen 			swc_treebelt = anymatch(ag_d25a ag_d25b), values(6)
-	label 			variable swc_treebelt "plot has tree belts to control erosion"
-	egen 			swc_drainage = anymatch(ag_d25a ag_d25b), values(8)
-	label 			variable swc_drainage "plot has drainage ditches to control erosion"
-
-* make some overall categories 
-	egen 			swc_any = anymatch(ag_d25a ag_d25b), values(2 3 4 5 6 7 8)
-	label 			variable swc_any "plot has any erosion control structure"
-	egen 			swc_mech = anymatch(ag_d25a ag_d25b), values(2 3 4 7 8)
-	label 			variable swc_mech "plot has many mechanical erosion control structure"
-	egen 			swc_bio = anymatch(ag_d25a ag_d25b), values(5 6)
-	label 			variable swc_bio "plot has any biological erosion control measures"
-
-* slope of plot
-	tabulate 		ag_d26, missing
-	generate 		slope = ag_d26
-	label 			values slope slope
-	label 			variable slope "predominant slope of plot" 
-	bysort 			region: egen modeslope = mode(slope), minmode
-	replace 		slope = modeslope if missing(slope)
-	*** 26 changes 
-	drop 			modeslope 
-
-* plot is in dambo area
-	tabulate 		ag_d27, missing
-	generate 		dambo = 1 if ag_d27 == 1
-	replace			dambo = 0 if dambo == . 
-	label 			variable dambo "plot is in swamp/wetland" 
+* cut all code for soil and erosion - not used 	
 	
 * **********************************************************************
 * 4 - fertilizer
 * **********************************************************************
 
-* omitting kgs of organic as there is no reliable conversion factor 
+* organic 
+* binary 
+	tab 			ag_d36
+	gen				fert_org = 1 if ag_d36 == 1
+	replace			fert_org = 0 if fert_org == . 
 
 * inorganic
 	tab 			ag_d38
@@ -177,6 +114,9 @@
 	label 			variable fert_inorg_n "number of applications of inorganic fertilizer on plot"
 
 	drop 			fert_inorg1 fert_inorg2 fert_inorg_kg1 fert_inorg_kg2
+	
+	
+	*** THIS IS NOT THE CORRECT VARIABLE FOR FERTILIZER 
 	
 * **********************************************************************
 * 5 - irrigation
@@ -216,7 +156,6 @@
 						| (!missing(ag_d41e) & !missing(ag_d41f) & !missing(ag_d41g)))
 	label 			variable pesticide_any	"any pesticide was applied on plot" 
 	
-
 * **********************************************************************
 * 7 - labor days
 * **********************************************************************
@@ -316,10 +255,17 @@
 * hire labor dummy
 	generate 			hirelabor_any = (hirelbrdays>0)
 	label 				variable hirelabor_any	"any labor hired on plot" 
+	
+* add value of hired labor here
+	adgaadsg
+	ag_d47c ag_d48c 
+	
 
 * the cover crop and tillage questions are not available in IHS3
 * not included here in line with that
-* and we do not really use in this project
+
+
+*** ANNA STOP HERE UPDATE FROM HERE DOWN **** 
 
 * **********************************************************************
 * 8 - end matter, clean up to save
