@@ -19,20 +19,20 @@
 * **********************************************************************
 
 * define paths
-	loc		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
-	loc		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
-	loc		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
+	global		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
+	global		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
+	global		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
 
 * open log
 	cap 	log			close
-	log 	using 		"`logout'/mwi_hh_mod_b19", append
+	log 	using 		"$logout/mwi_hh_mod_b19", append
 
 * **********************************************************************
 * 1 - clean plot area 
 * **********************************************************************
 
 * load data
-	use 			"`root'/hh_mod_b_19.dta", clear
+	use 			"$root/hh_mod_b_19.dta", clear
 
 	* rename variables			
 	rename 			hh_b03 gender
@@ -52,7 +52,7 @@ compress
 	summarize 
 	
 * save data
-	save 			"`export'/hh_mod_b_19.dta", replace
+	save 			"$export/hh_mod_b_19.dta", replace
 	
 * close the log
 	log	close
