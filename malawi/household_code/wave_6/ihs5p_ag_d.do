@@ -4,30 +4,35 @@
 * Edited on: 7 November 2024
 * Edited by: alj 
 * Stata v.18.5 
+
 * does
-	* cleans crop price / sales information 
+	* cleans:
+		* fertilizer (any inorg, kgs inorg, any org)
+		* pesticide, herbicide, etc. 
+		* labor
+		* irrigation
+		* gender etc. individual manager 
 	* directly follow from ag_d code - by JB
 	
 * assumes
 	* access to MWI W6 raw data
 	
 * TO DO:
-	* PATHWAYS FUCKED AT LINE 302
-	* need to add education at line 317
+	* done - i think 
 	
 * **********************************************************************
 * 0 - setup
 * **********************************************************************
 
 * define paths
-	loc		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
-	loc		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
-	loc		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
-	loc 	temp 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/tmp"
+	global		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
+	global		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
+	global		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
+	global	 	temp 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/tmp"
 	
 * open log
 	cap 	log			close
-	log 	using 		"`logout'/mwi_ag_mod_d_19", append
+	log 	using 		"$logout/mwi_ag_mod_d_19", append
 
 
 * **********************************************************************
@@ -35,7 +40,7 @@
 * **********************************************************************
 
 * load data
-	use 			"`root'/ag_mod_d_19.dta", clear
+	use 			"$root/ag_mod_d_19.dta", clear
 
 	describe 
 	sort 			y4_hhid gardenid plotid 	
@@ -58,7 +63,7 @@
 * **********************************************************************
 
 * bring in spatial variables for merge merge to conversion factor database
-	merge m:1 y4_hhid using "`root'/hh_mod_a_filt_19.dta", keepusing(region district reside) assert(2 3) keep(3) nogenerate
+	merge m:1 y4_hhid using "$root/hh_mod_a_filt_19.dta", keepusing(region district reside) assert(2 3) keep(3) nogenerate
 	*** (all) 5347 matched
 	
 * cut all code for soil and erosion - not used 	
@@ -300,9 +305,7 @@
 
 * merge in age and gender for decision maker a 
 	merge m:1 		y4_hhid id_code using "$export/hh_mod_b_19.dta"
-	* ?  unmatched from master 
-	
-	adfa
+	* none unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -311,8 +314,8 @@
 	rename 			age age_mgmt_a
 	
 * merge in education for decision maker a 
-	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
-	* ?  unmatched from master 
+	merge m:1 		y4_hhid id_code using "$export/hh_mod_c_19.dta"
+	* 27 unmatched from master 
 	
 	rename			edu educ_mgmt_a
 	
@@ -323,39 +326,39 @@
 	rename 			ag_d01_1 id_code
 	
 * merge in age and gender 	
-	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_b_19.dta"
-	* ? unmatched from master 
+	merge m:1 		y4_hhid id_code using "$export/hh_mod_b_19.dta"
+	* 595 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
 * merge in education for decision maker b 
-	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
-	* ?  unmatched from master 
+	merge m:1 		y4_hhid id_code using "$export/hh_mod_c_19.dta"
+	* 595  unmatched from master 
 	
-	rename 			educ educ_mgmt_b
+	rename 			edu educ_mgmt_b
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
 	rename 			id_code managerb
-	rename 			ag_d01_2a managerc
+	rename 			ag_d01_2a id_code
 	
 	rename 			gender gender_mgmt_b
 	rename 			age age_mgmt_b 
 	
 * merge in age and gender for manager c 
-	merge m:1 		hhid pid using "$`export'/hh_mod_b_19.dta"
-	* ? unmatched from master 
+	merge m:1 		y4_hhid id_code using "$export/hh_mod_b_19.dta"
+	* 2332 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 	
 	* merge in education for decision maker c 
-	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
-	* ?  unmatched from master 
+	merge m:1 		y4_hhid id_code using "$export/hh_mod_c_19.dta"
+	* 2332  unmatched from master 
 	
-	rename 			educ educ_mgmt_c
+	rename 			edu educ_mgmt_c
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -368,17 +371,17 @@
 	
 	
 * merge in age and gender for manager d 	
-	merge m:1 		hhid pid using "$`export'/hh_mod_b_19.dta"
-	* ? unmatched from master 
+	merge m:1 		y4_hhid id_code  using "$export/hh_mod_b_19.dta"
+	* 4912 unmatched from master 
 	
 	drop 			if _merge == 2
 	drop 			_merge
 
 * merge in education for decision maker b 
-	merge m:1 		y4_hhid id_code using "$`export'/hh_mod_c_19.dta"
-	* ?  unmatched from master 
+	merge m:1 		y4_hhid id_code using "$export/hh_mod_c_19.dta"
+	* 4912  unmatched from master 
 	
-	rename 			educ educ_mgmt_d
+	rename 			edu educ_mgmt_d
 	
 	drop 			if _merge == 2
 	drop 			_merge
@@ -411,7 +414,7 @@
 	summarize 
 	
 * save data
-	save 			"`export'/ag_mod_d_19.dta", replace
+	save 			"$export/ag_mod_d_19.dta", replace
 
 * close the log
 	log			close
