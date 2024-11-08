@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: rg
-* Edited on: 6 Nov 24
+* Edited on: 8 Nov 24
 * Edited by: rg
 * Stata v.18.0, mac
 
@@ -21,7 +21,7 @@
 	* access to cleaned AGSEC1
 
 * TO DO:
-	* tfor months, there are values > 12
+	* done
 
 	
 ***********************************************************************
@@ -62,6 +62,62 @@
 	rename			a5bq6f harv_stp_month
 	rename			a5bq6f_1 harv_stp_year
 	
+	tabulate 		harv_str_month 
+	tabulate 		harv_str_year
+	tabulate 		harv_str_month if harv_str_year == 2015
+
+	replace 		harv_str_year = 2014 if harv_str_month < 13
+	replace 		harv_str_year = 2015 if harv_str_month > 12 & harv_str_year == 2014
+	
+	drop if			harv_str_month == 26 
+	mdesc 			harv_str_month 
+	mdesc 			harv_str_month if harv_str_month ==. & harv_str_year == 2015
+	*** there are 121 missing values in 2015
+	
+	mdesc 			harv_str_year 
+	*** one observation missing
+	
+	drop if missing(harv_str_year) | missing(harv_str_month) | harv_str_year != 2015
+	*** 354 observations deleted
+	*** keeping observations in 2015
+	
+	tabulate 		harv_str_year
+	tabulate 		harv_str_month 
+	
+* subtract 12 to harvmonth 
+	replace 		harv_str_month = harv_str_month - 12
+	tabulate 		harv_str_month	
+	*** harvest months range from 1 to 12
+	
+	
+* do the same for harv_stp_month
+
+	tabulate 		harv_stp_month 
+	tabulate 		harv_stp_year
+	tabulate 		harv_stp_month if harv_stp_year == 2015
+
+	replace 		harv_stp_year = 2014 if harv_stp_month < 13
+	replace 		harv_stp_year = 2015 if harv_stp_month > 12 & harv_stp_year == 2014
+	
+	drop if			harv_stp_month == 26 | harv_stp_month == 27
+	mdesc 			harv_stp_month 
+	mdesc 			harv_stp_month if harv_stp_month ==. & harv_stp_year == 2015
+	*** there are 32 missing values in 2015
+	
+	mdesc 			harv_stp_year 
+	
+	drop if missing(harv_stp_year) | missing(harv_stp_month) | harv_stp_year != 2015
+	*** 38 observations deleted
+	*** keeping observations in 2015
+	
+	tabulate 		harv_stp_year
+	tabulate 		harv_stp_month 
+	
+* subtract 12 to harvmonth 
+	replace 		harv_stp_month = harv_stp_month - 12
+	tabulate 		harv_stp_month	
+	*** months range from 1 to 12
+
 	
 * drop observations from plots that did not harvest because crop was immature
 	drop 			if a5bq5_2 == 1
@@ -75,13 +131,8 @@
 	
 * drop cropid is other, fallow, pasture, and trees
 	drop 			if cropid > 669
-	*** 1,981 observations dropped
+	*** 1,945 observations dropped
 	
-	
-* replace missing cropharvests with 0
-	replace 		a5bq6a = 0 if a5bq6a == .
-	*** 0 changed to zero
-
 * missing prcid and pltid don't allow for unique id, drop missing
 	drop			if prcid == .
 	drop			if pltid == .
@@ -108,14 +159,14 @@
 	
 	merge m:1 		cropid unit condition using ///
 						"$conv/ValidCropUnitConditionCombinations.dta" 
-	*** unmatched 152 from master 
-	*** unmatched 764 from using
-	*** total unmatched, 916
+	*** unmatched 146 from master 
+	*** unmatched 771 from using
+	*** total unmatched, 917
 	
 	
 * drop from using
 	drop 			if _merge == 2
-	** 764 obs dropped
+	** 771 obs dropped
 
 * how many unmatched had a harvest of 0
 	tab 			a5bq6a if _merge == 1
@@ -223,7 +274,7 @@
 	*** mean 252, max 90,000
 	
 	drop 			if cropid == 530
-	*** 28 observatinos dropped (tobacco)
+	*** 26 observatinos dropped (tobacco)
 	
 
 ***********************************************************************

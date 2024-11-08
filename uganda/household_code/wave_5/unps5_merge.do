@@ -1,12 +1,17 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 12 Oct 2024
+* Edited on: 8 Nov 2024
 * Edited by: rg
 * Stata v.18, mac
 
 * does
-	
+	* merges together all cleaned data sets
+	* imputs area planted to crops
+	* imputs harvest quantity
+	* generates variables to identify crop, country, wave
+	* outputs cleaned plot-crop data for merging with weather data
+
 
 * assumes
 	* previously cleaned household datasets
@@ -306,7 +311,7 @@
 	gen				wave = 5
 	lab var			wave "Survey wave"
 	
-	*replace			year = 2015
+	gen				year = 2015
 	
 ***********************************************************************
 **# 7 - harvest month
@@ -323,7 +328,7 @@
 			(mean)		plnt_month harv_str_month harv_stp_month plnt_year  ///
 						harv_str_year harv_stp_year, ///
 						by(pltid prcid hhid country admin_1 admin_2 ///
-						admin_3 admin_4 ea survey wave wgt15 ///
+						admin_3 admin_4 ea survey wave year wgt15 ///
 						rotate prclsize crop ///
 						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
 						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
@@ -370,7 +375,7 @@
 
 * order variables
 	order			pltid prcid hhid country admin_1 admin_2 ///
-						admin_3 admin_4 ea survey wave wgt15 ///
+						admin_3 admin_4 ea survey wave year wgt15 ///
 						rotate prclsize crop season ///
 						harv_qty crop_area yield intrcrp seed_qty seed_type ///
 						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
