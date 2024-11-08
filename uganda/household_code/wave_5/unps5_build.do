@@ -1,13 +1,15 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: jdm
-* Edited on: 24 May 24
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Sep 2024
+* Created by: rg
+* Edited on: 8 Nov 2024
+* Edited by: rg
+* Stata v.18, mac
 
 * does
-	* merges weather data into unps5 household data
+	* merges weather data into unps4 household data
 	* does this for north and south seperately
+	* outputs complete wave 5 plot-crop data for building panel
+
 
 * assumes
 	* cleaned UNPS 5 data
@@ -17,23 +19,23 @@
 	* done
 
 	
-* **********************************************************************
-* 0 - setup
-* **********************************************************************
+***********************************************************************
+**# 0 - setup
+***********************************************************************
 
 	global 	rootw  		"$data/weather_data/uganda/wave_5/refined/unpsy5_up"  
-	global  rooth 		"$data/household_data/uganda/wave_5/refined"
-	global  export 		"$data/merged_data/uganda/wave_5"
-	global 	logout 		"$data/merged_data/uganda/logs"
+	global  rooth 		"$data/lsms_ag_prod_data/refined_data/uganda/wave_5"
+	global  export 		"$data/lsms_ag_prod_data/merged_data/uganda/wave_5"
+	global 	logout 		"$data/lsms_ag_prod_data/merged_data/uganda/logs"
 
 * open log	
 	cap log close
 	log 	using 		"$logout/unps5_build", append
 
 	
-* **********************************************************************
-* 1 - merge northern household data with rainfall data
-* **********************************************************************
+***********************************************************************
+**# 1 - merge northern household data with rainfall data
+***********************************************************************
 
 * import the .dta houeshold file
 	use 		"$rooth/hhfinal_unps5.dta", clear
@@ -52,7 +54,7 @@
 	foreach 	file in `fileList' {	
 	
 		* merge weather data with household data
-			merge 	1:1 hh using "$rootw/`file'"	
+			merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -127,7 +129,7 @@
 	foreach 	file in `fileList' {	
 	
 	* merge weather data with household data
-		merge 	1:1 hh using "$rootw/`file'"	
+		merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -185,7 +187,7 @@
 }
 
 * save file
-	isid				hh
+	isid				hh pltid prcid crop
 	
 	qui: compress
 	
@@ -213,7 +215,7 @@
 	foreach 	file in `fileList' {	
 	
 		* merge weather data with household data
-			merge 	1:1 hh using "$rootw/`file'"	
+			merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -288,7 +290,7 @@
 	foreach 	file in `fileList' {	
 	
 	* merge weather data with household data
-		merge 	1:1 hh using "$rootw/`file'"	
+		merge 	m:1 hh using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -346,7 +348,7 @@
 }
 
 * save file
-	isid				hh
+	isid				hh pltid prcid crop 
 	
 	qui: compress
 	

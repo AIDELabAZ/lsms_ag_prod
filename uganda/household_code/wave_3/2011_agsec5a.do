@@ -45,6 +45,11 @@
 
 * import wave 3 season 1
 	use 			"$root/2011_AGSEC5A.dta", clear
+
+* unlike other waves, HHID is a numeric here
+	format 			%18.0g HHID
+	tostring		HHID, gen(hhid_strg) format(%18.0g)
+	*** keeping this one to match hhid weather data format in build file.
 	
 	rename 			HHID hhid
 	rename 			cropID cropid
@@ -183,7 +188,7 @@
 	drop 			if cropid == 530
 	*** 25 obs dropped
 	
-	keep 			hhid prcid pltid productionID cropid harv_str_month ///
+	keep 			hhid hhid_strg prcid pltid productionID cropid harv_str_month ///
 					 harv_stp_month  harv_qty plt_shck harv_miss
 
 * collapse to hhid prcid pltid cropid
@@ -191,7 +196,7 @@
 
 	collapse 		(sum) harv_qty ///
 					(mean) harv_str_month  harv_stp_month, ///
-						by(hhid prcid pltid cropid plt_shck harv_miss)
+						by(hhid hhid_strg prcid pltid cropid plt_shck harv_miss)
 						
 	* goes from 8,295 to 7,253		
 	

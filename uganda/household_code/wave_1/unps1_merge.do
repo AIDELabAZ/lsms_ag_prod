@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 2 Nov 2024
+* Edited on: 8 Nov 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -335,6 +335,16 @@
 **# 7 - harvest month
 ***********************************************************************
 
+* merge in harvest season
+	merge			m:1 county using "$root/harv_month", force
+	drop			if _merge == 2
+	drop			_merge
+	
+	replace			season = 0 if season == 1 & district == 211
+
+* merge in geovars
+	merge			m:1 hhid using "$root/2009_geovars", force
+	keep			if _merge == 3
 * rename variables so they match wave 4 
 	rename 				ag_shck ag_shock
 	rename 				hh_shck hh_shock

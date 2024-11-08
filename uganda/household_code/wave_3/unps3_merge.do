@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 6 Nov 2024
+* Edited on: 8 Nov 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -323,7 +323,7 @@
 	gen				wave = 3
 	lab var			wave "Survey wave"
 	
-	*replace			year = 2011
+	gen 			year = 2011
 	
 ***********************************************************************
 **# 7 - harvest month
@@ -339,8 +339,8 @@
 						irr_any pest_any herb_any harv_miss plt_shck ///
 			(mean)		plnt_month harv_str_month harv_stp_month plnt_year  ///
 						, ///
-						by(pltid prcid hhid country admin_1 admin_2 ///
-						admin_3 admin_4 ea survey wave wgt11 ///
+						by(pltid prcid hhid hhid_strg country admin_1 admin_2 ///
+						admin_3 admin_4 ea survey wave year wgt11 ///
 						prclsize crop ///
 						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
 						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
@@ -386,9 +386,13 @@
 **# 8 - end matter
 ***********************************************************************
 
+* rename variable so hhid matched when merging weather data
+	rename 			hhid HHID
+	rename 			hhid_strg hhid 
+
 * order variables
 	order			pltid prcid hhid country admin_1 admin_2 ///
-						admin_3 admin_4 ea survey wave wgt11 ///
+						admin_3 admin_4 ea survey wave year wgt11 ///
 						prclsize crop season ///
 						harv_qty crop_area yield intrcrp seed_qty seed_type ///
 						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///

@@ -327,7 +327,7 @@
 						irr_any pest_any herb_any harv_miss plt_shck ///
 			(mean)		plnt_month harv_str_month harv_stp_month plnt_year  ///
 						harv_str_year harv_stp_year, ///
-						by(pltid prcid hhid country admin_1 admin_2 ///
+						by(pltid prcid hhid hh country admin_1 admin_2 ///
 						admin_3 admin_4 ea survey wave year wgt15 ///
 						rotate prclsize crop ///
 						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
@@ -374,7 +374,7 @@
 ***********************************************************************
 
 * order variables
-	order			pltid prcid hhid country admin_1 admin_2 ///
+	order			pltid prcid hhid hh country admin_1 admin_2 ///
 						admin_3 admin_4 ea survey wave year wgt15 ///
 						rotate prclsize crop season ///
 						harv_qty crop_area yield intrcrp seed_qty seed_type ///

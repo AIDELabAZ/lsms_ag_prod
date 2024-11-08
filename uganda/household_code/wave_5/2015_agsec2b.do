@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 31 Oct 2024
+* Edited on: 8 Nov 2024
 * Edited by: rg
 * Stata v.18, mac
 
@@ -221,7 +221,7 @@
 ***********************************************************************
 	
 * keep only necessary variables
-	keep 			hhid hh_agric prcid admin_?  wgt15 hwgt_W4_W5 ///
+	keep 			hhid hh hh_agric prcid admin_?  wgt15 hwgt_W4_W5 ///
 					prclsize irr_any ea rotate ownshp_rght_a ownshp_rght_b ///
 					gender_own_a age_own_a edu_own_a gender_own_b ///
 					age_own_b edu_own_b two_own tenure sector
