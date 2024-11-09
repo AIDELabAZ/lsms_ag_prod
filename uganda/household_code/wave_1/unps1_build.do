@@ -1,13 +1,14 @@
-* Project: WB Weather
-* Created on: Aug 2020
-* Created by: ek
-* Edited on: 6 November 2024
-* Edited by: alj
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Sep 2024
+* Created by: rg
+* Edited on: 8 Nov 2024
+* Edited by: rg
+* Stata v.18.0, mac
 
 * does
-	* merges weather data into unps1 household data
+	* merges weather data into unps4 household data
 	* does this for north and south seperately
+	* outputs complete wave 1 plot-crop data for building panel
 
 * assumes
 	* cleaned GHSY1 data
@@ -15,7 +16,7 @@
 
 * TO DO:
 	* complete
-	* look for *** to see where I think we need to change things
+
 
 	
 * **********************************************************************
@@ -23,10 +24,10 @@
 * **********************************************************************
 
 * define paths
-	global			rootw 	= 	"$data/weather_data/uganda/wave_1/refined/unpsy1_up"
-	global			rooth 	= 	"$data/household_data/uganda/wave_1/refined"
-	global			export 	= 	"$data/merged_data/uganda/wave_1"
-	global			logout 	= 	"$data/merged_data/uganda/logs"
+	global 	rootw  		"$data/weather_data/uganda/wave_1/refined/unpsy1_up"  
+	global  rooth 		"$data/lsms_ag_prod_data/refined_data/uganda/wave_1"
+	global  export 		"$data/lsms_ag_prod_data/merged_data/uganda/wave_1"
+	global 	logout 		"$data/lsms_ag_prod_data/merged_data/uganda/logs"
 
 * open log	
 	cap log close
@@ -43,10 +44,6 @@
 *keep northern	
 	keep if		season == 1
 	
-*** MAYBE CHANGES NEEDED HERE *** 
-*** DID WE HAVE A SEASON ISSUE WITH W1? I THINK WE'RE OKAY???
-* LOOK TO LINE 46 IN W4	
-	
 * generate variable to record data source
 	gen 		data = "unps1"
 	lab var 	data "Data Source"
@@ -58,11 +55,8 @@
 	foreach 	file in `fileList' {	
 	
 		* merge weather data with household data
-			merge 	1:1 hhid using "$rootw/`file'"		
-			
-*** MAYBE CHANGES NEEDED HERE*** 
-*** NEED TO CHANGE ALL THE 1:1 TO M:1 *** 			
-	
+			merge 	m:1 hhid using "$rootw/`file'"		
+				
 		* drop files that did not merge
 			drop 	if 	_merge != 3
 			drop 		_merge
@@ -136,7 +130,7 @@
 	foreach 	file in `fileList' {	
 	
 	* merge weather data with household data
-		merge 	1:1 hhid using "$rootw/`file'"	
+		merge 	m:1 hhid using "$rootw/`file'"	
 		
 		*** MAYBE CHANGES NEEDED HERE*** 
 		*** 1:1 TO M:1 AGAIN *** 
@@ -197,7 +191,7 @@
 }
 
 * save file
-	isid				hhid
+	isid				hhid crop pltid prcid
 
 	qui: compress
 	
@@ -225,10 +219,7 @@
 	foreach 	file in `fileList' {	
 	
 		* merge weather data with household data
-			merge 	1:1 hhid using "$rootw/`file'"	
-			
-		*** MAYBE CHANGES NEEDED HERE*** 
-		*** 1:1 TO M:1 AGAIN *** 
+			merge 	m:1 hhid using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -303,10 +294,7 @@
 	foreach 	file in `fileList' {	
 	
 	* merge weather data with household data
-		merge 	1:1 hhid using "$rootw/`file'"	
-		
-		*** MAYBE CHANGES NEEDED HERE*** 
-		*** 1:1 TO M:1 AGAIN *** 
+		merge 	m:1 hhid using "$rootw/`file'"	
 	
 		* drop files that did not merge
 			drop 	if 	_merge != 3
@@ -364,7 +352,7 @@
 }
 
 * save file
-	isid				hhid
+	isid				hhid crop prcid pltid
 	
 	qui: compress
 	

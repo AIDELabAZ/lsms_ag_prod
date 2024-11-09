@@ -51,7 +51,8 @@
 	rename 			h1aq4b admin_4
 	rename 			hh_status hh_status2010
 	***	district variables not labeled in this wave, just coded
-
+	rename 			h1aq2b county
+	
 	rename 			comm ea 
 	destring 		ea, replace 
 	
@@ -69,7 +70,7 @@
 ************************************************************************
 
 	keep 			hhid admin_? ea sector hh_status2010 /// 
-					spitoff09_10 spitoff10_11 wgt10
+					spitoff09_10 spitoff10_11 wgt10 county
 
 	order 			hhid hh_status2010 admin_1 admin_2 admin_3 admin_4 ///
 					sector wgt10 spitoff09_10 spitoff10_11 ea

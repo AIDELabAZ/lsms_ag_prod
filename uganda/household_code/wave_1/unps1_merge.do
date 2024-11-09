@@ -16,7 +16,7 @@
 	* previously cleaned household datasets
 
 * TO DO:
-	* everything
+	*line 338, merging harv_month file. There are 3,303 unmatched from master.
 	
 
 ***********************************************************************
@@ -338,19 +338,21 @@
 * merge in harvest season
 	merge			m:1 county using "$root/harv_month", force
 	drop			if _merge == 2
+	*** there are 3,303 observations unmatched from master
+	
+	distinct 		county if _merge == 1
+	*** 73 counties are not included in the using file
+	
 	drop			_merge
 	
-	replace			season = 0 if season == 1 & district == 211
+	replace			season = 0 if season == 1 & admin_2 == 211
 
-* merge in geovars
-	merge			m:1 hhid using "$root/2009_geovars", force
-	keep			if _merge == 3
+
 * rename variables so they match wave 4 
 	rename 				ag_shck ag_shock
 	rename 				hh_shck hh_shock
 
 * in this wave seed_qty is not asked, so we kept seed value 
-
 
 
 * collapse to plot-crop level
@@ -364,7 +366,7 @@
 						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
 						sector hh_size lvstck sanml pltry electric ag_shock ///
 						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
-						sq4 sq5 sq6 sq7)
+						sq4 sq5 sq6 sq7 season harv)
 						
 * tenure has values greater than 1
 	replace 			tenure = 1 if tenure > 1
@@ -382,25 +384,7 @@
 * round to nearest integer
 	*replace			plnt = round(plnt,1)
 	*lab var			plnt "Start of planting month"	
-	
-* generate average harvest month for district
-*	egen			harv = mean(harv_str_month), by(admin_2)
-	
-* round to nearest integer
-*	replace			harv = round(harv,1)
-*	lab var			harv "Start of harvest month"					
-
-* create "north"/"south" dummy
-*	gen				season = 0 if harv == 6 | harv == 7
-*	replace			season = 1 if season == .
-*	lab def			season 0 "South" 1 "North"
-*	lab val			season season
-*	lab var			season "South/North season"
-	
-* drop month/year
-	*drop			plnt_month plnt_year harv_str_month ///
-						harv_str_year harv_stp_month harv_stp_year
-	
+		
 ***********************************************************************
 **# 8 - end matter
 ***********************************************************************
@@ -408,7 +392,7 @@
 * order variables
 	order			pltid prcid hhid country admin_1 admin_2 ///
 						admin_3 admin_4 ea survey wave year wgt09 ///
-						prclsize crop  ///
+						prclsize crop season ///
 						harv_qty crop_area yield intrcrp seed_vle seed_type ///
 						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///
 						irr_any pest_any herb_any harv_miss plt_shck ///
@@ -416,7 +400,7 @@
 						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
 						sector hh_size lvstck sanml pltry electric ag_shock ///
 						hh_shock dist_road dist_pop aez elevat sq1 sq2 sq3 ///
-						sq4 sq5 sq6 sq7							
+						sq4 sq5 sq6 sq7					
 	
 	lab var				harv_qty "Harvest quantity (kg)"
 	lab var				crop_area "Area planted (ha)"

@@ -1,6 +1,6 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
-* Created by: 4 Oct 24
+* Created by: 8 Nov 24
 * Edited by: rg
 * Stata v.18.0, mac
 
@@ -53,6 +53,7 @@
 	rename			urban sector
 	rename 			hh_status hh_status2009
 	rename 			comm ea 
+	rename 			h1aq2b county
 	
 	destring 		ea, replace
 	***	district variables not labeled in this wave, just coded
@@ -67,7 +68,7 @@
 **# 2 - end matter, clean up to save
 ***********************************************************************
 
-	keep 			hhid admin_? hh_status2009 wgt09wosplits wgt09 sector ea
+	keep 			hhid admin_? hh_status2009 wgt09wosplits wgt09 sector ea county
 	order 			hhid hh_status2009 admin_1 admin_2 admin_3 admin_4 ///
 					sector wgt09 wgt09wosplits ea
 

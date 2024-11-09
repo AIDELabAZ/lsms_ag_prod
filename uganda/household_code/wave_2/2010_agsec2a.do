@@ -256,7 +256,7 @@
 					prclsize irr_any ownshp_rght_a ownshp_rght_b ///
 					member_number_a member_number_b ///
 					gender_own_a age_own_a edu_own_a gender_own_b ///
-					age_own_b edu_own_b two_own tenure ea
+					age_own_b edu_own_b two_own tenure ea county
 					
 	lab var			ownshp_rght_a "pid for first owner"
 	lab var			ownshp_rght_b "pid for second owner"	

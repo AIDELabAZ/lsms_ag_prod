@@ -6,7 +6,7 @@
 * Stata v.18, mac
 
 * does
-	* merges weather data into unps4 household data
+	* merges weather data into unps3 household data
 	* does this for north and south seperately
 	* outputs complete wave 3 plot-crop data for building panel
 

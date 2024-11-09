@@ -314,8 +314,8 @@
 	gen				wave = 2
 	lab var			wave "Survey wave"
 	
-	*replace			year = 2010
-	*** create variable year
+	gen				year = 2010
+
 ***********************************************************************
 **# 7 - harvest month
 ***********************************************************************
@@ -332,7 +332,7 @@
 						irr_any pest_any herb_any harv_miss plt_shck ///
 			(mean)		harv_str_month harv_stp_month, ///
 						by(pltid prcid hhid country admin_1 admin_2 ///
-						admin_3 admin_4 ea survey wave  wgt10 ///
+						admin_3 admin_4 ea survey wave year wgt10 ///
 						prclsize crop ///
 						ownshp_rght_a gender_own_a age_own_a edu_own_a ///
 						ownshp_rght_b gender_own_b age_own_b edu_own_b two_own ///
@@ -377,7 +377,7 @@
 
 * order variables
 	order			pltid prcid hhid country admin_1 admin_2 ///
-						admin_3 admin_4 ea survey wave wgt10  ///
+						admin_3 admin_4 ea survey wave year wgt10  ///
 						prclsize crop season ///
 						harv_qty crop_area yield intrcrp seed_vle seed_type ///
 						fert_qty fert_org fam_lab hrd_lab tot_lab tenure ///

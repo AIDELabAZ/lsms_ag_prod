@@ -1,12 +1,12 @@
-* Project: WB Weather
-* Created on: Oct 2020
-* Created by: jdm
-* Edited on: 23 May 2024
-* Edited by: jdm
-* Stata v.18
+* Project: LSMS_ag_prod
+* Created on: Sep 2024
+* Created by: rg
+* Edited on: 8 Nov 2024
+* Edited by: rg
+* Stata v.18.0, mac
 
 * does
-	* determines if regions are in "north" or "south"
+	* determines season are in "north" or "south"
 
 * assumes
 	* access to all raw data
