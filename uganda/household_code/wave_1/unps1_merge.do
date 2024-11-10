@@ -1,8 +1,8 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 8 Nov 2024
-* Edited by: rg
+* Edited on: 11 Nov 2024
+* Edited by: alj
 * Stata v.18, mac
 
 * does
@@ -17,7 +17,7 @@
 
 * TO DO:
 	*line 338, merging harv_month file. There are 3,303 unmatched from master.
-	
+	*** Rodrigo look here to see what I did	- alj
 
 ***********************************************************************
 **# 0 - setup
@@ -257,9 +257,8 @@
 	
 * plot harvest against land
 *	twoway			(scatter tot_lab crop_area)	
-	*** some putliers, Anna told me to impute those seven observations
+	*** some outliers, Anna told me to impute those seven observations
 
-	
 * summarize  labor prior to imputations
 	sum				tot_lab, detail
 	*** mean 245, sd 1,307, max 75,600
@@ -346,7 +345,92 @@
 	drop			_merge
 	
 	replace			season = 0 if season == 1 & admin_2 == 211
+	
+* try to replace identical identifies - so if admin_1 - 4 are the same, and ea 
+*** Rodrigo look here to see what I did	
+*** i do not love this solution 
+	
+* create a group identifier based on location 
+	egen 			group_id = group(admin_1 admin_2 admin_3 admin_4 ea)
 
+* get the season value within each group, ignoring missing values
+	bysort 			group_id: egen season_filled = max(season)
+
+* replace missing season values with the filled value from the group
+	replace 		season = season_filled if missing(season)
+
+* clean up
+	drop 			season_filled
+	drop 			group_id
+	
+	*** after this still 2417 missing 
+
+* repeat and reduce location requirement 
+	egen 			group_id = group(admin_1 admin_2 admin_3 admin_4 )
+
+* get the season value within each group, ignoring missing values
+	bysort 			group_id: egen season_filled = max(season)
+
+* replace missing season values with the filled value from the group
+	replace 		season = season_filled if missing(season)
+
+* clean up
+	drop 			season_filled
+	drop 			group_id
+
+	*** still 2392 missing 
+	
+* repeat and reduce location requirement 
+	egen 			group_id = group(admin_1 admin_2 admin_3 )
+
+* get the season value within each group, ignoring missing values
+	bysort 			group_id: egen season_filled = max(season)
+
+* replace missing season values with the filled value from the group
+	replace 		season = season_filled if missing(season)
+
+* clean up
+	drop 			season_filled
+	drop 			group_id
+	
+	*** down to 1859 missing 
+	
+* repeat and reduce location requirement 
+	egen 			group_id = group(admin_1 admin_2 )
+
+* get the season value within each group, ignoring missing values
+	bysort 			group_id: egen season_filled = max(season)
+
+* replace missing season values with the filled value from the group
+	replace 		season = season_filled if missing(season)
+
+* clean up
+	drop 			season_filled
+	drop 			group_id
+		
+	*** better, only 270 missing 
+	
+* repeat and reduce location requirement 
+	egen 			group_id = group(admin_1 )
+
+* get the season value within each group, ignoring missing values
+	bysort 			group_id: egen season_filled = max(season)
+
+* replace missing season values with the filled value from the group
+	replace 		season = season_filled if missing(season)
+
+* clean up
+	drop 			season_filled
+	drop 			group_id	
+	
+	*** 22 missing, this is probably the best that we're going to get 
+
+* above we replace a bunch of season to missing based on admin2 location
+* we'll replace these 22 as well 	
+	replace			season = 0 if season == . 
+
+*** 10 Nov 2024: alj not super pleased with this solution, but fine temporary
+*** looking into as a larger issue with matching 	
 
 * rename variables so they match wave 4 
 	rename 				ag_shck ag_shock
