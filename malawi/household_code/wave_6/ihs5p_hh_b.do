@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: March 2024
 * Created by: alj
-* Edited on: 7 November 2024
+* Edited on: 11 November 2024
 * Edited by: alj 
 * Stata v.18.5 
 
@@ -28,23 +28,31 @@
 	log 	using 		"$logout/mwi_hh_mod_b19", append
 
 * **********************************************************************
-* 1 - clean plot area 
+* 1 - clean person traits 
 * **********************************************************************
 
 * load data
 	use 			"$root/hh_mod_b_19.dta", clear
 
-	* rename variables			
+* rename variables			
 	rename 			hh_b03 gender
 	rename 			hh_b05a age
+	
+* for reece 
+* gender of houeshold head 
+
+	gen 			hh_head_gender = . 
+	replace			hh_head_gender = gender if hh_b04 == 1
+	bys y4_hhid: 	egen hh_head_gender_all = max(hh_head_gender)
+	replace			hh_head_gender = hh_head_gender_all if hh_head_gender == .
 	
 ***********************************************************************
 ** 2 - output person data for merge with ag
 ***********************************************************************
 	
-	keep 			y4_hhid PID id_code gender age 
+	keep 			y4_hhid PID id_code gender age hh_head_gender
 	
-	order			y4_hhid PID id_code gender age 
+	order			y4_hhid PID id_code gender age hh_head_gender
 
 	
 compress
