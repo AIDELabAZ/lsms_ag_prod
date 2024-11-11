@@ -1,38 +1,39 @@
 * Project: WB Weather
 * Created on: Feb 2024
 * Created by: alj
-* Edited on: 17 June 2024
+* Edited on: 11 November 2024
 * Edited by: alj 
 * Stata v.18
 
 * does
-	* cleans crop plot size (gps and self-report)
+	* cleans crop plot size 
 
 * assumes
 	* access to MWI 6 raw data - PANEL
 	
 * TO DO:
-	* done
+	* done 
 
 * **********************************************************************
 * 0 - setup
 * **********************************************************************
 
 * define paths
-	loc		root 	= 	"$data/household_data/malawi/wave_6/raw"	
-	loc		export 	= 	"$data/household_data/malawi/wave_6/refined"
-	loc		logout 	= 	"$data/household_data/malawi/logs"
-
+	global		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
+	global		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
+	global		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
+	global	 	temp 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/tmp"
+	
 * open log
 	cap 	log			close
-	log 	using 		"`logout'/mwi_ag_mod_c19", append
+	log 	using 		"$logout/mwi_ag_mod_c19", append
 
 * **********************************************************************
 * 1 - clean plot area 
 * **********************************************************************
 
 * load data
-	use 			"`root'/ag_mod_c_19.dta", clear
+	use 			"$root/ag_mod_c_19.dta", clear
 	
 * drop observations with missing plot id variable or garden id variable 
 	summarize 		if missing(plotid)
@@ -59,6 +60,7 @@
 	
 * generate GPS land area of plot in hectares 
 * as a starting point, expect that GPS is more accurate than self-report 
+*** THIS IS THE ASSUMPTION EVEN IF I DON'T AGREE - GPS IS MORE ACCURATE 
 	summarize 		ag_c04c, detail 
 	generate 		gps = ag_c04c * 0.40468564 if ag_c04c!=0
 	summarize 		gps, detail
@@ -96,41 +98,27 @@
 	*** my inclincation, in reviewing, is to not trust gps 
 	*** but wb says to trust gps 
 	scatter			selfreport gps
+	*** THIS IS THE ASSUMPTION GPS > SELF REPORT 
 
 * make plotsize using GPS area if it is within reasonable range
-	generate 		plotsize = gps if gps>0.001 & gps<3
-	*** 320 missing values
-	replace			plotsize = selfreport if plotsize == . & selfreport>0.001 & selfreport<3
-	*** 298 changes
+	generate 		plotsize = gps 
+	*** 311 missing values 
+	replace			plotsize = selfreport if plotsize == . 
+	*** 299 changes
 	summarize 			selfreport gps plotsize	
-	*** we have some self-report information where we are missing plotsize 
+	*** do we have some self-report information where we are missing plotsize?
 	summarize 			selfreport if missing(plotsize), detail
+	*** nope no observations 
 
-* prepare for imputation
-* need district variables 
-	merge m:1 y4_hhid using "`root'/hh_mod_a_filt_19.dta", keepusing(district) assert (2 3) keep (3) nogenerate
-	*** all 5553 matched
-	
-* impute missing plotsizes 
-	mi 	set wide 
-	mi 				xtset, clear
-	mi 				register imputed plotsize
-	mi 				impute pmm plotsize selfreport i.district, add(1) rseed(245780) noisily dots force knn(5) bootstrap 
-	mi unset 
-
-* summarize results of imputation
-	tabulate 		mi_miss	
-	*** this binary = 1 for the full set of observations where plotsize is missing
-	tabstat 		gps selfreport plotsize plotsize_1_, ///
-					by(mi_miss) statistics(n mean min max) columns(statistics) longstub format(%9.3g) 			
+* merge  district variables 
+	merge m:1 y4_hhid using "$root/hh_mod_a_filt_19.dta", keepusing(district) assert (2 3) keep (3) nogenerate
+	*** all 5553 matched	
 					
 * cannot do anyting about missing plot sizes from above 
-	list 			gps selfreport plotsize if missing(plotsize_1_), sep(0)
-	drop 			if missing(plotsize_1_)
+	drop if plotsize == . 
 	* drop 12 observations 
 	
 * manipulate variables for export
-	rename 			(plotsize plotsize_1_)(plotsize_raw plotsize)
 	label 			variable plotsize		"Plot Size (ha)"
 	
 	pwcorr 			plotsize gps selfreport 
@@ -148,7 +136,7 @@
 	summarize 
 	
 * save data
-	save 			"`export'/ag_mod_c_19.dta", replace
+	save 			"$export/ag_mod_c_19.dta", replace
 
 * close the log
 	log			close
