@@ -1,8 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: March 2024
 * Created by: alj
-* Edited on: 6 November 2024
-*** A VERY BAD DAY 
+* Edited on: 12 November 2024
 * Edited by: alj 
 * Stata v.18.5 
 
@@ -23,10 +22,10 @@
 * **********************************************************************
 
 * define paths
-	loc		root 	= 	"$data/household_data/malawi/wave_6/raw"	
-	loc		export 	= 	"$data/household_data/malawi/wave_6/refined"
-	loc		logout 	= 	"$data/household_data/malawi/logs"
-	loc 	temp 	= 	"$data/household_data/malawi/wave_6/tmp"
+	global		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
+	global		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
+	global		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
+	global	 	temp 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/tmp"
 	
 * open log
 	cap 	log			close

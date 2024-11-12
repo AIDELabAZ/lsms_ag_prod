@@ -1,13 +1,14 @@
 * Project: WB Weather
 * Created on: March 2024
 * Created by: alj
-* Edited on: 3 June 2024
+* Edited on: 12 November 2024
 * Edited by: alj 
-* Stata v.18
+* Stata v.18.5
 
 * does
 	* cleans crop price / sales information 
 	* directly follow from ag_i code - by JB
+	* adapting based on rg / jdm code from uganda - wave 4 
 
 * assumes
 	* access to MWI W6 raw data
@@ -20,14 +21,14 @@
 * **********************************************************************
 
 * define paths
-	loc		root 	= 	"$data/household_data/malawi/wave_6/raw"	
-	loc		export 	= 	"$data/household_data/malawi/wave_6/refined"
-	loc		logout 	= 	"$data/household_data/malawi/logs"
-	loc 	temp 	= 	"$data/household_data/malawi/wave_6/tmp"
+	global		root 	= 	"$data/raw_lsms_data/malawi/wave_6/raw"	
+	global		export 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/wave_6"
+	global		logout 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/logs"
+	global	 	temp 	= 	"$data/lsms_ag_prod_data/refined_data/malawi/tmp"
 
 * open log
 	cap 	log			close
-	log 	using 		"`logout'/mwi_ag_mod_i_19", append
+	log 	using 		"$logout/mwi_ag_mod_i_19", append
 
 
 * **********************************************************************
@@ -35,8 +36,8 @@
 * **********************************************************************
 
 * load data
-	use 			"`root'/ag_mod_i_19.dta", clear
-	
+	use 			"$root/ag_mod_i_19.dta", clear
+
 * describe 
 	describe
 	sort 			y4_hhid crop_code
@@ -58,7 +59,7 @@
 	*** 74 observations redone
 
 * bring in spatial variables for merge merge to conversion factor database
-	merge m:1 y4_hhid using "`root'/hh_mod_a_filt_19.dta", keepusing(region district reside) assert(2 3) keep(3) nogenerate
+	merge m:1 y4_hhid using "$root/hh_mod_a_filt_19.dta", keepusing(region district reside) assert(2 3) keep(3) nogenerate
 	*** (all) 7264 matched
 	
 	gen unit_code = ag_i02b
@@ -67,7 +68,7 @@
 	replace region = region/100
 	
 * bring in conversion factor to construct quantity 
-	merge m:1 crop_code region unit_code condition using "`root'/ihs_seasonalcropconversion_factor_2020_up.dta", keep(1 3) generate(_conversion)	
+	merge m:1 crop_code region unit_code condition using "$root/ihs_seasonalcropconversion_factor_2020_up.dta", keep(1 3) generate(_conversion)	
 	*** only 1636 matched
 	tabulate 		crop_code unit_code if _conversion==1
 	drop 			_conversion
@@ -99,6 +100,9 @@
 	inspect 		crop_code
 	recode crop_code (5/10=5)(11/16=11)(17/26=17), generate(cropid)
 	*** 658 differences between crop_code and cropid
+	drop 			if crop_code == 5
+	*** 164 observations dropped 
+	*** dropping tobacco 
 
 * define cropid label for common cropid across survey rounds
 * this is adapted from file "label_cropid.do" in "tools" in MWI kitchen sink 
@@ -108,7 +112,6 @@ label define cropid
 	2 "Maize Composite/OPV"
 	3 "Maize Hybrid"
 	4 "Maize Hybrid Recycled"
-	5 "Tobacco"
 	11 "Groundnut" 
 	17 "Rice" 
 	27 "Ground Bean (Nzama)" 
@@ -145,7 +148,7 @@ label define cropid
 		
 * make sale quantity
 	generate 		quant = ag_i02a * conversion 
-	*** 5628 missing values generated
+	*** 5517 missing values generated
 	replace			quant = ag_i02a * conversion_other if quant == .
 	*** 14 changes 
 	drop 			if quant == . 
@@ -155,7 +158,6 @@ label define cropid
 	generate 		quantoutlier = ((quant > median+(3*stddev)) | (quant < median-(3*stddev)))
 	list 			cropid quant if quantoutlier==1 & !missing(quant), sepby(cropid) 
 	drop 			median stddev quantoutlier
-	*** we will do imputations with quantity / plot area 
 
 * make self-reported unit value
 	generate 		cropprice = ag_i03 / quant
@@ -172,40 +174,41 @@ label define cropid
 * **********************************************************************
 
 * make datasets with crop price information
-* in other files "ta" exists, but that is not represented in wave 5, so omitted from this process 
 
 	preserve
 		collapse (p50) p_ea = cropprice (count) n_ea=cropprice, by(cropid reside region district y4_hhid)
-		save "`temp'/ag_i1.dta", replace 
+		save "$temp/ag_i1.dta", replace 
 	restore
 	
 	preserve
 		collapse (p50) p_dst = cropprice (count) n_ta=cropprice, by(cropid reside region district)
-		save "`temp'/ag_i2.dta", replace 
+		save "$temp/ag_i2.dta", replace 
 	restore
 	
 	preserve
 		collapse (p50) p_rgn = cropprice (count) n_dst=cropprice, by(cropid reside region)
-		save "`temp'/ag_i3.dta", replace 
+		save "$temp/ag_i3.dta", replace 
 	restore
 	
 	preserve
 		collapse (p50) p_urb = cropprice (count) n_rgn=cropprice, by(cropid reside)
-		save "`temp'/ag_i4.dta", replace 
+		save "$temp/ag_i4.dta", replace 
 	restore
 	
 	preserve
 		collapse (p50) p_crop = cropprice (count) n_urb=cropprice, by(cropid)
-		save "`temp'/ag_i5.dta", replace 
+		save "$temp/ag_i5.dta", replace 
 	restore
 
 * merge price data back into dataset
-	merge m:1 cropid reside region district y4_hhid  using "`temp'/ag_i1.dta", assert(3) nogenerate
-	merge m:1 cropid reside region district       using "`temp'/ag_i2.dta", assert(3) nogenerate
-	merge m:1 cropid reside region           	  using "`temp'/ag_i3.dta", assert(3) nogenerate
-	merge m:1 cropid reside                    	  using "`temp'/ag_i4.dta", assert(3) nogenerate
-	merge m:1 cropid                           	  using "`temp'/ag_i5.dta", assert(3) nogenerate
+	merge m:1 cropid reside region district y4_hhid  using "$temp/ag_i1.dta", assert(3) nogenerate
+	merge m:1 cropid reside region district       using "$temp/ag_i2.dta", assert(3) nogenerate
+	merge m:1 cropid reside region           	  using "$temp/ag_i3.dta", assert(3) nogenerate
+	merge m:1 cropid reside                    	  using "$temp/ag_i4.dta", assert(3) nogenerate
+	merge m:1 cropid                           	  using "$temp/ag_i5.dta", assert(3) nogenerate
 
+	fdajk;aj
+	
 * make imputed price, using median price where we have at least 10 observations
 	tabstat 		n_ea p_ea n_dst p_dst n_rgn p_rgn n_urb p_urb p_crop, ///
 						by(cropid) longstub statistics(n min p50 max) columns(statistics) format(%9.3g) 
