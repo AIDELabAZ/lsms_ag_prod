@@ -1,7 +1,9 @@
-* Project: WB Weather - metric 
-* Created on: Jan 2024
-* Created by: cda
-* Stata v.18.0
+* Project: LSMS_ag_prod
+* Created on: Sep 2024
+* Created by: rg
+* Edited on: 20 Sep 2024
+* Edited by: rg
+* Stata v.18, mac
 
 * does
 	* establishes an identical workspace between users
@@ -22,10 +24,10 @@
 * **********************************************************************
 
 * set $pack to 0 to skip package installation
-	global 			pack 	1
+	global 			pack 	0
 		
 * Specify Stata version in use
-    global stataVersion 18.0    // set Stata version
+    global stataVersion 18.5    // set Stata version
     version $stataVersion
 
 * **********************************************************************
@@ -35,40 +37,25 @@
 * Define root folder globals
 
 if `"`c(username)'"' == "jdmichler" {
-        global 		code  	"C:/Users/jdmichler/git/AIDELabAZ/weather_and_agriculture"
+        global 		code  	"C:/Users/jdmichler/git/AIDELabAZ/lsms_ag_prod"
 		global 		data	"C:/Users/jdmichler/OneDrive - University of Arizona/weather_and_agriculture"
     }
-if `"`c(username)'"' == "annal" {
-        global 		code  	"C:/Users/aljosephson/git/weather_and_agriculture"
-		global 		data	"C:/Users/aljosephson/OneDrive - University of Arizona/weather_and_agriculture"
+if `"`c(username)'"' == "aljos" {
+        global 		code  	"C:/Users/aljos/git/weather_and_agriculture/lsms_ag_prod"
+		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/lsms_base"
+		
     }	
 if `"`c(username)'"' == "rodrigoguerra" {
-        global 		code  	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/Documents/GitHub/weather_and_agriculture"
-		global 		data	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/weather_and_agriculture" 
+        global 		code  	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/Documents/GitHub/lsms_ag_prod"
+		global 		data	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/weather_and_agriculture/lsms_base" 
     }
-if `"`c(username)'"' == "fvkrysbackpackpc" {
-        global 		code  	"/Users/fvkrysbackpackpc/Documents/GitHub/weather_and_agriculture"
-		global 		data	"/Users/fvkrysbackpackpc/Library/CloudStorage/OneDrive-UniversityofArizona/weather_and_agriculture"	
-    }
-if `"`c(username)'"' == "yetfl" {
-        global 		code  	"C:/Users/yetfl/OneDrive/Desktop/GitHub/weather_and_agriculture"
-		global 		data	"C:/Users/yetfl/OneDrive - University of Arizona/weather_and_agriculture"
-    }
-if `"`c(username)'"' == "rbrnhm" {
-        global 		code  	"C:/Users/rbrnhm/GitHub/weather_and_agriculture"
-		global 		data	"C:/Users/rbrnhm/OneDrive - University of Arizona/weather_and_agriculture"
-    }	
-	 if `"`c(username)'"' == "Chandrakant Agme" {
-        global 		code  	"C:/Users/Chandrakant Agme/Documents/GitHub/weather_metrics"
-		global 		data	"C:/Users/Chandrakant Agme/University of Arizona/Michler, Jeffrey David - (jdmichler) - weather_metrics"
-	 }	
 
 * **********************************************************************
 * 0 (b) - Check if any required packages are installed:
 * **********************************************************************
 
 * install packages if global is set to 1
-if $pack == 1 {
+if $pack == 0 {
 	
 	* for packages/commands, make a local containing any required packages
     * temporarily set delimiter to ; so can break the line
@@ -144,12 +131,4 @@ if $pack == 1 {
 * **********************************************************************
 * 2 - run analysis .do files
 * **********************************************************************
-/*
-	do			"$code/analysis/viz_code/sum_table.do"
-	do			"$code/analysis/viz_code/sum_vis.do"
-	do			"$code/analysis/viz_code/r2_vis.do"
-	do			"$code/analysis/viz_code/pval_vis.do"
-	do			"$code/analysis/viz_code/coeff_vis.do"
-	do			"$code/analysis/viz_code/coeff_lc_vis.do"
-	do			"$code/analysis/viz_code/coeff_mc_vis.do"
-*/
+
