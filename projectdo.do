@@ -42,12 +42,12 @@ if `"`c(username)'"' == "jdmichler" {
     }
 if `"`c(username)'"' == "aljos" {
         global 		code  	"C:/Users/aljos/git/weather_and_agriculture/lsms_ag_prod"
-		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture"
+		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/lsms_base"
 		
     }	
 if `"`c(username)'"' == "rodrigoguerra" {
         global 		code  	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/Documents/GitHub/lsms_ag_prod"
-		global 		data	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/weather_and_agriculture" 
+		global 		data	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/weather_and_agriculture/lsms_base" 
     }
 
 * **********************************************************************
@@ -55,7 +55,7 @@ if `"`c(username)'"' == "rodrigoguerra" {
 * **********************************************************************
 
 * install packages if global is set to 1
-if $pack == 1 {
+if $pack == 0 {
 	
 	* for packages/commands, make a local containing any required packages
     * temporarily set delimiter to ; so can break the line
