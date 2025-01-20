@@ -71,5 +71,25 @@
 }
 
 * estimate model 2 for yield 1
+	foreach country in Ethiopia Malawi Mali Niger Nigeria Tanzania {
+	
+	svyset ea_id_obs [pweight=pw], strata(strataid) singleunit(centered)	
+	
+	svy: reg ln_yield1 c.year if country=="`country'" 
+	local lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
+	local ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
+	*outreg2 using "${Paper1_temp}\FINAL.xls",   keep(c.year  $inputs_cp $controls_cp ) ctitle("`country'- model 1") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
+}
 
 * estimate model 2 for yield 2 
+	foreach country in Ethiopia Malawi Mali Niger Nigeria Tanzania {
+	
+	svyset ea_id_obs [pweight=pw], strata(strataid) singleunit(centered)	
+	
+	svy: reg ln_yield1 c.year if country=="`country'" 
+	local lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
+	local ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
+	*outreg2 using "${Paper1_temp}\FINAL.xls",   keep(c.year  $inputs_cp $controls_cp ) ctitle("`country'- model 1") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
+}
+
+*** RODRIGO: after c.year in the model 2 regressions, add the input variables and other control variables that we want to include
