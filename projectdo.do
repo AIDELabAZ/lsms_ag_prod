@@ -48,6 +48,7 @@ if `"`c(username)'"' == "aljos" {
 if `"`c(username)'"' == "rodrigoguerra" {
         global 		code  	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/Documents/GitHub/lsms_ag_prod"
 		global 		data	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/weather_and_agriculture/lsms_base" 
+		global 		output	"/Users/rodrigoguerra/Library/CloudStorage/OneDrive-UniversityofArizona/ag_prod" 
     }
 
 * **********************************************************************

@@ -1,7 +1,7 @@
 * Project: Rodrigo thesis
 * Created on: January 2025
 * Created by: rg
-* Edited on: 20 January 2025
+* Edited on: 21 January 2025
 * Edited by: rg
 * Stata v.18.0
 
@@ -12,9 +12,6 @@
 	* clean data all countries and rounds
 	
 * TO DO:
-	* create a folder to export results. 
-	* suggestion in the path export
-		* aggregate/descriptive_stats
 	* axis titles, legend, colors etc.
 	
 	* NOTE: try creating graphs using pytho, it might be easier 
@@ -26,7 +23,7 @@
 * define paths	
 	global 	root  		"$data/countries"
 	global 	logout 		"$data/logs"
-	*global export 		"$data/lsms_ag_prod_data/refined_data/aggregate/descriptive_stats"
+	global 	export1 	"$output/graphs&tables"
 	
 * open log	
 	cap log 		close
@@ -44,6 +41,9 @@
 **# 2 - descriptive statistics table 
 ***********************************************************************
 	
+* install outreg2 command since it is a user-written command 
+	*ssc 		install outreg2
+
 * create the table 
 	tabstat		urban harvest_kg seed_kg improved used_pesticides crop_shock /// 
 				pests_shock rain_shock drought_shock flood_shock yield_kg /// 
@@ -64,10 +64,10 @@
 
 
 * save output and then transpose 
-	*esttab 		using "$export/tabstat_results.dta", replace 
+	outreg2 	using "$output/tables/summary_stats.tex", replace stat(mean sd) ctitle("Summary Statistics")
 	
 * load results 
-	use 		"export/tabstat_results.dta", clear
+
 	
 * reshape to long format 
 	reshape		long mean sd, i(variable) j(country)
@@ -78,7 +78,7 @@
 	rename 		sd* *_sd 
 	
 * save or export 
-
+	*save 		"$output/tables/"
 
 ***********************************************************************
 **# 3 - figure - percet of plots by crop category
