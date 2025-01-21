@@ -96,15 +96,33 @@
 **# 2 (b) - model 2
 ***********************************************************************
 
+* generate log variables for inputs and controls 
+	gen 	ln_total_labor_days1 = asinh(total_labor_days1)
+	gen 	ln_total_labor_days2 = asinh(total_labor_days2)
+	
+	gen 	ln_seed_kg1 = asinh(seed_kg1)
+	gen 	ln_seed_kg2 = asinh(seed_kg2)
+	
+	gen 	ln_nitrogen_kg1 = asinh(nitrogen_kg1)
+	gen 	ln_nitrogen_kg2 = asinh(nitrogen_kg2)
+	
+* define input and control globals 
+	global 		inputs_cp1 ln_total_labor_days1 ln_seed_kg1 ln_nitrogen_kg1 
+	
+	global 		inputs_cp2 ln_total_labor_days2 ln_seed_kg2 ln_nitrogen_kg2 
+	
+	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned harv_missing
+	*** in this global they used miss_harvest_value_cp
+
 * estimate model 2 for yield 1
 	foreach country in Ethiopia Malawi Mali Niger Nigeria Tanzania {
 	
 	svyset ea_id_obs [pweight=pw], strata(strataid) singleunit(centered)	
 	
-	svy: reg ln_yield1 c.year if country=="`country'" 
+	svy: reg ln_yield1 c.year $inputs_cp1 $controls_cp if country=="`country'" 
 	local lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
-	*outreg2 using "${Paper1_temp}\FINAL.xls",   keep(c.year  $inputs_cp $controls_cp ) ctitle("`country'- model 1") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
+	outreg2 using "$export1/tables/model2/yield1.tex",   keep(c.year  $inputs_cp1 $controls_cp ) ctitle("`country'- model 2") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
 }
 
 * estimate model 2 for yield 2 
@@ -112,10 +130,10 @@
 	
 	svyset ea_id_obs [pweight=pw], strata(strataid) singleunit(centered)	
 	
-	svy: reg ln_yield1 c.year if country=="`country'" 
+	svy: reg ln_yield2 c.year $inputs_cp2 $controls_cp if country=="`country'" 
 	local lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
-	*outreg2 using "${Paper1_temp}\FINAL.xls",   keep(c.year  $inputs_cp $controls_cp ) ctitle("`country'- model 1") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
+	outreg2 using "$export1/tables/model2/yield2.tex",   keep(c.year  $inputs_cp2 $controls_cp ) ctitle("`country'- model 2") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
 }
 
 *** RODRIGO: after c.year in the model 2 regressions, add the input variables and other control variables that we want to include
