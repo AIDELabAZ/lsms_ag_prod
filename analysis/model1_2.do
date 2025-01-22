@@ -125,6 +125,7 @@
 	outreg2 using "$export1/tables/model2/yield1.tex",   keep(c.year  $inputs_cp1 $controls_cp ) ctitle("`country'- model 2") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
 }
 
+
 * estimate model 2 for yield 2 
 	foreach country in Ethiopia Malawi Mali Niger Nigeria Tanzania {
 	
