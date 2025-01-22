@@ -48,19 +48,47 @@
 **# 2 - run replication for process 1 
 ***********************************************************************
 	
+svyset ea_id_obs [pweight=pw], strata(strataid) singleunit(centered)
+	
+	
 * MODEL 1
 
 	svy: reg ln_yield1 year i.country 
 	local lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	*outreg2 using "${Paper1_temp}\FINAL.xls",   keep(c.year  $inputs_cp $controls_cp ) ctitle("Geovariables and 	weather controls") addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  replace
-local r2 = e(r2_a)
-di "`lb', `ub', `r2'"
-estimates store A
+	local r2 = e(r2_a)
+	di "`lb', `ub', `r2'"
+	estimates store A
 
 * MODEL 2
 	
+lasso linear ln_harvest_value_cp ($FE c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(8788) selection(plugin) 
+lassocoef 
+global selbaseline `e(allvars_sel)'
+global testbaseline `e(othervars_sel)'
+
+svy: reg ln_harvest_value_cp 1.Country 1.Main_crop $selbaseline 
+local lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
+local ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
+di "`lb', `ub',"
+estimates store B
+test $testbaseline
+local F1 = r(F) 
+test $inputs_cp
+global F2 = r(F)
+outreg2 using "${Paper1_temp}\FINAL.xls",   keep(c.year  $inputs_cp $controls_cp ) ctitle("Geovariables and weather controls") addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
+
+***********************************************************************
+**# 3 - run replication for process 2
+***********************************************************************
 	
+	
+
+***********************************************************************
+**# 4 - COUNTRY LEVEL MODELS
+***********************************************************************
+		
 	
 /*	
 
