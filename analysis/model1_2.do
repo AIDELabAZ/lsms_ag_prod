@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Oct 2024
 * Created by: jdm
-* Edited on: 21 Jan 24
+* Edited on: 23 Jan 25
 * Edited by:rg
 * Stata v.18.0
 
@@ -137,4 +137,31 @@
 	outreg2 using "$export1/tables/model2/yield2.tex",   keep(c.year  $inputs_cp2 $controls_cp ) ctitle("`country'- model 2") 	addstat(  Upper bound CI, `ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  append
 }
 
-*** RODRIGO: after c.year in the model 2 regressions, add the input variables and other control variables that we want to include
+***********************************************************************
+**# 3 (b) - model 3
+***********************************************************************
+
+* we have to identify the main crop of the hh
+
+* determine total harvest for each crop within hh 
+	bysort		 hh_id_obs wave crop: egen harvest_maincrop = total(harvest_kg1)
+	
+* identify the main crop 
+	bysort		hh_id_obs wave (harvest_maincrop): gen main_crop2 = crop[_N]
+	
+* rename variable 	
+	drop 		main_crop
+	rename 		main_crop2 main_crop
+	
+* attach labels
+	lab 		define main_crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
+				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
+	lab 		values main_crop main_crop
+	lab var		main_crop "Main Crop group of hh"
+	
+
+
+	
+
+
