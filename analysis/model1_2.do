@@ -1,8 +1,8 @@
 * Project: LSMS_ag_prod
-* Created on: Oct 2024
-* Created by: jdm
+* Created on: Jan 2025
+* Created by: rg
 * Edited on: 29 Jan 25
-* Edited by:rg
+* Edited by: rg
 * Stata v.18.0
 
 * does
@@ -12,7 +12,7 @@
 	* access to replication data
 	
 * TO DO:
-	*  The code for all models run, but we need to update them with the final variables 
+	*  the code for all models run, but we need to update them with the final variables 
 	* (inputs at constant prices, harvest at constant prices) and generate 
 	* a few additional variables (cluster_id, plot_manager_id, ea, etc...)
 	
@@ -32,11 +32,10 @@
 *	log using 		"$logout", append
 	*** i'm not getting this to work, but don't want to bother to fix it
 	
-
 ***********************************************************************
 **# 1 (a) - table 1 country-level baseline results using their code and zenodo mega panel 
 ***********************************************************************
-
+/*
 * we are using the data set LSMS Mega panel
 	use  		"$data/countries/aggregate/lsms_zenodo.dta", clear
 	
@@ -72,8 +71,7 @@
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 }
-
-
+*/
 ***********************************************************************
 **# 1 (b) - country-level baseline results 
 ***********************************************************************
@@ -86,11 +84,10 @@
 	gen 		ln_yield2 = asinh(yield_kg2)
 
 * generate time trend
-	sort		year
-	egen		tindex = group(year)
+*	sort		year
+*	egen		tindex = group(year)
 	
 *** NOTE DEFAULT FOR SVY IS ROBUST STANDARD ERRORS 	
-
 
 * estimate country-level for yield 1
 	erase 		"$export1/tables/country_level/yield1.tex"
@@ -788,15 +785,4 @@
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append			
 				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
-				
+* END *
