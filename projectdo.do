@@ -42,7 +42,7 @@ if `"`c(username)'"' == "jdmichler" {
     }
 if `"`c(username)'"' == "aljos" {
         global 		code  	"C:/Users/aljos/git/weather_and_agriculture/lsms_ag_prod"
-		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/lsms_base"
+		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/lsms-base"
 		global 		output	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/ag_prod" 
 		
     }	
