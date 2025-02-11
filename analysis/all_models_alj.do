@@ -230,7 +230,7 @@
 	local 		F1 = r(F) 
 	test 		$inputs_cp
 	global 		F2 = r(F)
-	outreg2 	using "$export1/tables/model2/yield.tex",  /// 
+*	outreg2 	using "$export1/tables/model2/yield.tex",  /// 
 				keep(c.year  $inputs_cp $controls_cp ) /// 
 				ctitle("Geovariables and weather controls") /// 
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
@@ -243,10 +243,13 @@
 
 * adjust values plot size 
 *	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
-				nitrogen_kg fert_USD {
+*				nitrogen_kg fert_USD {
 *					replace `var' = `var' * plot_area_GPS
 *				}
 	*** lines 41 and 42 --> baseline results do-file
+	
+	**** I DO NOT KNOW WHY THE FUCK THEY DO THIS. 
+	**** ONLY EXPLANATION: AM I MISSING A RESCALING THEY DO EARLIER BECAUSE THEY REFUSE TO RENAME ANYTHING??
 
 * we have to identify the main crop of the hh
 
@@ -328,12 +331,13 @@
 * calculate per-unit area values 
 	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
 				fert_USD {
-					replace 	`var' = `var'/plot_area_GPS
+					*replace 	`var' = `var'/plot_area_GPS
+					generate	`var'_perha	= `var'/plot_area_GPS
 				}
 				
 * generate new variables containing ln of the original variable
-	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
-				fert_USD plot_area_GPS  {
+	foreach 	var of varlist harvest_value_USD_perha total_labor_days_perha seed_kg_perha seed_USD_perha /// 
+				fert_USD_perha plot_area_GPS  {
 					gen		ln_`var' = asinh(`var')
 					lab var ln_`var' "Natural log of `var'"
 				}
@@ -359,12 +363,13 @@
 	lab var		main_crop "Main Crop group of hh"
 			
 * run model 3
-	erase 		"$export1/tables/model3/yield.tex"
-	erase 		"$export1/tables/model3/yield.txt"
+*	erase 		"$export1/tables/model3/yield.tex"
+*	erase 		"$export1/tables/model3/yield.txt"
 	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
 
-	svy: 		reg  ln_harvest_value_USD 1.Country 1.main_crop $selbaseline
+	svy: 		reg  ln_harvest_value_USD_perha 1.Country 1.main_crop $selbaseline
+	*svy: 		reg  ln_harvest_value_USD 1.Country 1.main_crop $selbaseline
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	estimates 	store C
@@ -373,12 +378,12 @@
 	*global 		test : list global(testbaseline) - global(remove)
 	*test 		$test
 	*local 		F1 = r(F)
-	outreg2 	using "$export1/tables/model3/yield.tex",  /// 
+*	outreg2 	using "$export1/tables/model3/yield.tex",  /// 
 				keep(c.year  $inputs_cp $controls_cp ) /// 
 				ctitle("Geovariables and weather controls") /// 
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
- 
+ dfdsafdas
 ***********************************************************************
 **# 5 - model 4 - hh FE 
 ***********************************************************************
