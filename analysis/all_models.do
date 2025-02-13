@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 6 Feb 25
+* Edited on: 13 Feb 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -13,6 +13,7 @@
 	
 * TO DO:
 	* fix model 4,5 and update model 6
+	* organize code structure 
 	
 	
 ***********************************************************************
@@ -192,34 +193,32 @@
 	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
 	
 	global 		weather_all v01_rf1 v02_rf1 v03_rf1 v04_rf1 v05_rf1 v06_rf1 v07_rf1 v08_rf1 v09_rf1 v10_rf1 v11_rf1 v12_rf1 v13_rf1 v14_rf1
-/*
-	global 		weather_all
+	*** mali only country with missing values (38,564 observations)
 	
-	foreach 	prefix in chi era cpc {
-		forvalues 	i = 1/14 {
-				local varname : display "v" string(`i', "%02.0f") "_1_`prefix'"
-        global weather_all $weather_all `varname'
-    }
-}
-*/
-	 
+	* Mali weather data is in v**_1_arc and v**_2_arc , trying to replace the missing values with real values 
+	foreach 	i in 01 02 03 04 05 06 07 08 09 10 11 12 13 14 {
+					replace v`i'_rf1 = v`i'_1_arc if country == "Mali" & v`i'_1_arc !=.
+					replace v`i'_rf1 = v`i'_2_arc if country == "Mali" & v`i'_2_arc !=.
+	}
+	 	 
 * lasso linear regression to select variables
 	lasso		linear ln_yield_USD (i.Country i.crop c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(9912) selection(plugin) 
-	
+	*** variables in parentheses are always included
+	*** vars out of parentheses are subject to selection by LASSO
 	lassocoef
 	
 	global		selbaseline `e(allvars_sel)'
-	*** these are the variables selected by LASSO
+	*** these are all the variables
 	
 	global 		testbaseline `e(othervars_sel)'
-	*** these are the ones not selected by LASSO
+	*** these are the variables chosen that were subject to selection by LASSO
 	
 * estimate model 2
 	erase 		"$export1/tables/model2/yield.tex"
 	erase 		"$export1/tables/model2/yield.txt"
 	*** erase the files to avoid appending 6 columns every time we run the loop
 	
-	svy: 		reg ln_yield_USD 1.Country 1.crop $selbaseline 
+	svy: 		reg ln_yield_USD $selbaseline 
 	*** they use 1.Main_crop here
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -241,12 +240,14 @@
 **# 4 - model 3 - farm level
 ***********************************************************************
 
+/*
 * adjust values plot size 
 	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
 				nitrogen_kg fert_USD {
 					replace `var' = `var' * plot_area_GPS
 				}
 	*** lines 41 and 42 --> baseline results do-file
+*/
 
 * we have to identify the main crop of the hh
 
@@ -260,44 +261,52 @@
 	drop 		main_crop
 	rename 		main_crop2 main_crop
 	
+	* drop plot-level crop variable and rename the other one
+	drop 		crop
+	rename 		main_crop crop
+	*** we do this because the selbaseline global dummies are called i.crop, if we leave 
+	*** the name as main_crop, we won't be able to run model 3
+	
 	* attach labels
-	lab 		define main_crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+	lab 		define crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
 				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
 				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
-	lab 		values main_crop main_crop
-	lab var		main_crop "Main Crop group of hh"
+	lab 		values crop crop
+	lab var		crop "Main Crop group of hh"
 
 	* check how many main_crop == .
-	tab 		main_crop, missing
+	tab 		crop, missing
 	*** 31.48 % missing total
 	
-	distinct 	hh_id if main_crop == .
+	distinct 	hh_id if crop == .
 	*** 49,738 hh with main_crop missing (45.4% of hh)
 
 
-* creating missing value indicators
-	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
+* creating missing value indicators at plot level
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
 				nitrogen_kg fert_USD plot_area_GPS {
 					gen 	mi_`var' = 1 if `var' == .
 				}
+				
 * to display lasso vars we can do this:
 	display 	"$selbaseline"
 
 * collapse the data to a hh level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* main_crop cluster_id /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ///
 				soil_fertility_index ///
-				(sum) harvest_value_USD seed_USD fert_USD total_labor_days /// 
+				(sum) yield_USD harvest_value_USD seed_USD fert_USD total_labor_days /// 
 				(sum) seed_kg nitrogen_kg plot_area_GPS /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) v02_rf1 v04_rf1 v09_rf1 ///
 				(count) mi_* /// 
-				(count) n_harvest_value_USD = harvest_value_USD n_seed_kg = seed_kg ///
+				(count) n_yield_USD = yield_USD n_harvest_value_USD = harvest_value_USD /// 
+				n_seed_kg = seed_kg /// 
 				n_seed_USD = seed_USD n_fert_USD = fert_USD /// 
 				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(hh_id wave)
@@ -309,14 +318,17 @@
 		
 		
 * replace invalid observations with missing values and drop flag variables 
-	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
 				fert_USD plot_area_GPS {
 					replace 	`var' = . if n_`var' == 0
 					drop 		n_`var'
 				}
+	*** (count) does not count missing values	
+	*** if n_`var' == 0, it means that all values of a variable are missing in that household.
+
 
 * flag variables with plots containing one or more missing observations
-	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
 				fert_USD plot_area_GPS  {
 					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
 					replace miss_`var' = 0 if mi_`var' == 0 
@@ -325,14 +337,16 @@
 					drop 	mi_`var'
 				}
 
+/*
 * calculate per-unit area values 
 	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
 				fert_USD {
 					replace 	`var' = `var'/plot_area_GPS
 				}
+*/
 				
 * generate new variables containing ln of the original variable
-	foreach 	var of varlist harvest_value_USD total_labor_days seed_kg seed_USD /// 
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
 				fert_USD plot_area_GPS  {
 					gen		ln_`var' = asinh(`var')
 					lab var ln_`var' "Natural log of `var'"
@@ -352,19 +366,20 @@
 	drop 		scalar temp_weight_test
 	
 * attach labels
-	lab 		define main_crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+	lab 		define crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
 				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
 				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
-	lab 		values main_crop main_crop
-	lab var		main_crop "Main Crop group of hh"
+	lab 		values crop crop
+	lab var		crop "Main Crop group of hh"
 			
 * run model 3
 	erase 		"$export1/tables/model3/yield.tex"
 	erase 		"$export1/tables/model3/yield.txt"
 	
+	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
 
-	svy: 		reg  ln_harvest_value_USD 1.Country 1.main_crop $selbaseline
+	svy: 		reg  ln_yield_USD $selbaseline
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	estimates 	store C
@@ -387,12 +402,12 @@
 	svyset,		clear 
 	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_harvest_value_USD year ln_plot_area_GPS ln_total_labor_days /// 
+				bsrweight(ln_yield_USD year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_seed_kg  ln_fert_USD ln_seed_USD used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned ln_dist_popcenter cluster_id v02_rf1 v04_rf1 v09_rf1 /// 
-				soil_fertility_index Country main_crop) vce(bootstrap)
+				soil_fertility_index Country crop) vce(bootstrap)
 		*** vars included in the original: ln_hired_labor_value_constant, ag_asset_index
 		*** miss_harvest_value_cp, ln_dist_road, ln_elevation, tot_precip_sd_season, 
 		*** cluster_id, agro_ecological_zone, temperature_min_season, temperature_max_season
@@ -400,10 +415,10 @@
 		*** temperature_above30C_season
 		
 * describe survey design 
-	svydes 		ln_harvest_value_USD, single generate(d)
+	svydes 		ln_yield_USD, single generate(d)
 	
 * determine how many ea exist
-	bysort		strataid (ea_id_obs): gen ID = sum(ea != ea_id_obs[_n - 1])
+	bysort		strataid (ea_id_obs): gen ID = sum(ea_id_obs != ea_id_obs[_n - 1])
 	
 * determine max number of ea per strata
 	bysort		strataid: egen count_ea = max(ID)
@@ -416,13 +431,14 @@
 
 	global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
-	global 	sel : list global(selbaseline) - global(remove)
-
+	global 		sel : list global(selbaseline) - global(remove)
+	display 	"$sel"
+	
 * estimate model 4
 	erase 		"$export1/tables/model4/yield.tex"
 	erase 		"$export1/tables/model4/yield.txt"
 	
-	bs4rw, 		rw(bsw*)  : areg ln_harvest_value_USD 1.main_crop $sel /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls
 	estimates 	store D
 	test 		$test
