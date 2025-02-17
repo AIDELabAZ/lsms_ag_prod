@@ -78,7 +78,7 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	
+
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
 	egen 		hh_id = group(country wave hh_id_obs)
  	egen 		plot_manager_id = group(country wave manager_id_obs)
@@ -110,8 +110,8 @@
 *** NOTE DEFAULT FOR SVY IS ROBUST STANDARD ERRORS 	
 
 * estimate country-level for yield 1
-	erase 		"$export1/tables/country_level/yield1.tex"
-	erase 		"$export1/tables/country_level/yield1.txt"
+*	erase 		"$export1/tables/country_level/yield1.tex"
+*	erase 		"$export1/tables/country_level/yield1.txt"
 	*** erase the files to avoid appending 6 columns every time we run the loop
 	
 	foreach		country in Ethiopia Malawi Mali Niger Nigeria Tanzania {
@@ -121,7 +121,7 @@
 	svy: reg 	ln_yield_USD c.year if country=="`country'" 
 	local 		lb = _b[c.year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[c.year] + invttail(e(df_r),0.025)*_se[year]
-	outreg2 	using "$export1/tables/country_level/yield1.tex", keep(c.year) /// 
+*	outreg2 	using "$export1/tables/country_level/yield1.tex", keep(c.year) /// 
 				ctitle("`country'- model 1") 	addstat(  Upper bound CI, `ub', /// 
 				Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES) append
 }
@@ -294,7 +294,7 @@
 	display 	"$selbaseline"
 
 * collapse the data to a hh level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
@@ -373,12 +373,15 @@
 	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
 	
+*	xtset 		hh_id_obs wave
+*	xtreg 		ln_yield_USD $selbaseline , fe
+	
 * run model 3
 	*erase 		"$export1/tables/model3/yield.tex"
 	*erase 		"$export1/tables/model3/yield.txt"
 	
-*	svy: 		reg  ln_yield_USD $selbaseline
-/*
+	svy: 		reg  ln_yield_USD $selbaseline
+
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	estimates 	store C
@@ -387,12 +390,12 @@
 	*global 		test : list global(testbaseline) - global(remove)
 	*test 		$test
 	*local 		F1 = r(F)
-	outreg2 	using "$export1/tables/model3/yield.tex",  /// 
+	*outreg2 	using "$export1/tables/model3/yield.tex",  /// 
 				keep(c.year  $inputs_cp $controls_cp ) /// 
 				ctitle("Geovariables and weather controls") /// 
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
- */
+ 
  
 ***********************************************************************
 **# 5 - model 4 - hh FE 
@@ -423,7 +426,7 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(500) seed(123)
+	*bsweights 	bsw, n(-1) reps(500) seed(123)
 
 	global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
@@ -433,8 +436,11 @@
 * estimate model 4
 *	erase 		"$export1/tables/model4/yield.tex"
 *	erase 		"$export1/tables/model4/yield.txt"
+
+	xtset 		hh_id_obs wave	
+	xtreg		ln_yield_USD $sel, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
+	*bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls
 /*
 	estimates 	store D
@@ -445,7 +451,7 @@
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 */
-
+fdsafda
 ***********************************************************************
 **# 6 - model 5 - plot-manager
 ***********************************************************************		
