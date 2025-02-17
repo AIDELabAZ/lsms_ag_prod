@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 13 Feb 25
+* Edited on: 15 Feb 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -156,6 +156,7 @@
 	svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
 	
 	svy: 		reg ln_yield_USD year i.Country 
+/*
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
 	outreg2		using "$export1/tables/model1/yield.tex", keep(c.year i.Country) /// 
@@ -165,7 +166,8 @@
 	local 		r2 = e(r2_a)
 	di 			"`lb', `ub', `r2'"
 	estimates 	store A
-	
+*/
+
 ***********************************************************************
 **# 3 - model 2: plot-level
 ***********************************************************************
@@ -214,12 +216,12 @@
 	*** these are the variables chosen that were subject to selection by LASSO
 	
 * estimate model 2
-	erase 		"$export1/tables/model2/yield.tex"
-	erase 		"$export1/tables/model2/yield.txt"
+	*erase 		"$export1/tables/model2/yield.tex"
+	*erase 		"$export1/tables/model2/yield.txt"
 	*** erase the files to avoid appending 6 columns every time we run the loop
 	
 	svy: 		reg ln_yield_USD $selbaseline 
-	*** they use 1.Main_crop here
+/*
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	di 			"`lb', `ub',"
@@ -234,7 +236,7 @@
 				ctitle("Geovariables and weather controls") /// 
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
-
+*/
 
 ***********************************************************************
 **# 4 - model 3 - farm level
@@ -310,12 +312,7 @@
 				n_seed_USD = seed_USD n_fert_USD = fert_USD /// 
 				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(hh_id wave)
-				
-		*** check line 57 do-file Baseline results - including variables not in the 
-		*** the dataset. (for example: self_reported area.) They already have weather 
-		*** variables at this point
-		*** keeping ea_id_obs to see if model runs (we need to creare an ea variable)
-		
+						
 		
 * replace invalid observations with missing values and drop flag variables 
 	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
@@ -372,14 +369,16 @@
 	lab 		values crop crop
 	lab var		crop "Main Crop group of hh"
 			
-* run model 3
-	erase 		"$export1/tables/model3/yield.tex"
-	erase 		"$export1/tables/model3/yield.txt"
-	
+
 	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
-
-	svy: 		reg  ln_yield_USD $selbaseline
+	
+* run model 3
+	*erase 		"$export1/tables/model3/yield.tex"
+	*erase 		"$export1/tables/model3/yield.txt"
+	
+*	svy: 		reg  ln_yield_USD $selbaseline
+/*
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	estimates 	store C
@@ -393,6 +392,7 @@
 				ctitle("Geovariables and weather controls") /// 
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
+ */
  
 ***********************************************************************
 **# 5 - model 4 - hh FE 
@@ -406,14 +406,10 @@
 				ln_seed_kg  ln_fert_USD ln_seed_USD used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned ln_dist_popcenter cluster_id v02_rf1 v04_rf1 v09_rf1 /// 
+				urban plot_owned v02_rf1 v04_rf1 v09_rf1 /// 
 				soil_fertility_index Country crop) vce(bootstrap)
-		*** vars included in the original: ln_hired_labor_value_constant, ag_asset_index
-		*** miss_harvest_value_cp, ln_dist_road, ln_elevation, tot_precip_sd_season, 
-		*** cluster_id, agro_ecological_zone, temperature_min_season, temperature_max_season
-		*** temperature_sd_season, temperature_mean_season, temperature_above25C_season
-		*** temperature_above30C_season
-		
+
+				
 * describe survey design 
 	svydes 		ln_yield_USD, single generate(d)
 	
@@ -435,11 +431,12 @@
 	display 	"$sel"
 	
 * estimate model 4
-	erase 		"$export1/tables/model4/yield.tex"
-	erase 		"$export1/tables/model4/yield.txt"
+*	erase 		"$export1/tables/model4/yield.tex"
+*	erase 		"$export1/tables/model4/yield.txt"
 	
 	bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls
+/*
 	estimates 	store D
 	test 		$test
 	local 		F1 = r(F)
@@ -447,6 +444,7 @@
 				keep(c.year  $inputs_cp $controls_cp ) /// 
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
+*/
 
 ***********************************************************************
 **# 6 - model 5 - plot-manager
