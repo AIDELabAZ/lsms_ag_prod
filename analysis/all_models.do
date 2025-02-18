@@ -426,7 +426,7 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	*bsweights 	bsw, n(-1) reps(500) seed(123)
+	bsweights 	bsw, n(-1) reps(500) seed(123)
 
 	global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
@@ -437,11 +437,11 @@
 *	erase 		"$export1/tables/model4/yield.tex"
 *	erase 		"$export1/tables/model4/yield.txt"
 
-	xtset 		hh_id_obs wave	
-	xtreg		ln_yield_USD $sel, fe
+	*xtset 		hh_id_obs wave	
+	*xtreg		ln_yield_USD $sel, fe
 	
-	*bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
-				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls
+	bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
+				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 /*
 	estimates 	store D
 	test 		$test
