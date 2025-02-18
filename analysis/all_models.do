@@ -373,9 +373,6 @@
 	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
 	
-*	xtset 		hh_id_obs wave
-*	xtreg 		ln_yield_USD $selbaseline , fe
-	
 * run model 3
 	*erase 		"$export1/tables/model3/yield.tex"
 	*erase 		"$export1/tables/model3/yield.txt"
@@ -451,7 +448,7 @@
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 */
-fdsafda
+
 ***********************************************************************
 **# 6 - model 5 - plot-manager
 ***********************************************************************		
