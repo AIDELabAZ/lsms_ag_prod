@@ -176,8 +176,8 @@
 ***********************************************************************
 
 * drop plot-level crop variable and rename the other one
-	drop 		crop
-	rename 		main_crop crop
+*	drop 		crop
+*	rename 		main_crop crop
 	*** we do this because the selbaseline global dummies are called i.crop, if we leave 
 	*** the name as main_crop, we won't be able to run model 3
 
@@ -285,7 +285,7 @@
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 				
-fdsafdsa				
+				
 ***********************************************************************
 **# 5 - model 4 - hh FE 
 ***********************************************************************
@@ -315,7 +315,7 @@ fdsafdsa
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(500) seed(123)
+	bsweights 	bsw, n(-1) reps(5) seed(123)
 
 	global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
@@ -341,7 +341,7 @@ fdsafdsa
 				addtext(Main crop FE, YES, Country FE, YES)  append
 */
 
-
+fdsa
 ***********************************************************************
 **# 6 - model 5 - plot-manager
 ***********************************************************************		
