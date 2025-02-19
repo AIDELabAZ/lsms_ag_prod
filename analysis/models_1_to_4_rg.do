@@ -32,7 +32,7 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	
+
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
 	egen 		hh_id = group(country wave hh_id_obs)
  	egen 		plot_manager_id = group(country wave manager_id_obs)
@@ -43,14 +43,14 @@
 * create main crop 
 	
 	* determine value of total harvest for each crop within hh 
-	bysort		 hh_id wave crop: egen value_maincrop = total(harvest_value_USD)
+*	bysort		 hh_id_obs wave crop: egen value_maincrop = total(harvest_value_USD)
 	
 	* identify the main crop 
-	bysort		hh_id wave (value_maincrop): gen main_crop2 = crop[_N]
+*	bysort		hh_id_obs wave (value_maincrop): gen main_crop2 = crop[_N]
 	
 	* rename variable 	
-	drop 		main_crop
-	rename 		main_crop2 main_crop
+*	drop 		main_crop
+*	rename 		main_crop2 main_crop
 	
 	* drop plot-level crop variable and rename the other one
 *	drop 		crop
@@ -59,15 +59,18 @@
 	*** the name as main_crop, we won't be able to run model 3
 	
 	* attach labels
-	lab 		define main_crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+*	lab 		define main_crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
 				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
 				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
-	lab 		values main_crop main_crop
-	lab var		main_crop "Main Crop group of hh"
+*	lab 		values main_crop main_crop
+*	lab var		main_crop "Main Crop group of hh"
 	
 * drop if main crop if missing
-	drop if 	main_crop == .
-	*** 112,802 observations dropped
+	*drop if 	main_crop == "" 
+	*** main crop if their variable
+	drop if		crop == . 
+	*** crop is our vairalbe 
+	*** 124,157 observations dropped
 	
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
@@ -251,11 +254,11 @@
 	drop 		scalar temp_weight_test
 	
 * attach labels
-	lab 		define crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+*	lab 		define crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
 				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
 				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
-	lab 		values crop crop
-	lab var		crop "Main Crop group of hh"
+*	lab 		values crop crop
+*	lab var		crop "Main Crop group of hh"
 			
 
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
@@ -282,7 +285,7 @@
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 				
-				
+fdsafdsa				
 ***********************************************************************
 **# 5 - model 4 - hh FE 
 ***********************************************************************
