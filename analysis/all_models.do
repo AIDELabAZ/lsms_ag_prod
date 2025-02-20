@@ -545,42 +545,269 @@ ooooo
 **# 7 - model 6 - cluster 
 ***********************************************************************	
 
+* open dataset
+	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
+
+* generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
+	egen 		hh_id = group(country wave hh_id_obs)
+ 	egen 		plot_manager_id = group(country wave manager_id_obs)
+	egen 		plot_id = group(country wave plot_id_obs)
+	egen 		parcel_id = group(country wave parcel_id_obs)
+	egen 		cluster_id = group( country wave ea_id_obs)
+	
+	drop if		crop == . 
+	*** crop is our vairalbe 
+	*** 124,157 observations dropped
+	
+	gen 		ln_dist_popcenter = asinh(dist_popcenter)
+	
+* create total_wgt_survey varianble 
+	drop if 	pw == .
+	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
+	
+
+* we have to identify the main crop of the hh
+
+	* determine value of total harvest for each crop within hh 
+	bysort		 hh_id wave crop: egen value_maincrop = total(harvest_value_USD)
+	
+	* identify the main crop 
+	bysort		hh_id wave (value_maincrop): gen main_crop2 = crop[_N]
+	
+	* rename variable 	
+	drop 		main_crop
+	rename 		main_crop2 main_crop
+	
+	* drop plot-level crop variable and rename the other one
+	drop 		crop
+	rename 		main_crop crop
+	*** we do this because the selbaseline global dummies are called i.crop, if we leave 
+	*** the name as main_crop, we won't be able to run model 3
+	
+	* attach labels
+	lab 		define crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
+				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
+	lab 		values crop crop
+	lab var		crop "Main Crop group of hh"
 
 
+* creating missing value indicators at plot level
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
+				fert_USD plot_area_GPS {
+					gen 	mi_`var' = 1 if `var' == .
+				}
+				
+* to display lasso vars we can do this:
+	display 	"$selbaseline"
+
+* collapse the data to a hh level 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
+				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
+				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
+				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
+				ln_dist_popcenter ///
+				soil_fertility_index ///
+				(sum) yield_USD harvest_value_USD seed_USD fert_USD total_labor_days /// 
+				(sum) seed_kg nitrogen_kg plot_area_GPS /// 
+				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
+				plot_owned irrigated /// 
+				(mean) age_manager year ///
+				(first) v02_rf1 v04_rf1 v09_rf1 ///
+				(count) mi_* /// 
+				(count) n_yield_USD = yield_USD n_harvest_value_USD = harvest_value_USD /// 
+				n_seed_kg = seed_kg /// 
+				n_seed_USD = seed_USD n_fert_USD = fert_USD /// 
+				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
+				by(hh_id wave)
+						
+		
+* replace invalid observations with missing values and drop flag variables 
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
+				fert_USD plot_area_GPS {
+					replace 	`var' = . if n_`var' == 0
+					drop 		n_`var'
+				}
+	*** (count) does not count missing values	
+	*** if n_`var' == 0, it means that all values of a variable are missing in that household.
 
 
+* flag variables with plots containing one or more missing observations
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
+				fert_USD plot_area_GPS  {
+					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
+					replace miss_`var' = 0 if mi_`var' == 0 
+					label var miss_`var' "Flag: Does `var' contain one or more missing values at the plot level?"
+					lab 	val miss_`var' miss_`var'
+					drop 	mi_`var'
+				}
 
+* we have to identify the main crop by cluster
+
+	* determine value of total harvest for each crop within hh 
+	bysort		 cluster_id wave crop: egen value_maincrop = total(harvest_value_USD)
+	
+	* identify the main crop 
+	bysort		cluster_id wave (value_maincrop): gen main_crop = crop[_N]
+	
+	
+	* rename name so it matches the one in the global $sel
+	drop 		crop
+	rename 		main_crop crop
+	*** we do this because the selbaseline global dummies are called i.crop, if we leave 
+	*** the name as main_crop, we won't be able to run the model (because of global)
+	
+	* attach labels
+	lab 		define crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
+				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
+				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
+	lab 		values crop crop
+	lab var		crop "Main Crop group - cluster"
+
+* creating missing value indicators at plot level
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
+				nitrogen_kg fert_USD plot_area_GPS {
+					gen 	mi_`var' = 1 if `var' == .
+				}
+				
+	drop if 	cluster_id == .
+	*** 183 dropped
+	
+* collapse the data to cluster level 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop  /// 
+				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
+				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
+				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
+				ln_dist_popcenter ///
+				soil_fertility_index ///
+				(sum) yield_USD harvest_value_USD seed_USD fert_USD total_labor_days /// 
+				(sum) seed_kg nitrogen_kg plot_area_GPS /// 
+				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
+				plot_owned irrigated /// 
+				(mean) age_manager year ///
+				(first) v02_rf1 v04_rf1 v09_rf1 ///
+				(count) mi_* /// 
+				(count) n_yield_USD = yield_USD n_harvest_value_USD = harvest_value_USD /// 
+				n_seed_kg = seed_kg /// 
+				n_seed_USD = seed_USD n_fert_USD = fert_USD /// 
+				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
+				by(cluster_id wave)
+
+* replace invalid observations with missing values and drop flag variables 
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
+				fert_USD plot_area_GPS {
+					replace 	`var' = . if n_`var' == 0
+					drop 		n_`var'
+				}
+	*** (count) does not count missing values	
+	*** if n_`var' == 0, it means that all values of a variable are missing in that household.
+
+
+* flag variables with plots containing one or more missing observations
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
+				fert_USD plot_area_GPS  {
+					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
+					replace miss_`var' = 0 if mi_`var' == 0 
+					label var miss_`var' "Flag: Does `var' contain one or more missing values at the plot level?"
+					lab 	val miss_`var' miss_`var'
+					drop 	mi_`var'
+				}
+
+				
+* generate new variables containing ln of the original variable
+	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
+				fert_USD plot_area_GPS  {
+					gen		ln_`var' = asinh(`var')
+					lab var ln_`var' "Natural log of `var'"
+				}
+				
+	
+* generate dummy variables for each country	
+	encode 		country, gen(Country)
+	tab			Country, gen(country_dummy)
+	
+	
+* create weight adj
+	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
+	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
+	gen 		double wgt_adj_surveypop = scalar * pw 
+	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
+	assert 		float(temp_weight_test)==float(total_wgt_survey)
+	drop 		scalar temp_weight_test
+	
+* attach labels
+	lab 		values crop crop
+	lab var		crop "Main Crop group - cluster"
+				
+* survey design
+	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
+				bsrweight(ln_yield_USD year ln_plot_area_GPS ln_total_labor_days /// 
+				ln_seed_kg  ln_fert_USD ln_seed_USD used_pesticides organic_fertilizer /// 
+				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
+				formal_education_manager female_manager age_manager hh_electricity_access /// 
+				urban plot_owned v02_rf1 v04_rf1 v09_rf1 /// 
+				soil_fertility_index Country crop) vce(bootstrap)
+				
+* describe survey design 
+	svydes 		ln_yield_USD, single generate(d)
+	
+* determine how many ea exist
+	bysort		strataid (ea_id_obs): gen ID = sum(ea_id_obs != ea_id_obs[_n - 1])
+	
+* determine max number of ea per strata
+	bysort		strataid: egen count_ea = max(ID)
+	
+* drop singletons (singleton strta can cause errors in variance estimation)
+	drop if 	count_ea < 2 // drop singletons 
+	
+* generate bootstrap weights
+	bsweights 	bsw, n(-1) reps(5) seed(123)
+
+	global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
+	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
+	global 		sel : list global(selbaseline) - global(remove)
+	display 	"$sel"
+	
+* estimate model 4
+*	erase 		"$export1/tables/model4/yield.tex"
+*	erase 		"$export1/tables/model4/yield.txt"
+
+	*xtset 		hh_id_obs wave	
+	*xtreg		ln_yield_USD $sel, fe
+	
+	bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
+				[pw = wgt_adj_surveypop],absorb(ea_id_obs) // many reps fail due to collinearities in controls
+
+	estimates 	store F
+*	test 		$test
+*	local 		F1 = r(F)
+*	outreg2 	using "$export1/tables/model6/yield.tex",  /// 
+				keep(c.year  $inputs_cp $controls_cp ) /// 
+				ctitle("Geovariables and weather controls - FE")  /// 
+				addtext(Main crop FE, YES, Country FE, YES)  append
+		
+				
 ***********************************************************************
-**# 8 - coefficient graph
+**# 8 - coefficient plot
 ***********************************************************************		
 
 * create the graph
 	set			scheme s1color
 	
-	coefplot 	(A, mcolor(navy) ciopts(color(navy) recast(rcap))) /// 
-				(B,  mcolor(navy) ciopts(color(navy) recast(rcap))) /// 
-				(C,  mcolor(navy) ciopts(color(navy) recast(rcap))) /// 
-				(D,  mcolor(navy) ciopts(color(navy) recast(rcap))), /// 
-				keep(year) /// 
-				xlabel(1.5 "Model 1" 2.75 "Model 2" 4.25 /// 
-				"Model 3" 1 "Model 4", labsize(small) grid) /// 
+	coefplot 	(A, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 1) ||  /// 
+				(B, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 2) ||  /// 
+				(C, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 3) ||  /// 
+				(D, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 4) || /// 
+				(F, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 6) /// 
+				byopts(row(1)) keep(year) /// 
+				xlabel(none) /// 
 				yline(0, lcolor(black%50)) /// 
-				labsize(small) grid ) ///
-				vertical leg(off) ciopts(recast(rcap)) ///
-				xline(1 2 3 4, lcolor(black%60))  xsize(5.5)
+				ylab(0.13 "13" 0.12 "12" .11 "11" .10 "10" 0.09 "9" 0.08 "8" 0.07 "7" 0.06 "6"0.05 "5" 0.04 "4" 0.03 "3" 0.02 "2" /// 
+				0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" -0.03 "-3" -0.04 "-4", labsize(small) grid) /// 
+				ytitle(Annual productivity change (%)) vertical xsize(5)
+				
 
 
-coefplot 	(A,  mcolor(navy) ciopts(color(navy) recast(rcap))) /// 
-			(B,  mcolor(navy) ciopts(color(navy) recast(rcap))) /// 
-			(C,  mcolor(navy) ciopts(color(navy) recast(rcap))) /// 
-			(D,  mcolor(navy) ciopts(color(navy) recast(rcap))), /// 
-			keep(year) xlabel(0.5 "Model 1" 1.5 "Model 2" 2.5 /// 
-			"Model 3" 3.5 "Model 4", labsize(small)) /// 
-			ytitle(Productivity growth) yline(0, lcolor(black%50)) /// 
-			ylab( 0.08 "8" 0.07 "7" 0.06 "6"0.05 "5" 0.04 "4" 0.03 "3" 0.02 "2" 0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" -0.03 "-3" ///
-			-0.04 "-4", /// 
-			labsize(small) grid ) ytitle(Annual productivity change (%)) /// 
-			vertical leg(off) ciopts(recast(rcap)) /// 
-			xline(1 2 3, lcolor(black%60)) xscale(range(0 4))  xsize(5.5)
+
 
 			
