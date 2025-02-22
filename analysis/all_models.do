@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 20 Feb 25
+* Edited on: 22 Feb 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -39,31 +39,6 @@
 	egen 		plot_id = group(country wave plot_id_obs)
 	egen 		parcel_id = group(country wave parcel_id_obs)
 	egen 		cluster_id = group( country wave ea_id_obs)
-
-* create main crop 
-	
-	* determine value of total harvest for each crop within hh 
-*	bysort		 hh_id_obs wave crop: egen value_maincrop = total(harvest_value_USD)
-	
-	* identify the main crop 
-*	bysort		hh_id_obs wave (value_maincrop): gen main_crop2 = crop[_N]
-	
-	* rename variable 	
-*	drop 		main_crop
-*	rename 		main_crop2 main_crop
-	
-	* drop plot-level crop variable and rename the other one
-*	drop 		crop
-*	rename 		main_crop crop
-	*** we do this because the selbaseline global dummies are called i.crop, if we leave 
-	*** the name as main_crop, we won't be able to run model 3
-	
-	* attach labels
-*	lab 		define main_crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
-				4 "Millet" 5 "Nuts/Seeds" 6 "Other" 7 "Rice" ///
-				8 "Sorghum" 9 "Tubers/Roots" 10 "Wheat", replace
-*	lab 		values main_crop main_crop
-*	lab var		main_crop "Main Crop group of hh"
 	
 * drop if main crop if missing
 	*drop if 	main_crop == "" 
@@ -71,6 +46,7 @@
 	drop if		crop == . 
 	*** crop is our vairalbe 
 	*** 124,157 observations dropped
+	
 	
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
@@ -109,7 +85,6 @@
 				
 	local 		r2 = e(r2_a)
 	di 			"`lb', `ub', `r2'"
-
 
 	
 ***********************************************************************
@@ -281,7 +256,7 @@
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
 	gen 		double wgt_adj_surveypop = scalar * pw 
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
-	assert 		float(temp_weight_test)==float(total_wgt_survey)
+	assert 		float(temp_weight_test) == float(total_wgt_survey)
 	drop 		scalar temp_weight_test
 	
 * attach labels
@@ -582,7 +557,7 @@ ooooo
 	drop 		crop
 	rename 		main_crop crop
 	*** we do this because the selbaseline global dummies are called i.crop, if we leave 
-	*** the name as main_crop, we won't be able to run model 3
+	*** the name as main_crop, we won't be able to run the model 
 	
 	* attach labels
 	lab 		define crop 1 "Barley" 2 "Beans/Peas/Lentils/Peanuts" 3 "Maize" ///
@@ -732,7 +707,11 @@ ooooo
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
 	gen 		double wgt_adj_surveypop = scalar * pw 
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
-	assert 		float(temp_weight_test)==float(total_wgt_survey)
+	
+	drop if 	float(temp_weight_test) != float(total_wgt_survey)
+	* if we drop these obs the model runs
+	
+	assert 		float(temp_weight_test) == float(total_wgt_survey)
 	drop 		scalar temp_weight_test
 	
 * attach labels
@@ -798,6 +777,7 @@ ooooo
 				(B, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 2) ||  /// 
 				(C, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 3) ||  /// 
 				(D, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 4) || /// 
+				(E, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 5) || ///
 				(F, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 6) /// 
 				byopts(row(1)) keep(year) /// 
 				xlabel(none) /// 
