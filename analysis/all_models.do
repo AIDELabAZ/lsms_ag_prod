@@ -90,6 +90,7 @@
 ***********************************************************************
 **# 3 - model 2: plot-level
 ***********************************************************************
+set seed 123456
 
 * generate log variables for inputs and controls 
 	gen 		ln_total_labor_days = asinh(total_labor_days)
@@ -161,6 +162,8 @@
 ***********************************************************************
 **# 4 - model 3 - farm level
 ***********************************************************************
+
+set seed 123456
 
 * we have to identify the main crop of the hh
 
