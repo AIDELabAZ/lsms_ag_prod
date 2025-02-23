@@ -28,7 +28,8 @@
 	
 ***********************************************************************
 **# 1 - generate  hh_id, plot_manager_id, and cluster_id, main crop
-***********************************************************************
+**********************************************************************
+set seed 123456
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
