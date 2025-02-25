@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 22 Feb 25
+* Edited on: 25 Feb 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -34,12 +34,8 @@ set seed 123456
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 
-* generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
-	egen 		hh_id = group(country wave hh_id_obs)
- 	egen 		plot_manager_id = group(country wave manager_id_obs)
-	egen 		plot_id = group(country wave plot_id_obs)
-	egen 		parcel_id = group(country wave parcel_id_obs)
-	egen 		cluster_id = group( country wave ea_id_obs)
+	drop if 	ea_id_obs == .
+	drop if 	pw == .
 	
 * drop if main crop if missing
 	*drop if 	main_crop == "" 
@@ -48,6 +44,14 @@ set seed 123456
 	*** crop is our vairalbe 
 	*** 124,157 observations dropped
 	
+	replace 	crop_shock = . if crop_shock == .a
+	
+* generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
+	egen 		hh_id = group(country wave hh_id_obs)
+ 	egen 		plot_manager_id = group(country wave manager_id_obs)
+	egen 		plot_id = group(country wave plot_id_obs)
+	egen 		parcel_id = group(country wave parcel_id_obs)
+	egen 		cluster_id = group( country wave ea_id_obs)
 	
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
@@ -254,6 +258,14 @@ set seed 123456
 	encode 		country, gen(Country)
 	tab			Country, gen(country_dummy)
 	
+* create local to drop missing vals
+	drop if 	ln_yield_USD == .
+	local drop_mv ln_total_labor_days ln_seed_USD ln_fert_USD ln_plot_area_GPS used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned v02_rf1 v04_rf1 v09_rf1
+
+	foreach var of varlist `drop_mv' {
+		drop if `var' == .
+	}
+	
 	
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
@@ -267,7 +279,7 @@ set seed 123456
 	lab 		values crop crop
 	lab var		crop "Main Crop group of hh"
 			
-
+	svyset, 	clear
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
 
 	
@@ -277,8 +289,8 @@ set seed 123456
 	
 
 	svy: 		reg  ln_yield_USD $selbaseline 
-	
-
+	*gen 		included = e(sample)
+jjj
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	estimates 	store C
