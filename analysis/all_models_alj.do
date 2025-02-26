@@ -148,9 +148,9 @@ set seed 123456
 	
 	svy: 		reg ln_yield_USD v02_rf1 v04_rf1 v09_rf1 
 
-	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
-	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
-	di 			"`lb', `ub',"
+*	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
+*	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
+*	di 			"`lb', `ub',"
 	
 	estimates 	store B
 *	test 		$testbaseline
@@ -294,7 +294,7 @@ set seed 123456
 	lab var		crop "Main Crop group of hh"
 			
 	svyset, 	clear
-	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
+	svyset 		ea_id_obs [pweight=total_wgt_survey], strata(strata) singleunit(centered)
 
 	
 * run model 3
@@ -302,7 +302,7 @@ set seed 123456
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_USD v02_rf1 v04_rf1 v09_rf1 
+	svy: 		reg  ln_yield_USD v02_rf1 v04_rf1 v09_rf1 ln_seed_USD ln_fert_USD year crop_shock
 	*gen 		included = e(sample)
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
