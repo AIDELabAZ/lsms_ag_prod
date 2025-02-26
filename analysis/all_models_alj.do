@@ -146,7 +146,24 @@ set seed 123456
 	*erase 		"$export1/tables/model2/yield.txt"
 	*** erase the files to avoid appending 6 columns every time we run the loop
 	
-	svy: 		reg ln_yield_USD v02_rf1 v04_rf1 v09_rf1 
+	gen 		deth = 1 if country == "Ethiopia" 
+	replace		deth = 0 if deth == . 
+	gen 		dmwi = 1 if country == "Malawi"
+	replace 	dmwi = 0 if dmwi == .
+	gen 		dmli = 1 if country == "Mali"
+	replace 	dmli = 0 if dmli == .
+	gen 		dngr = 1 if country == "Niger"
+	replace 	dngr = 0 if dngr == . 
+	gen 		dnga = 1 if country == "Nigeria"
+	replace 	dnga = 0 if dnga == .
+	gen 		dtza = 1 if country == "Tanzania" 
+	replace 	dtza = 0 if dtza == .  
+	
+*** NEED TO FIX HERE 	
+	svy: 		reg ln_yield_USD  year ln_total_labor_days ln_seed_USD ln_fert_USD ln_plot_area_GPS used_pesticides organic_fertilizer  /// 
+						irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager ///
+						hh_electricity_access urban plot_owned v02_rf1 v04_rf1 v09_rf1 ///
+						deth dmwi dmli dngr dnga dtza 
 
 *	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 *	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -163,7 +180,6 @@ set seed 123456
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 */
-
 
 ***********************************************************************
 **# 4 - model 3 - farm level
@@ -207,7 +223,7 @@ set seed 123456
 	display 	"$selbaseline"
 
 * collapse the data to a hh level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
+	collapse 	(first) dtza dmwi deth dnga dngr dmli country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
@@ -302,7 +318,10 @@ set seed 123456
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_USD v02_rf1 v04_rf1 v09_rf1 ln_seed_USD ln_fert_USD year crop_shock
+	svy: 		reg ln_yield_USD  year ln_total_labor_days ln_seed_USD ln_fert_USD ln_plot_area_GPS used_pesticides organic_fertilizer   /// 
+						irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager ///
+						hh_electricity_access urban plot_owned v02_rf1 v04_rf1 v09_rf1 ///
+						deth dmwi dmli dngr dnga dtza 
 	*gen 		included = e(sample)
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
