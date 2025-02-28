@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 25 Feb 25
+* Edited on: 28 Feb 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -72,13 +72,17 @@ set seed 123456
 * generate necessary variables 
 	gen			ln_yield_USD = asinh(yield_USD)
 
-* encode country variable to generate dummies
-	encode		country, gen(Country)
+	
+* generate dummies for each country 
+	foreach 	country in Ethiopia Mali Malawi Niger Nigeria Tanzania{
+		gen 	d_`country' = 1 if country == "`country'"
+		replace	d_`country' = 0 if d_`country' == .
+	}
 	
 * run survey-weighted regression 
 	svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
 	
-	svy: 		reg ln_yield_USD year i.Country 
+	svy: 		reg ln_yield_USD year d_* 
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
@@ -128,8 +132,19 @@ set seed 123456
 					replace v`i'_rf1 = v`i'_2_arc if country == "Mali" & v`i'_2_arc !=.
 	}
 	 	 
+* generate dummy for crops
+	levelsof 	crop, local(crop_levels)  
+
+	foreach 	crop_code in `crop_levels' {
+		local 	crop_label : label crop `crop_code'
+		local 	clean_label = subinstr("`crop_label'", "/", "_", .)  
+    
+		gen 	indc_`clean_label' = (crop == `crop_code') 
+}
+
+
 * lasso linear regression to select variables
-	lasso		linear ln_yield_USD (i.Country i.crop c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(9912) selection(plugin) 
+	lasso		linear ln_yield_USD (d_* indc_* c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(9912) selection(plugin) 
 	*** variables in parentheses are always included
 	*** vars out of parentheses are subject to selection by LASSO
 	lassocoef
@@ -211,7 +226,7 @@ set seed 123456
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ///
-				soil_fertility_index ///
+				soil_fertility_index d_* indc_* ///
 				(sum) yield_USD harvest_value_USD seed_USD fert_USD total_labor_days /// 
 				(sum) seed_kg nitrogen_kg plot_area_GPS /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
@@ -253,19 +268,8 @@ set seed 123456
 					gen		ln_`var' = asinh(`var')
 					lab var ln_`var' "Natural log of `var'"
 				}
-				
-* generate dummy variables for each country	
-	encode 		country, gen(Country)
-	tab			Country, gen(country_dummy)
-	
-* create local to drop missing vals
-	drop if 	ln_yield_USD == .
-	local drop_mv ln_total_labor_days ln_seed_USD ln_fert_USD ln_plot_area_GPS used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned v02_rf1 v04_rf1 v09_rf1
-
-	foreach var of varlist `drop_mv' {
-		drop if `var' == .
-	}
-	
+					
+	encode		country, gen(Country)
 	
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
@@ -337,7 +341,7 @@ jjj
 * generate bootstrap weights
 	bsweights 	bsw, n(-1) reps(5) seed(123)
 
-	global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
+	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
 	global 		sel : list global(selbaseline) - global(remove)
 	display 	"$sel"
