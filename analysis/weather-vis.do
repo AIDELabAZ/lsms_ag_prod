@@ -17,8 +17,7 @@
 	* exports not working
 	* saving not working
 	*** anna too tired to debug
-	* mali is weird 
-	* scaling issues: malawi, niger 
+	* scaling issues: malawi, mali, niger 
 	
 * **********************************************************************
 * 0 - setup
@@ -70,9 +69,9 @@ twoway  (kdensity v05_rf2 if country == "Malawi", color(gray%30) recast(area)) /
 *	graph export 	"$export1\mwi_density_rf.pdf", as(pdf) 
 
 * total season rainfall - mali
-twoway  (kdensity v05_rf2 if country == "Mali", color(gray%30) recast(area)) ///
-        (kdensity v05_rf3 if country == "Mali", color(vermillion%30) recast(area)) ///
-        (kdensity v05_rf4 if country == "Mali", color(sea%30) recast(area)) ///
+twoway  (kdensity v05_2_chi if country == "Mali", color(gray%30) recast(area)) ///
+        (kdensity v05_2_cpc if country == "Mali", color(vermillion%30) recast(area)) ///
+        (kdensity v05_2_era if country == "Mali", color(sea%30) recast(area)) ///
         , xtitle("") xscale(r(0(500)2500)) title("Mali") ///
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
