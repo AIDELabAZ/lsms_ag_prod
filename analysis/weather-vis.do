@@ -14,8 +14,11 @@
 	* grc1leg2.ado
 
 * TO DO:
-	* complete
-
+	* exports not working
+	* saving not working
+	*** anna too tired to debug
+	* mali is weird 
+	* scaling issues: malawi, niger 
 	
 * **********************************************************************
 * 0 - setup
@@ -60,7 +63,7 @@
 twoway  (kdensity v05_rf2 if country == "Malawi", color(gray%30) recast(area)) ///
         (kdensity v05_rf3 if country == "Malawi", color(vermillion%30) recast(area)) ///
         (kdensity v05_rf4 if country == "Malawi", color(sea%30) recast(area)) ///
-        , xtitle("") xscale(r(0(500)2500)) title("Malawi") ///
+        , xtitle("") xscale(r(0(500)3000)) title("Malawi") ///
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
 			
@@ -73,68 +76,56 @@ twoway  (kdensity v05_rf2 if country == "Mali", color(gray%30) recast(area)) ///
         , xtitle("") xscale(r(0(500)2500)) title("Mali") ///
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
+		*** THIS ISN'T WORKING AT ALL
 			
 *	graph export 	"$export1\mli_density_rf.pdf", as(pdf) 
 
 * total season rainfall - niger	
-	twoway  (kdensity v05_rf1 if country == 4, color(gray%30) recast(area)) ///
-			(kdensity v05_rf2 if country == 4, color(vermillion%30) recast(area)) ///
-			(kdensity v05_rf3 if country == 4, color(sea%30) recast(area)) ///
-			(kdensity v05_rf4 if country == 4, color(turquoise%30) recast(area)) ///
-			(kdensity v05_rf5 if country == 4, color(reddish%30) recast(area)) ///
-			(kdensity v05_rf6 if country == 4, color(ananas%30) recast(area) ///
-			xtitle("") xscale(r(0(100)800)) title("Niger (n = 3,913)") ///
-			ytitle("Density") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small))), ///
-			legend(off) saving("$sfig/ngr_density_rf", replace)
+twoway  (kdensity v05_rf2 if country == "Niger", color(gray%30) recast(area)) ///
+        (kdensity v05_rf3 if country == "Niger", color(vermillion%30) recast(area)) ///
+        (kdensity v05_rf4 if country == "Niger", color(sea%30) recast(area)) ///
+        , xtitle("") xscale(r(0(500)2500)) title("Niger") ///
+        ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
+        legend(off)
 			
-*	graph export 	"$xfig\ngr_density_rf.pdf", as(pdf) replace
+*	graph export 	"$export1\ngr_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - nigeria
-	twoway  (kdensity v05_rf1 if country == 5, color(gray%30) recast(area)) ///
-			(kdensity v05_rf2 if country == 5, color(vermillion%30) recast(area)) ///
-			(kdensity v05_rf3 if country == 5, color(sea%30) recast(area)) ///
-			(kdensity v05_rf4 if country == 5, color(turquoise%30) recast(area)) ///
-			(kdensity v05_rf5 if country == 5, color(reddish%30) recast(area)) ///
-			(kdensity v05_rf6 if country == 5, color(ananas%30) recast(area) ///
-			xtitle("") xscale(r(0(500)3000)) title("Nigeria (n = 9,145)") ///
-			ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small))), ///
-			legend(off) saving("$sfig/nga_density_rf", replace)
+twoway  (kdensity v05_rf2 if country == "Nigeria", color(gray%30) recast(area)) ///
+        (kdensity v05_rf3 if country == "Nigeria", color(vermillion%30) recast(area)) ///
+        (kdensity v05_rf4 if country == "Nigeria", color(sea%30) recast(area)) ///
+        , xtitle("") xscale(r(0(500)3000)) title("Nigeria") ///
+        ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
+        legend(off)
 			
-*	graph export 	"$xfig\nga_density_rf.pdf", as(pdf) replace
+*	graph export 	"$export1\nga_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - tanzania	
-	twoway  (kdensity v05_rf1 if country == 6, color(gray%30) recast(area)) ///
-			(kdensity v05_rf2 if country == 6, color(vermillion%30) recast(area)) ///
-			(kdensity v05_rf3 if country == 6, color(sea%30) recast(area)) ///
-			(kdensity v05_rf4 if country == 6, color(turquoise%30) recast(area)) ///
-			(kdensity v05_rf5 if country == 6, color(reddish%30) recast(area)) ///
-			(kdensity v05_rf6 if country == 6, color(ananas%30) recast(area) ///
-			xtitle("Total Season Rainfall (mm)") xscale(r(0(2000)6000)) title("Tanzania (n = 9,916)") ///
-			ytitle("Density") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small))), ///
-			legend(off) saving("$sfig/tza_density_rf", replace)
+twoway  (kdensity v05_rf2 if country == "Tanzania", color(gray%30) recast(area)) ///
+        (kdensity v05_rf3 if country == "Tanzania", color(vermillion%30) recast(area)) ///
+        (kdensity v05_rf4 if country == "Tanzania", color(sea%30) recast(area)) ///
+        , xtitle("Total Seasonal Rainfall (mm)") xscale(r(0(500)3000)) title("Tanzania") ///
+        ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
+        legend(off)
 			
-*	graph export 	"$xfig\tza_density_rf.pdf", as(pdf) replace
+*	graph export 	"$export1\tza_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - uganda	
-	twoway  (kdensity v05_rf1 if country == 7, color(gray%30) recast(area)) ///
-			(kdensity v05_rf2 if country == 7, color(vermillion%30) recast(area)) ///
-			(kdensity v05_rf3 if country == 7, color(sea%30) recast(area)) ///
-			(kdensity v05_rf4 if country == 7, color(turquoise%30) recast(area)) ///
-			(kdensity v05_rf5 if country == 7, color(reddish%30) recast(area)) ///
-			(kdensity v05_rf6 if country == 7, color(ananas%30) recast(area) ///
-			xtitle("Total Season Rainfall (mm)") xscale(r(0(5000)3500)) ///
-			title("Uganda (n = 11,692)") ///
-			ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small))), ///
-			legend(off) saving("$sfig/uga_density_rf", replace)	
+*twoway  (kdensity v05_rf2 if country == "Uganda", color(gray%30) recast(area)) ///
+        (kdensity v05_rf3 if country == "Uganda", color(vermillion%30) recast(area)) ///
+        (kdensity v05_rf4 if country == "Uganda", color(sea%30) recast(area)) ///
+        , xtitle("Total Seasonal Rainfall (mm)") xscale(r(0(500)3500)) title("Uganda") ///
+        ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
+        legend(off)
 			
-*	graph export 	"$xfig\uga_density_rf.pdf", as(pdf) replace
+*	graph export 	"$export1\uga_density_rf.pdf", as(pdf) replace
 
 *	grc1leg2 		"$sfig/eth_density_rf.gph" "$sfig/mwi_density_rf.gph" ///
 						"$sfig/ngr_density_rf.gph" "$sfig/nga_density_rf.gph"   ///
 						"$sfig/tza_density_rf.gph" "$sfig/uga_density_rf.gph", ///
 						col(2) iscale(.5) commonscheme
 						
-*	graph export 	"$xfig\density_rf.pdf", replace			
+*	graph export 	"$export1\density_rf.pdf", replace			
 
 * if those middle parts ran this would work but it isn't working
 * can try and fix 
