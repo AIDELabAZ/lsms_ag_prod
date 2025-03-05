@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 28 Feb 25
+* Edited on: 5 March 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -10,6 +10,9 @@
 
 * assumes
 	* access to replication data
+	
+* notes:
+	* update model 5 and beyond
 	
 	
 ***********************************************************************
@@ -29,7 +32,6 @@
 ***********************************************************************
 **# 1 - generate  hh_id, plot_manager_id, and cluster_id, main crop
 **********************************************************************
-set seed 123456
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
@@ -42,9 +44,10 @@ set seed 123456
 	*** main crop if their variable
 	drop if		crop == . 
 	*** crop is our vairalbe 
-	*** 124,157 observations dropped
+	*** 83,753 observations dropped
 	
 	replace 	crop_shock = . if crop_shock == .a
+	* 53 changes
 	
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
 	egen 		hh_id = group(country wave hh_id_obs)
@@ -69,12 +72,15 @@ set seed 123456
 **# 2 - model 1: plot-level
 ***********************************************************************
 
+*generate yield using constant price 
+	gen 		yield_cp = harvest_value_cp / plot_area_GPS
+
 * generate necessary variables 
-	gen			ln_yield_USD = asinh(yield_USD)
+	gen			ln_yield_cp = asinh(yield_cp)
 
 	
 * generate dummies for each country 
-	foreach 	country in Ethiopia Mali Malawi Niger Nigeria Tanzania{
+	foreach 	country in Ethiopia Mali Malawi Niger Nigeria Tanzania {
 		gen 	d_`country' = 1 if country == "`country'"
 		replace	d_`country' = 0 if d_`country' == .
 	}
@@ -82,7 +88,7 @@ set seed 123456
 * run survey-weighted regression 
 	svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
 	
-	svy: 		reg ln_yield_USD year d_* 
+	svy: 		reg ln_yield_cp c.year d_* 
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
@@ -99,19 +105,18 @@ set seed 123456
 ***********************************************************************
 **# 3 - model 2: plot-level
 ***********************************************************************
-set seed 123456
 
 * generate log variables for inputs and controls 
 	gen 		ln_total_labor_days = asinh(total_labor_days)
-	gen 		ln_seed_USD = asinh(seed_USD)	
+	gen 		ln_seed_value_cp = asinh(seed_value_cp)	
 	gen 		ln_plot_area_GPS = asinh(plot_area_GPS)
-	gen			ln_fert_USD = asinh(fert_USD)
+	gen			ln_fert_value_cp = asinh(fert_value_cp)
 	gen 		ln_dist_popcenter = asinh(dist_popcenter)
 	*gen 		ln_elevation = asinh(elevation)
 
 	
 * define input and control globals 
-	global 		inputs_cp ln_total_labor_days ln_seed_USD  ln_fert_USD ln_plot_area
+	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp ln_plot_area_GPS
 	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned 
 	*** in this global they used miss_harvest_value_cp
 	
@@ -126,12 +131,14 @@ set seed 123456
 	global 		weather_all v01_rf1 v02_rf1 v03_rf1 v04_rf1 v05_rf1 v06_rf1 v07_rf1 v08_rf1 v09_rf1 v10_rf1 v11_rf1 v12_rf1 v13_rf1 v14_rf1
 	*** mali only country with missing values (38,564 observations)
 	
+/*
 	* Mali weather data is in v**_1_arc and v**_2_arc , trying to replace the missing values with real values 
 	foreach 	i in 01 02 03 04 05 06 07 08 09 10 11 12 13 14 {
-					replace v`i'_rf1 = v`i'_1_arc if country == "Mali" & v`i'_1_arc !=.
-					replace v`i'_rf1 = v`i'_2_arc if country == "Mali" & v`i'_2_arc !=.
+					replace v`i'_rf1 = v`i'_rf1_t1 if country == "Mali" & v`i'_rf1_t1 !=.
+					replace v`i'_rf1 = v`i'_2_t1 if country == "Mali" & v`i'_2_arc !=.
 	}
-	 	 
+*/
+	
 * generate dummy for crops
 	levelsof 	crop, local(crop_levels)  
 
@@ -144,7 +151,7 @@ set seed 123456
 
 
 * lasso linear regression to select variables
-	lasso		linear ln_yield_USD (d_* indc_* c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(9912) selection(plugin) 
+	lasso		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(9912) selection(plugin) 
 	*** variables in parentheses are always included
 	*** vars out of parentheses are subject to selection by LASSO
 	lassocoef
@@ -160,8 +167,8 @@ set seed 123456
 	*erase 		"$export1/tables/model2/yield.txt"
 	*** erase the files to avoid appending 6 columns every time we run the loop
 	
-	svy: 		reg ln_yield_USD $selbaseline 
-
+	svy: 		reg ln_yield_cp $selbaseline 
+	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	di 			"`lb', `ub',"
@@ -183,12 +190,10 @@ set seed 123456
 **# 4 - model 3 - farm level
 ***********************************************************************
 
-set seed 123456
-
 * we have to identify the main crop of the hh
 
 	* determine value of total harvest for each crop within hh 
-	bysort		 hh_id wave crop: egen value_maincrop = total(harvest_value_USD)
+	bysort		 hh_id wave crop: egen value_maincrop = total(harvest_value_cp)
 	
 	* identify the main crop 
 	bysort		hh_id wave (value_maincrop): gen main_crop2 = crop[_N]
@@ -212,8 +217,8 @@ set seed 123456
 
 
 * creating missing value indicators at plot level
-	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
-				nitrogen_kg fert_USD plot_area_GPS {
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
+				fert_value_cp plot_area_GPS {
 					gen 	mi_`var' = 1 if `var' == .
 				}
 				
@@ -227,23 +232,22 @@ set seed 123456
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ///
 				soil_fertility_index d_* indc_* ///
-				(sum) yield_USD harvest_value_USD seed_USD fert_USD total_labor_days /// 
-				(sum) seed_kg nitrogen_kg plot_area_GPS /// 
+				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
+				(sum) plot_area_GPS /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v02_rf1 v04_rf1 v09_rf1 ///
+				(first) v02_rf1 v04_rf1 v10_rf1 v14_rf1 ///
 				(count) mi_* /// 
-				(count) n_yield_USD = yield_USD n_harvest_value_USD = harvest_value_USD /// 
-				n_seed_kg = seed_kg /// 
-				n_seed_USD = seed_USD n_fert_USD = fert_USD /// 
+				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
+				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
 				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(hh_id wave)
 						
 		
 * replace invalid observations with missing values and drop flag variables 
-	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
-				fert_USD plot_area_GPS {
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
+				fert_value_cp plot_area_GPS {
 					replace 	`var' = . if n_`var' == 0
 					drop 		n_`var'
 				}
@@ -252,8 +256,8 @@ set seed 123456
 
 
 * flag variables with plots containing one or more missing observations
-	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
-				fert_USD plot_area_GPS  {
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
+				fert_value_cp plot_area_GPS  {
 					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
 					replace miss_`var' = 0 if mi_`var' == 0 
 					label var miss_`var' "Flag: Does `var' contain one or more missing values at the plot level?"
@@ -263,13 +267,12 @@ set seed 123456
 
 				
 * generate new variables containing ln of the original variable
-	foreach 	var of varlist yield_USD harvest_value_USD total_labor_days seed_kg seed_USD /// 
-				fert_USD plot_area_GPS  {
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
+				fert_value_cp plot_area_GPS  {
 					gen		ln_`var' = asinh(`var')
 					lab var ln_`var' "Natural log of `var'"
 				}
 					
-	encode		country, gen(Country)
 	
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
@@ -292,9 +295,8 @@ set seed 123456
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_USD $selbaseline 
-	*gen 		included = e(sample)
-jjj
+	svy: 		reg  ln_yield_cp $selbaseline 
+
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	estimates 	store C
@@ -318,16 +320,16 @@ jjj
 	svyset,		clear 
 	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_USD year ln_plot_area_GPS ln_total_labor_days /// 
-				ln_seed_kg  ln_fert_USD ln_seed_USD used_pesticides organic_fertilizer /// 
+				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
+				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned v02_rf1 v04_rf1 v09_rf1 /// 
-				soil_fertility_index Country crop) vce(bootstrap)
+				urban plot_owned v02_rf1 v04_rf1 v10_rf1 v14_rf1 /// 
+				soil_fertility_index d_* indc_*) vce(bootstrap)
 
 				
 * describe survey design 
-	svydes 		ln_yield_USD, single generate(d)
+	svydes 		ln_yield_cp, single generate(d)
 	
 * determine how many ea exist
 	bysort		strataid (ea_id_obs): gen ID = sum(ea_id_obs != ea_id_obs[_n - 1])
@@ -353,7 +355,7 @@ jjj
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $sel, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_USD $sel /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $sel /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 
 	estimates 	store D
