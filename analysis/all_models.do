@@ -12,8 +12,7 @@
 	* access to replication data
 	
 * notes:
-	* 
-	
+	* run time is on the scale of hours?
 	
 ***********************************************************************
 **# 0 - setup
