@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 5 March 25
+* Edited on: 8 March 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -70,9 +70,6 @@
 ***********************************************************************
 **# 2 - model 1: plot-level
 ***********************************************************************
-
-*generate yield using constant price 
-	gen 		yield_cp = harvest_value_cp / plot_area_GPS
 
 * generate necessary variables 
 	gen			ln_yield_cp = asinh(yield_cp)
@@ -386,9 +383,6 @@
 	
 	replace 	crop_shock = . if crop_shock == .a	
 	
-* generate yield using constant price 
-	gen 		yield_cp = harvest_value_cp / plot_area_GPS
-
 * generate necessary variables 
 	gen			ln_yield_cp = asinh(yield_cp)
 	
@@ -587,9 +581,6 @@
 	
 	replace 	crop_shock = . if crop_shock == .a	
 	
-* generate yield using constant price 
-	gen 		yield_cp = harvest_value_cp / plot_area_GPS
-
 * generate necessary variables 
 	gen			ln_yield_cp = asinh(yield_cp)
 	
