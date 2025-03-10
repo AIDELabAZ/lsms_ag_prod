@@ -1,9 +1,9 @@
-* Project: rodirgo thesis 
-* Created on: 3 mars 2024
+* Project: rodrigo thesis 
+* Created on: March 2025
 * Created by: alj
-* Edited by: alj
-* Last edit: 3 mars 2025 
-* Stata v.18.5 
+* Edited by: rg
+* Last edit: 9 March 2025 
+* Stata v.18.0 
 
 * does
 	* reads in lsms data set
@@ -14,14 +14,14 @@
 	* grc1leg2.ado
 
 * TO DO:
-	* exports not working
-	* saving not working
-	*** anna too tired to debug
-	* scaling issues: malawi, mali, niger 
+	* include Uganda (?)
+
+* Note:
+	* created a loop to create graphs starting at line 154
 	
-* **********************************************************************
-* 0 - setup
-* **********************************************************************
+***********************************************************************
+**# 0 - setup
+***********************************************************************
 
 * define paths
 	global root 	"$data/lsms_ag_prod_data/replication"  
@@ -33,17 +33,18 @@
 	cap log close
 *	log 	using 		"$logout/summaryvis", append
 
-* **********************************************************************
-* 1 - load and process data
-* **********************************************************************
+***********************************************************************
+**# 1 - load and process data
+***********************************************************************
 
 * load data 
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 
-* **********************************************************************
-* 2 - generate total season distribution graphs by country
-* **********************************************************************
+***********************************************************************
+**# 2 - generate total season distribution graphs by country
+***********************************************************************
 
+/*
 * total season rainfall - ethiopia
 	twoway  (kdensity v05_rf2 if country == "Ethiopia", color(gray%30) recast(area)) ///
 			(kdensity v05_rf3 if country == "Ethiopia", color(vermillion%30) recast(area)) ///
@@ -52,11 +53,10 @@
 			ytitle("Density") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
 			legend(pos(6) col(6) label(1 "CHIRPS") label(2 "CPC") ///
 			label(3 "ERA5")) 
-			*** previously at the end there was a line "saving("$export1/NAME", replace)"
-			*** but it wasn't running so i cut it for now
-			*** this came at the end of all of them
 
-*	graph export 	"$export1\eth_density_rf.pdf", as(pdf) replace
+	* save the graph as .gph (to later combine)
+		*graph save 		"$export1/figures/density_rf/eth_density_rf.gph", replace
+		*graph export 	"$export1/figures/density_rf/eth_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - malawi	
 twoway  (kdensity v05_rf2 if country == "Malawi", color(gray%30) recast(area)) ///
@@ -65,19 +65,23 @@ twoway  (kdensity v05_rf2 if country == "Malawi", color(gray%30) recast(area)) /
         , xtitle("") xscale(r(0(500)3000)) title("Malawi") ///
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
-			
-*	graph export 	"$export1\mwi_density_rf.pdf", as(pdf) 
+
+	* save the graph as .gph (to later combine)
+		*graph save 		"$export1/figures/density_rf/mwi_density_rf.gph", replace
+		*graph export 	"$export1/figures/density_rf/mwi_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - mali
-twoway  (kdensity v05_2_chi if country == "Mali", color(gray%30) recast(area)) ///
-        (kdensity v05_2_cpc if country == "Mali", color(vermillion%30) recast(area)) ///
-        (kdensity v05_2_era if country == "Mali", color(sea%30) recast(area)) ///
+twoway  (kdensity v05_rf2 if country == "Mali", color(gray%30) recast(area)) ///
+        (kdensity v05_rf3 if country == "Mali", color(vermillion%30) recast(area)) ///
+        (kdensity v05_rf4 if country == "Mali", color(sea%30) recast(area)) ///
         , xtitle("") xscale(r(0(500)2500)) title("Mali") ///
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
-		*** THIS ISN'T WORKING AT ALL
-			
-*	graph export 	"$export1\mli_density_rf.pdf", as(pdf) 
+
+
+	* save the graph as .gph (to later combine)
+		*graph save 		"$export1/figures/density_rf/mli_density_rf.gph", replace		
+		*graph export 	"$export1/figures/density_rf/mli_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - niger	
 twoway  (kdensity v05_rf2 if country == "Niger", color(gray%30) recast(area)) ///
@@ -86,8 +90,11 @@ twoway  (kdensity v05_rf2 if country == "Niger", color(gray%30) recast(area)) //
         , xtitle("") xscale(r(0(500)2500)) title("Niger") ///
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
-			
-*	graph export 	"$export1\ngr_density_rf.pdf", as(pdf) replace
+
+
+	* save the graph as .gph (to later combine)
+		*graph save 		"$export1/figures/density_rf/ngr_density_rf.gph", replace
+		*graph export 	"$export1/figures/density_rf/ngr_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - nigeria
 twoway  (kdensity v05_rf2 if country == "Nigeria", color(gray%30) recast(area)) ///
@@ -97,7 +104,10 @@ twoway  (kdensity v05_rf2 if country == "Nigeria", color(gray%30) recast(area)) 
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
 			
-*	graph export 	"$export1\nga_density_rf.pdf", as(pdf) replace
+
+	* save the graph as .gph (to later combine)
+		*graph save 		"$export1/figures/density_rf/nga_density_rf.gph", replace
+		*graph export 	"$export1/figures/density_rf/nga_density_rf.pdf", as(pdf) replace
 
 * total season rainfall - tanzania	
 twoway  (kdensity v05_rf2 if country == "Tanzania", color(gray%30) recast(area)) ///
@@ -106,8 +116,22 @@ twoway  (kdensity v05_rf2 if country == "Tanzania", color(gray%30) recast(area))
         , xtitle("Total Seasonal Rainfall (mm)") xscale(r(0(500)3000)) title("Tanzania") ///
         ytitle("") ylabel(, nogrid labsize(small)) xlabel(, nogrid labsize(small)) ///
         legend(off)
-			
-*	graph export 	"$export1\tza_density_rf.pdf", as(pdf) replace
+
+
+	* save the graph as .gph (to later combine)
+		*graph save 		"$export1/figures/density_rf/tza_density_rf.gph", replace
+		*graph export 	"$export1/figures/density_rf/tza_density_rf.pdf", as(pdf) replace
+
+* create a panel
+*graph combine "$export1/figures/density_rf/eth_density_rf.gph" ///
+              "$export1/figures/density_rf/mwi_density_rf.gph" ///
+              "$export1/figures/density_rf/mli_density_rf.gph" ///
+              "$export1/figures/density_rf/ngr_density_rf.gph" ///
+              "$export1/figures/density_rf/nga_density_rf.gph" ///
+              "$export1/figures/density_rf/tza_density_rf.gph", ///
+              rows(2) cols(3) imargin(3) title("Seasonal Rainfall Density by Country")
+*/
+
 
 * total season rainfall - uganda	
 *twoway  (kdensity v05_rf2 if country == "Uganda", color(gray%30) recast(area)) ///
@@ -129,10 +153,49 @@ twoway  (kdensity v05_rf2 if country == "Tanzania", color(gray%30) recast(area))
 * if those middle parts ran this would work but it isn't working
 * can try and fix 
 	
-			
-* **********************************************************************
-* 3 - end matter
-* **********************************************************************
+
+* create an indicator for values > 2,500 mm
+	foreach 		var in v05_rf2 v05_rf3 v05_rf4 {
+				gen 		`var'_mod = `var'
+				replace 	`var'_mod = 2500 if `var' > 2500
+		}
+
+* define axis ranges 
+	local 			x_range "xscale(range(0 2500)) xlabel(0(500)2000 2500 `"2,500+"', nogrid labsize(vsmall))"
+	local 			y_range "yscale(range(0 0.008)) ylabel(0(0.002)0.008, nogrid labsize(small))"
+
+* loop graphs by country 
+	foreach 		country in Ethiopia Malawi Mali Niger Nigeria Tanzania {
+				twoway 		(kdensity v05_rf2_mod if country == "`country'", color(gray%30) recast(area)) ///
+							(kdensity v05_rf3_mod if country == "`country'", color(vermillion%30) recast(area)) ///
+							(kdensity v05_rf4_mod if country == "`country'", color(sea%30) recast(area)), ///
+							xtitle("", size(vsmall)) `x_range' `y_range' title("`country'") ///
+							ytitle("") ///
+							legend(pos(6) col(6) label(1 "CHIRPS") label(2 "CPC") label(3 "ERA5"))
+
+    * save the graph as .gph (to later combine)
+				graph 		save "$export1/figures/density_rf/`=lower("`country'")'_density_rf.gph", replace
+				graph 		export "$export1/figures/density_rf/`=lower("`country'")'_density_rf.pdf", as(pdf) replace
+		}
+
+
+* create a panel			
+	grc1leg2 		"$export1/figures/density_rf/ethiopia_density_rf.gph" /// 
+					"$export1/figures/density_rf/mali_density_rf.gph" ///
+					"$export1/figures/density_rf/malawi_density_rf.gph" /// 
+					"$export1/figures/density_rf/niger_density_rf.gph" /// 
+					"$export1/figures/density_rf/nigeria_density_rf.gph" /// 
+					"$export1/figures/density_rf/tanzania_density_rf.gph", ///
+					rows(2) cols(3) iscale(.5) title("Total Season Rainfall Density by Country") commonscheme
+					
+	graph 			export "$export1/figures/density_rf/all_countries_density_rf", as(pdf) replace
+					
+					
+***********************************************************************
+**# 3 - end matter
+***********************************************************************
+
+
 
 * close the log
 *	log	close
