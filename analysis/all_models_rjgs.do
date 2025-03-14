@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 13 March 25
+* Edited on: 12 March 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -34,7 +34,12 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
+	
+* merge hh 
+	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
+	keep if 	_merge == 3
+		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
 	
@@ -43,10 +48,10 @@
 	*** main crop if their variable
 	drop if		crop == . 
 	*** crop is our vairalbe 
-	*** 3,769 observations dropped
+	*** 2,744 observations dropped
 	
 	replace 	crop_shock = . if crop_shock == .a
-	* 55 changes
+	* 49 changes
 	
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
 	egen 		hh_id = group(country wave hh_id_obs)
@@ -113,10 +118,10 @@
 	
 * define input and control globals 
 	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp ln_plot_area_GPS
-	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned 
+	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned 
 	*** in this global they used miss_harvest_value_cp
 	
-	global 		geo  ln_dist_popcenter soil_fertility_index   
+	global 		geo  ln_dist_popcenter soil_fertility_index   hh_asset_index
 	*** included but we do not have it yet: i.agro_ecological_zone, ln_dist_road, ln_elevation
 	
 	*global 		FE i.Country i.crop 
@@ -148,7 +153,7 @@
 
 
 * lasso linear regression to select variables
-	lasso		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(9912) selection(plugin) 
+	lasso		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp $geo ) $weather_all , nolog rseed(9912) selection(plugin) 
 	*** variables in parentheses are always included
 	*** vars out of parentheses are subject to selection by LASSO
 	lassocoef
@@ -307,8 +312,17 @@
 				ctitle("Geovariables and weather controls") /// 
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
+
 				
-				
+
+* keep only observations included in the regression
+	*keep if 	e(sample)
+	*keep 		wave country survey hh_id_obs
+	
+* save for merge 
+*	save 		"$export1/dta_files_merge/hh_included.dta", replace
+	
+
 ***********************************************************************
 **# 5 - model 4 - hh FE 
 ***********************************************************************
@@ -338,7 +352,7 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(500) seed(123)
+	bsweights 	bsw, n(-1) reps(200) seed(123)
 
 	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
@@ -372,6 +386,11 @@
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 
+* merge hh 
+	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+
+	keep if 	_merge == 3
+		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
 	
@@ -380,9 +399,10 @@
 	*** main crop if their variable
 	drop if		crop == . 
 	*** crop is our vairalbe 
-	*** 83,753 observations dropped
+	*** 2,744 observations dropped
 	
-	replace 	crop_shock = . if crop_shock == .a	
+	replace 	crop_shock = . if crop_shock == .a
+	* 49 changes
 	
 * generate necessary variables 
 	gen			ln_yield_cp = asinh(yield_cp)
@@ -540,7 +560,7 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(500) seed(123)
+	bsweights 	bsw, n(-1) reps(200) seed(123)
 
 	*global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
@@ -571,6 +591,11 @@
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 
+* merge hh 
+	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+
+	keep if 	_merge == 3
+		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
 	
@@ -578,9 +603,11 @@
 	*drop if 	main_crop == "" 
 	*** main crop if their variable
 	drop if		crop == . 
-	* crop is our variable
+	*** crop is our vairalbe 
+	*** 2,744 observations dropped
 	
-	replace 	crop_shock = . if crop_shock == .a	
+	replace 	crop_shock = . if crop_shock == .a
+	* 49 changes
 	
 * generate necessary variables 
 	gen			ln_yield_cp = asinh(yield_cp)
@@ -811,7 +838,7 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(500) seed(123)
+	bsweights 	bsw, n(-1) reps(200) seed(123)
 
 	*global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
