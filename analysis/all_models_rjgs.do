@@ -1,12 +1,18 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 12 March 25
+* Edited on: 17 March 25
 * Edited by: rg
 * Stata v.18.0
 
 * does
-	* reads in and conducts replication of Wollburg et al.
+	* runs all models using:
+		* tight sample
+		* scaled inputs 
+		* includes farm size as a control
+		* drops Mali before running models 4 and 5 becase hh and managers /// 
+		cannot be tracked over time
+
 
 * assumes
 	* access to replication data
@@ -107,6 +113,13 @@
 **# 3 - model 2: plot-level
 ***********************************************************************
 
+* scale inputs
+	foreach 	var in total_labor_days seed_value_cp fert_value_cp {
+			gen 	`var'_scale = `var' / plot_area_GPS
+			drop 	`var'
+			rename 	`var'_scale `var'	
+	}
+
 * generate log variables for inputs and controls 
 	gen 		ln_total_labor_days = asinh(total_labor_days)
 	gen 		ln_seed_value_cp = asinh(seed_value_cp)	
@@ -117,11 +130,14 @@
 
 	
 * define input and control globals 
-	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp ln_plot_area_GPS
-	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned 
+* we include farm size 
+
+
+	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp 
+	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size
 	*** in this global they used miss_harvest_value_cp
 	
-	global 		geo  ln_dist_popcenter soil_fertility_index   hh_asset_index
+	global 		geo  ln_dist_popcenter soil_fertility_index  hh_asset_index
 	*** included but we do not have it yet: i.agro_ecological_zone, ln_dist_road, ln_elevation
 	
 	*global 		FE i.Country i.crop 
@@ -130,15 +146,7 @@
 	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
 	
 	global 		weather_all v01_rf1 v02_rf1 v03_rf1 v04_rf1 v05_rf1 v06_rf1 v07_rf1 v08_rf1 v09_rf1 v10_rf1 v11_rf1 v12_rf1 v13_rf1 v14_rf1
-	*** mali only country with missing values (38,564 observations)
-	
-/*
-	* Mali weather data is in v**_1_arc and v**_2_arc , trying to replace the missing values with real values 
-	foreach 	i in 01 02 03 04 05 06 07 08 09 10 11 12 13 14 {
-					replace v`i'_rf1 = v`i'_rf1_t1 if country == "Mali" & v`i'_rf1_t1 !=.
-					replace v`i'_rf1 = v`i'_2_t1 if country == "Mali" & v`i'_2_arc !=.
-	}
-*/
+
 	
 * generate dummy for crops
 	levelsof 	crop, local(crop_levels)  
@@ -239,7 +247,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v02_rf1 v03_rf1 v04_rf1 v10_rf1 v14_rf1 ///
+				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -330,12 +338,15 @@
 * clear survey design settings 
 	svyset,		clear 
 	
+* drop Mali bc hh and managers cannot be tracked 
+	drop if 	country == "Mali"
+	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned v02_rf1 v03_rf1 v04_rf1 v10_rf1 v14_rf1 /// 
+				urban plot_owned farm_size v03_rf1 v04_rf1 v10_rf1 hh_asset_index /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 
 				
@@ -378,7 +389,6 @@
 				addtext(Main crop FE, YES, Country FE, YES)  append
 
 
-
 ***********************************************************************
 **# 6 - model 5 - plot-manager
 ***********************************************************************		
@@ -403,6 +413,13 @@
 	
 	replace 	crop_shock = . if crop_shock == .a
 	* 49 changes
+	
+* scale inputs
+	foreach 	var in total_labor_days seed_value_cp fert_value_cp {
+			gen 	`var'_scale = `var' / plot_area_GPS
+			drop 	`var'
+			rename 	`var'_scale `var'	
+	}
 	
 * generate necessary variables 
 	gen			ln_yield_cp = asinh(yield_cp)
@@ -482,7 +499,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v02_rf1 v03_rf1 v04_rf1 v10_rf1 v14_rf1 ///
+				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -527,6 +544,10 @@
 	lab 		values crop crop
 	lab var		crop "Main Crop group - plot manager"
 	
+* drop mali since hh and managers cannot be tracked 
+	drop if 	country == "Mali"
+	*** 5,577 obs dropped
+	
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
@@ -534,8 +555,12 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	
 	drop if 	float(temp_weight_test) != float(total_wgt_survey)
+	*** 1,412 obs dropped 
+	
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
+	
+
 
 * survey design
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
@@ -543,7 +568,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned v02_rf1 v03_rf1 v04_rf1 v10_rf1 v14_rf1 /// 
+				urban plot_owned farm_size v03_rf1 v04_rf1 v10_rf1 hh_asset_index /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 
 
@@ -608,6 +633,13 @@
 	
 	replace 	crop_shock = . if crop_shock == .a
 	* 49 changes
+	
+* scale inputs
+	foreach 	var in total_labor_days seed_value_cp fert_value_cp {
+			gen 	`var'_scale = `var' / plot_area_GPS
+			drop 	`var'
+			rename 	`var'_scale `var'	
+	}
 	
 * generate necessary variables 
 	gen			ln_yield_cp = asinh(yield_cp)
@@ -691,7 +723,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v02_rf1 v03_rf1 v04_rf1 v10_rf1 v14_rf1 ///
+				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -763,7 +795,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v02_rf1 v03_rf1 v04_rf1 v10_rf1 v14_rf1 ///
+				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -822,7 +854,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned v02_rf1 v03_rf1 v04_rf1 v10_rf1 v14_rf1 /// 
+				urban plot_owned v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 				
 * describe survey design 
@@ -879,8 +911,10 @@
 				byopts(row(1)) keep(year) /// 
 				xlabel(none) /// 
 				yline(0, lcolor(black%50)) /// 
-				ylab(0.10 "10" 0.09 "9" 0.08 "8" 0.07 "7" 0.06 "6" 0.05 "5" 0.04 "4" 0.03 "3" 0.02 "2" /// 
-				0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" -0.03 "-3" -0.04 "-4", labsize(small) grid) /// 
+				ylab(0.10 "10" 0.09 "9" 0.08 "8" 0.07 "7" 0.06 "6" 0.05 "5" /// 
+				0.04 "4" 0.03 "3" 0.02 "2" /// 
+				0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
+				-0.03 "-3" -0.04 "-4" -0.05 "-5" -0.06 "-6", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
 				
 
