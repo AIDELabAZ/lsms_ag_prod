@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 17 March 25
+* Edited on: 20 March 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -12,6 +12,8 @@
 		* includes farm size as a control
 		* drops Mali before running models 4 and 5 becase hh and managers /// 
 		cannot be tracked over time
+		* model 2: loop running lasso for each rf product and saving /// 
+		selected vars 
 
 
 * assumes
@@ -41,6 +43,9 @@
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 	
+* create number of plots variable
+	bysort		 country survey wave hh_id_obs  : egen nb_plot = count(plot_id_obs)
+	
 * merge hh 
 	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
@@ -69,14 +74,16 @@
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
 	
-* create weight adj
-	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
-	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
-	gen 		double wgt_adj_surveypop = scalar * pw 
-	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
-	assert 		float(temp_weight_test)==float(total_wgt_survey)
-	drop 		scalar temp_weight_test
-	
+* create weight adj	
+	gen 	double temp_weight_surveypop = pw/nb_plot 
+	bys 	country survey : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
+	gen 	double scalar =  total_wgt_survey / sum_weight_wave_surveypop
+	gen 	double wgt_adj_surveypop = scalar * temp_weight_surveypop 
+	bys 	country survey : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
+	assert 	float(temp_weight_test)==float(total_wgt_survey)
+	drop 	scalar temp_weight_test
+
+	drop 	nb_plot   temp_weight_surveypop sum_weight_wave_surveypop  
 	
 ***********************************************************************
 **# 2 - model 1: plot-level
@@ -145,7 +152,11 @@
 	
 	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
 	
-	global 		weather_all v01_rf1 v02_rf1 v03_rf1 v04_rf1 v05_rf1 v06_rf1 v07_rf1 v08_rf1 v09_rf1 v10_rf1 v11_rf1 v12_rf1 v13_rf1 v14_rf1
+	global 		era5 v01_rf4 v02_rf4 v03_rf4 v04_rf4 v05_rf4 v06_rf4 v07_rf4 v08_rf4 v09_rf4 v10_rf4 v11_rf4 v12_rf4 v13_rf4 v14_rf4
+	
+	global  	chirps v01_rf2 v02_rf2 v03_rf2 v04_rf2 v05_rf2 v06_rf2 v07_rf2 v08_rf2 v09_rf2 v10_rf2 v11_rf2 v12_rf2 v13_rf2 v14_rf2
+	
+	global 		cpc v01_rf3 v02_rf3 v03_rf3 v04_rf3 v05_rf3 v06_rf3 v07_rf3 v08_rf3 v09_rf3 v10_rf3 v11_rf3 v12_rf3 v13_rf3 v14_rf3
 
 	
 * generate dummy for crops
@@ -159,25 +170,46 @@
 		gen 		indc_`clean_label' = (crop == `crop_code') 
 	}
 
-
-* lasso linear regression to select variables
-	lasso		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp $geo ) $weather_all , nolog rseed(9912) selection(plugin) 
-	*** variables in parentheses are always included
-	*** vars out of parentheses are subject to selection by LASSO
-	lassocoef
 	
-	global		selbaseline `e(allvars_sel)'
-	*** these are all the variables
 	
-	global 		testbaseline `e(othervars_sel)'
-	*** these are the variables chosen that were subject to selection by LASSO
+* loop lasso different rf products 
+	local 		products chirps cpc era5
+	
+	foreach 	product of local products {	
+		* lasso linear reg to selec vars 
+		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp $geo ) /// 
+					$`product', nolog rseed(9912) selection(plugin)
+					
+		lassocoef
+		
+		* these are all the variables
+		global		selbaseline_`product' `e(allvars_sel)'
+		
+		* these are the variables chosen that were subject to selection by LASSO
+		global 		testbaseline_`product' `e(othervars_sel)'
+		
+		*create a local to store globals 
+		local 		current_selbaseline = "selbaseline_`product'"
+		
+		svy: 		reg ln_yield_cp $`current_selbaseline'
+	
+		local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
+		local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
+		di 			"`lb', `ub',"
+	}
+	
+	
+	* check which rf variables are chosen 
+	display 	"$testbaseline_chirps"
+	display 	"$testbaseline_cpc"
+	display 	"$testbaseline_era5"
 	
 * estimate model 2
 	*erase 		"$export1/tables/model2/yield.tex"
 	*erase 		"$export1/tables/model2/yield.txt"
 	*** erase the files to avoid appending 6 columns every time we run the loop
 	
-	svy: 		reg ln_yield_cp $selbaseline 
+	svy: 		reg ln_yield_cp $selbaseline_chirps
 	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -233,7 +265,7 @@
 				}
 				
 * to display lasso vars we can do this:
-	display 	"$selbaseline"
+	display 	"$selbaseline_chirps"
 
 * collapse the data to a hh level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
@@ -247,7 +279,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
+				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -305,7 +337,7 @@
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_cp $selbaseline 
+	svy: 		reg  ln_yield_cp $selbaseline_chirps 
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
