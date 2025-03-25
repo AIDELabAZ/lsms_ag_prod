@@ -76,10 +76,20 @@
 	
 * create weight adj	
 	gen 	double temp_weight_surveypop = pw/nb_plot 
-	bys 	country survey : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
+	* new variable 
+	* pw divided by number of plots
+	*bys 	country survey : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
+	bys 	country wave : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
+	*** why by survey?
+	* new variable that is the sum of the weighted survey just created by plots 
+	* ANNA IS CHANGING THIS TO WAVE NOT SURVEY - 25/03
 	gen 	double scalar =  total_wgt_survey / sum_weight_wave_surveypop
+	* product of the total weight of pw divided by the reweighted sum 
 	gen 	double wgt_adj_surveypop = scalar * temp_weight_surveypop 
-	bys 	country survey : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
+	* then muliplied by the outcome of the pw weighted by plots 
+	*bys 	country survey : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
+	bys 	country wave : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
+	*** AS ABOVE 
 	assert 	float(temp_weight_test)==float(total_wgt_survey)
 	drop 	scalar temp_weight_test
 
