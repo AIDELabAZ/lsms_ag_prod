@@ -388,7 +388,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size v03_rf1 v04_rf1 v10_rf1 hh_asset_index /// 
+				urban plot_owned farm_size v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 
 				
@@ -446,7 +446,7 @@
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
 	
-	bysort		 country survey wave hh_id_obs  : egen nb_plot = count(plot_id_obs)
+	bysort		 country survey wave hh_id_obs  : egen nb_man = count(manager_id_obs)
 	
 	
 * drop if main crop if missing
@@ -533,10 +533,10 @@
 	display 	"$selbaseline"
 
 * collapse the data to a plot manager level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id manager_id_obs /// 
+	collapse 	(first) wave country survey admin_1* admin_2* admin_3* crop cluster_id manager_id_obs nb_man /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
-				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
+				dist_popcenter strataid intercropped pw urban /// 
 				ln_dist_popcenter ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
@@ -544,7 +544,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
+				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -593,19 +593,29 @@
 	drop if 	country == "Mali"
 	*** 5,577 obs dropped
 	
-* create weight adj
-	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
-	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
-	gen 		double wgt_adj_surveypop = scalar * pw 
-	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
+* create total_wgt_survey varianble 
+	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
 	
-	drop if 	float(temp_weight_test) != float(total_wgt_survey)
-	*** 1,412 obs dropped 
-	
-	assert 		float(temp_weight_test)==float(total_wgt_survey)
-	drop 		scalar temp_weight_test
-	
+* create weight adj	
+	gen 	double temp_weight_surveypop = pw/nb_man 
+	* new variable 
+	* pw divided by number of plots
+	*bys 	country survey : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
+	bys 	country wave : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
+	*** why by survey?
+	* new variable that is the sum of the weighted survey just created by plots 
+	* ANNA IS CHANGING THIS TO WAVE NOT SURVEY - 25/03
+	gen 	double scalar =  total_wgt_survey / sum_weight_wave_surveypop
+	* product of the total weight of pw divided by the reweighted sum 
+	gen 	double wgt_adj_surveypop = scalar * temp_weight_surveypop 
+	* then muliplied by the outcome of the pw weighted by plots 
+	*bys 	country survey : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
+	bys 	country wave : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
+	*** AS ABOVE 
+	assert 	float(temp_weight_test)==float(total_wgt_survey)
+	drop 	scalar temp_weight_test
 
+	drop 	nb_man   temp_weight_surveypop sum_weight_wave_surveypop  
 
 * survey design
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
@@ -613,7 +623,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size v03_rf1 v04_rf1 v10_rf1 hh_asset_index /// 
+				urban plot_owned farm_size v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 
 
@@ -768,7 +778,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
+				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -840,7 +850,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
+				(first)v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -899,7 +909,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size /// 
+				urban plot_owned v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 				
 * describe survey design 
