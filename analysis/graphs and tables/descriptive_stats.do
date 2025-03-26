@@ -1,7 +1,7 @@
 * Project: Rodrigo thesis
 * Created on: January 2025
 * Created by: rg
-* Edited on: 21 January 2025
+* Edited on: 25 March 2025
 * Edited by: rg
 * Stata v.18.0
 
@@ -35,53 +35,36 @@
 ***********************************************************************
 
 * load the data 
-	use 		"$root/aggregate/allrounds_final", clear		
+	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear		
 	
 ***********************************************************************
 **# 2 - descriptive statistics table 
 ***********************************************************************
 	
-* install outreg2 command since it is a user-written command 
-	*ssc 		install outreg2
-
+* combine country and wave vars
+	egen 		country_wave = group(country wave), label
+	
 * create the table 
-	tabstat		urban harvest_kg seed_kg improved used_pesticides crop_shock /// 
-				pests_shock rain_shock drought_shock flood_shock yield_kg /// 
-				total_labor_days nitrogen_kg organic_fertilizer intercropped /// 
-				plot_owned age_manager female_manager formal_education_manager /// 
-				irrigated hh_shock hh_size hh_electricity_access harv_missing /// 
-				used_seed used_fert plot_tot plot_area_GPS, by(country) ///
-				statistics(mean sd)columns(variables)
+	estpost 	tabstat yield_cp plot_area_GPS seed_value_cp /// 
+				total_labor_days, by(country_wave) ///
+				statistics(mean sd) columns(variables)
 				
-				
-* post tabstat results
-	estpost 	tabstat urban harvest_kg seed_kg improved used_pesticides crop_shock /// 
-				pests_shock rain_shock drought_shock flood_shock yield_kg /// 
-				total_labor_days nitrogen_kg organic_fertilizer intercropped /// 
-				plot_owned age_manager female_manager formal_education_manager /// 
-				irrigated hh_shock hh_size hh_electricity_access harv_missing /// 
-				used_seed used_fert plot_tot plot_area_GPS, by(country) statistics(mean sd)
 
+* do the same using zenodo data
+	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear 
+	
+* combine country and wave vars
+	egen 		country_wave = group(country wave), label
+	
+* create the table 
+	estpost 	tabstat harvest_value_cp plot_area seed_value_cp /// 
+				labor_days_nonhired, by(country_wave) ///
+				statistics(mean sd) columns(variables)
+					
 
-* save output and then transpose 
-	outreg2 	using "$output/tables/summary_stats.tex", replace stat(mean sd) ctitle("Summary Statistics")
-	
-* load results 
-
-	
-* reshape to long format 
-	reshape		long mean sd, i(variable) j(country)
-	reshape 	wide mean sd, i(variable) j(country)
-	
-* label variables 
-	rename 		mean* *_mean 
-	rename 		sd* *_sd 
-	
-* save or export 
-	*save 		"$output/tables/"
 
 ***********************************************************************
-**# 3 - figure - percet of plots by crop category
+**# 3 - figure - percent of plots by crop category
 ***********************************************************************
 
 * load the data 

@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 20 March 25
+* Edited on: 25 March 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -14,6 +14,7 @@
 		cannot be tracked over time
 		* model 2: loop running lasso for each rf product and saving /// 
 		selected vars 
+		* include country FE in last three models 
 
 
 * assumes
@@ -50,6 +51,7 @@
 	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
 	keep if 	_merge == 3
+	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -388,7 +390,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size v03_rf1 v04_rf1 v10_rf1 hh_asset_index /// 
+				urban plot_owned farm_size v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 
 				
@@ -409,7 +411,7 @@
 
 	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
-	global 		sel : list global(selbaseline) - global(remove)
+	global 		sel : list global(selbaseline_chirps) - global(remove)
 	display 	"$sel"
 	
 * estimate model 4
@@ -419,7 +421,7 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $sel, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $sel /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_chirps /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 
 	estimates 	store D
@@ -541,7 +543,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
+				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -610,7 +612,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size v03_rf1 v04_rf1 v10_rf1 hh_asset_index /// 
+				urban plot_owned farm_size v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 
 
@@ -637,7 +639,7 @@
 	*erase 		"$export1/tables/model5/yield.tex"
 	*erase 		"$export1/tables/model5/yield.txt"
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $sel /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_chirps /// 
 				[pw = wgt_adj_surveypop],absorb(manager_id_obs) 
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -765,7 +767,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
+				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -837,7 +839,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size ///
+				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -896,7 +898,7 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned v03_rf1 v04_rf1 v10_rf1 hh_asset_index farm_size /// 
+				urban plot_owned v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
 				
 * describe survey design 
@@ -926,7 +928,7 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $sel, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $sel /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_chirps /// 
 				[pw = wgt_adj_surveypop],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 
 	estimates 	store F
