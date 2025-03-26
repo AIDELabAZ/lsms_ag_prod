@@ -1,20 +1,21 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 25 March 25
+* Edited on: 26 March 25
 * Edited by: rg
 * Stata v.18.0
 
 * does
 	* runs all models using:
 		* tight sample
+		* using nb_plot (weights)
 		* scaled inputs 
 		* includes farm size as a control
 		* drops Mali before running models 4 and 5 becase hh and managers /// 
 		cannot be tracked over time
 		* model 2: loop running lasso for each rf product and saving /// 
 		selected vars 
-		* include country FE in last three models 
+		* includes country FE in last three models ???
 
 
 * assumes
@@ -44,13 +45,21 @@
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 	
+* if we keep plots < 100 
+	*keep if		plot_area_GPS < 100 
+	*** 8,366 observations deleted
+	
+* if we keep plots < 50
+	*keep if 		plot_area_GPS < 50
+	*** 8,572 observations deleted
+	
 * create number of plots variable
 	bysort		 country survey wave hh_id_obs  : egen nb_plot = count(plot_id_obs)
 	
 * merge hh 
-	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	keep if 	_merge == 3
+	*keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 		
 	drop if 	ea_id_obs == .
@@ -365,14 +374,13 @@
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 
-				
 
 * keep only observations included in the regression
 	*keep if 	e(sample)
 	*keep 		wave country survey hh_id_obs
 	
 * save for merge 
-*	save 		"$export1/dta_files_merge/hh_included.dta", replace
+	*save 		"$export1/dta_files_merge/hh_included.dta", replace
 	
 
 ***********************************************************************
@@ -385,13 +393,16 @@
 * drop Mali bc hh and managers cannot be tracked 
 	drop if 	country == "Mali"
 	
+	drop 		d_Mali
+	
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
-				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
+				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned farm_size v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index /// 
 				soil_fertility_index d_* indc_*) vce(bootstrap)
+
 
 				
 * describe survey design 
@@ -409,10 +420,10 @@
 * generate bootstrap weights
 	bsweights 	bsw, n(-1) reps(200) seed(123)
 
-	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
+	global 		remove  d_Mali
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
-	global 		sel : list global(selbaseline_chirps) - global(remove)
-	display 	"$sel"
+	global 		selbaseline_4_5 : list global(selbaseline_chirps) - global(remove)
+	display 	"$selbaseline_4_5"
 	
 * estimate model 4
 *	erase 		"$export1/tables/model4/yield.tex"
@@ -421,9 +432,10 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $sel, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_chirps /// 
+	
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
-
+				
 	estimates 	store D
 *	test 		$test
 *	local 		F1 = r(F)
@@ -439,7 +451,13 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
+	
+* keep plots < 100 
+	*keep if		plot_area_GPS < 100 
 
+* keep plots < 50 
+	*keep if		plot_area_GPS < 50
+	
 * merge hh 
 	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
@@ -592,6 +610,8 @@
 	drop if 	country == "Mali"
 	*** 5,577 obs dropped
 	
+	drop 		d_Mali
+	
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
@@ -599,7 +619,9 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	
 	drop if 	float(temp_weight_test) != float(total_wgt_survey)
-	*** 1,412 obs dropped 
+	*** 1,402 obs dropped 
+	*** if plots < 100, then 2,459 obs dropped 
+	*** if plots < 50, then 0 obs dropped
 	
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
@@ -639,7 +661,7 @@
 	*erase 		"$export1/tables/model5/yield.tex"
 	*erase 		"$export1/tables/model5/yield.txt"
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_chirps /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(manager_id_obs) 
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -659,6 +681,12 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
+	
+* keep plots < 100 
+	*keep if		plot_area_GPS < 100 
+	
+* keep plots < 50 
+	*keep if		plot_area_GPS < 50 
 
 * merge hh 
 	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
