@@ -430,16 +430,12 @@
 *	erase 		"$export1/tables/model4/yield.txt"
 
 	*xtset 		hh_id_obs wave	
-	*xtreg		ln_yield_USD $sel, fe
-	
-	* Lentils_Peanuts indc_Maize indc_Millet indc_Nuts_Seeds indc_Other indc_Rice indc_Sorghum indc_Tubers_Roots indc_Wheat indc_Fruits o.indc_Cash_Crops year ln_total_labor_days ln_seed_value_cp ln_fert_value_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size ln_dist_popcenter soil_fertility_index hh_asset_index v04_rf2 v05_rf2 v07_rf2 v10_rf2
-
-	
+	*xtreg		ln_yield_USD $selbaseline_4_5, fe
 	
 	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 				
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp d_* /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 
 				
