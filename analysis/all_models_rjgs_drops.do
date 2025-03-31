@@ -87,6 +87,7 @@
 	
 * create weight adj	
 	gen 	double temp_weight_surveypop = pw/nb_plot 
+*	gen 	double temp_weight_surveypop = pw 
 	* new variable 
 	* pw divided by number of plots
 	*bys 	country survey : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
@@ -432,7 +433,7 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $selbaseline_4_5, fe
 	
-	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 				
 	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp d_* /// 
@@ -468,6 +469,9 @@
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
+	
+* create number of managers variable
+	bysort		 country survey wave hh_id_obs  : egen nb_man = count(manager_id_obs)	
 	
 * drop if main crop if missing
 	*drop if 	main_crop == "" 
@@ -551,13 +555,19 @@
 				
 * to display lasso vars we can do this:
 	display 	"$selbaseline"
-
+	
+* as soon as i enter in nb_man to the collapse below it says "no observations"	
+* can i make nb_man post collapse?
+	
 * collapse the data to a plot manager level 
+
+*** concern: in this we are collapsing to first for country and survey? what does that functionally result in?????? 
+
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id manager_id_obs /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
-				ln_dist_popcenter ///
+				ln_dist_popcenter  ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
 				(sum) plot_area_GPS /// 
@@ -570,7 +580,10 @@
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
 				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(plot_manager_id)
-						
+		
+* create number of managers variable
+	bysort		 country survey hh_id_obs  : egen nb_man = count(manager_id_obs)	
+			
 		
 * replace invalid observations with missing values and drop flag variables 
 	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
@@ -616,7 +629,8 @@
 	drop 		d_Mali
 	
 * create weight adj
-	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
+*	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
+	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw/nb_man)	
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
 	gen 		double wgt_adj_surveypop = scalar * pw 
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
