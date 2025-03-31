@@ -15,7 +15,7 @@
 		cannot be tracked over time
 		* model 2: loop running lasso for each rf product and saving /// 
 		selected vars 
-		* includes country FE in last three models ???
+		* includes country FE in last three models (??)
 
 
 * assumes
