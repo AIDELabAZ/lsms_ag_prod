@@ -15,7 +15,7 @@
 		cannot be tracked over time
 		* model 2: loop running lasso for each rf product and saving /// 
 		selected vars 
-		* includes country FE in last three models (??)
+		* includes country FE in last three models ???
 
 
 * assumes
@@ -54,7 +54,7 @@
 	*** 8,572 observations deleted
 	
 * create number of plots variable
-	bysort		 country survey wave hh_id_obs  : egen nb_plot = count(plot_id_obs)
+*	bysort		 country survey wave hh_id_obs  : egen nb_plot = count(plot_id_obs)
 	
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
@@ -433,7 +433,7 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $selbaseline_4_5, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	bs4rw, 		rw(bsw*)  : regdfe ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 				
 	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp d_* /// 
@@ -477,7 +477,7 @@
 	*drop if 	main_crop == "" 
 	*** main crop if their variable
 	drop if		crop == . 
-	*** crop is our vairalbe 
+	*** crop is our variable  
 	*** 2,744 observations dropped
 	
 	replace 	crop_shock = . if crop_shock == .a
@@ -557,10 +557,10 @@
 	display 	"$selbaseline"
 	
 * as soon as i enter in nb_man to the collapse below it says "no observations"	
-* can i make nb_man post collapse?
+* can i make nb_man post collapse? 
+**** no ... not varrying a bunch of those variables forward
 	
 * collapse the data to a plot manager level 
-
 *** concern: in this we are collapsing to first for country and survey? what does that functionally result in?????? 
 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id manager_id_obs /// 
@@ -580,10 +580,10 @@
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
 				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(plot_manager_id)
+				
+*** IF NB_MAN INCLUDED -> NO VARIABLES DEFINED 		
+*** OH I UNDERSTAND OKAY
 		
-* create number of managers variable
-	bysort		 country survey hh_id_obs  : egen nb_man = count(manager_id_obs)	
-			
 		
 * replace invalid observations with missing values and drop flag variables 
 	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
