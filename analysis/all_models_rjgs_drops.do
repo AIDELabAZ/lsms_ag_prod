@@ -433,7 +433,7 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $selbaseline_4_5, fe
 	
-	bs4rw, 		rw(bsw*)  : regdfe ln_yield_cp $selbaseline_4_5 /// 
+	bs4rw, 		rw(bsw*)  : noisily reghdfe ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 				
 	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp d_* /// 
@@ -559,6 +559,8 @@
 * as soon as i enter in nb_man to the collapse below it says "no observations"	
 * can i make nb_man post collapse? 
 **** no ... not varrying a bunch of those variables forward
+
+**** THIS IS WHERE IT DOESN'T WORK. 
 	
 * collapse the data to a plot manager level 
 *** concern: in this we are collapsing to first for country and survey? what does that functionally result in?????? 
