@@ -1,22 +1,18 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 26 March 25
+* Edited on: 2 April 25
 * Edited by: rg
 * Stata v.18.0
 
 * does
 	* runs all models using:
-		* tight sample
-		* using nb_plot (weights)
 		* scaled inputs 
-		* includes farm size as a control
+		* includes farm size and nb_plot as controls
 		* drops Mali before running models 4 and 5 becase hh and managers /// 
 		cannot be tracked over time
 		* model 2: loop running lasso for each rf product and saving /// 
 		selected vars 
-		* includes country FE in last three models ???
-
 
 * assumes
 	* access to replication data
@@ -25,7 +21,7 @@
 	* run time is on the scale of hours?
 	
 ***********************************************************************
-**# 0 - setup
+**# a - setup
 ***********************************************************************
 
 * define paths	
@@ -39,28 +35,26 @@
 	
 	
 ***********************************************************************
-**# 1 - generate  hh_id, plot_manager_id, and cluster_id, main crop
+**# b - generate  hh_id, plot_manager_id, and cluster_id, main crop
 **********************************************************************
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	
-* if we keep plots < 100 
-	*keep if		plot_area_GPS < 100 
-	*** 8,366 observations deleted
-	
-* if we keep plots < 50
-	*keep if 		plot_area_GPS < 50
-	*** 8,572 observations deleted
-	
-* create number of plots variable
-	bysort		 country survey wave hh_id_obs  : egen nb_plot = count(plot_id_obs)
-	
+			
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
 	*keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
+	
+	*drop 		_merge
+	
+* merge manager 
+	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
+				using "$export1/dta_files_merge/manager_included.dta"
+	
+	*keep if 	_merge == 3 | country == "Mali"
+	
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -70,10 +64,10 @@
 	*** main crop if their variable
 	drop if		crop == . 
 	*** crop is our vairalbe 
-	*** 2,744 observations dropped
+	*** 3,769 observations dropped
 	
 	replace 	crop_shock = . if crop_shock == .a
-	* 49 changes
+	* 55 changes
 	
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
 	egen 		hh_id = group(country wave hh_id_obs)
@@ -82,21 +76,21 @@
 	egen 		parcel_id = group(country wave parcel_id_obs)
 	egen 		cluster_id = group( country wave ea_id_obs)
 	
+	
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
-	
+		
 * create weight adj	
-	gen 	double temp_weight_surveypop = pw/nb_plot 
+	bys 		country wave : egen double sum_weight_wave_surveypop = sum(pw)
 	* new variable 
 	* pw divided by number of plots
 	*bys 	country survey : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
-	bys 	country wave : egen double sum_weight_wave_surveypop = sum(temp_weight_surveypop)
 	*** why by survey?
 	* new variable that is the sum of the weighted survey just created by plots 
 	* ANNA IS CHANGING THIS TO WAVE NOT SURVEY - 25/03
 	gen 	double scalar =  total_wgt_survey / sum_weight_wave_surveypop
 	* product of the total weight of pw divided by the reweighted sum 
-	gen 	double wgt_adj_surveypop = scalar * temp_weight_surveypop 
+	gen 	double wgt_adj_surveypop = scalar * pw 
 	* then muliplied by the outcome of the pw weighted by plots 
 	*bys 	country survey : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
 	bys 	country wave : egen double temp_weight_test = sum(wgt_adj_surveypop) // TEST
@@ -104,10 +98,10 @@
 	assert 	float(temp_weight_test)==float(total_wgt_survey)
 	drop 	scalar temp_weight_test
 
-	drop 	nb_plot   temp_weight_surveypop sum_weight_wave_surveypop  
+	drop 	sum_weight_wave_surveypop  
 	
 ***********************************************************************
-**# 2 - model 1: plot-level
+**# c - model 1: plot-level
 ***********************************************************************
 
 * generate necessary variables 
@@ -138,7 +132,7 @@
 
 	
 ***********************************************************************
-**# 3 - model 2: plot-level
+**# d - model 2: plot-level
 ***********************************************************************
 
 * scale inputs
@@ -162,7 +156,7 @@
 
 
 	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp 
-	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size
+	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plot
 	*** in this global they used miss_harvest_value_cp
 	
 	global 		geo  ln_dist_popcenter soil_fertility_index  hh_asset_index
@@ -198,7 +192,7 @@
 	
 	foreach 	product of local products {	
 		* lasso linear reg to selec vars 
-		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp $geo ) /// 
+		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp ) $geo /// 
 					$`product', nolog rseed(9912) selection(plugin)
 					
 		lassocoef
@@ -250,7 +244,7 @@
 
 
 ***********************************************************************
-**# 4 - model 3 - farm level
+**# e - model 3 - farm level
 ***********************************************************************
 
 * we have to identify the main crop of the hh
@@ -300,7 +294,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
+				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -384,7 +378,7 @@
 	
 
 ***********************************************************************
-**# 5 - model 4 - hh FE 
+**# f - model 4 - hh FE 
 ***********************************************************************
 
 * clear survey design settings 
@@ -400,8 +394,8 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index /// 
-				soil_fertility_index d_* indc_*) vce(bootstrap)
+				urban plot_owned farm_size hh_asset_index v02_rf2 v04_rf2 v05_rf2 /// 
+				v07_rf2 v10_rf2 nb_plot indc_*) vce(bootstrap)
 
 
 				
@@ -436,7 +430,7 @@
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
 				
-	estimates 	store D
+
 *	test 		$test
 *	local 		F1 = r(F)
 *	outreg2 	using "$export1/tables/model4/yield.tex",  /// 
@@ -444,24 +438,33 @@
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 
-
+	*svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
+	
+	
+	*areg 		ln_yield_cp $selbaseline_4_5 /// 
+				[pw = wgt_adj_surveypop],absorb(hh_id_obs)
+				
+	estimates 	store D
 ***********************************************************************
-**# 6 - model 5 - plot-manager
+**# g - model 5 - plot-manager
 ***********************************************************************		
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	
-* keep plots < 100 
-	*keep if		plot_area_GPS < 100 
-
-* keep plots < 50 
-	*keep if		plot_area_GPS < 50
-	
+		
 * merge hh 
-	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	keep if 	_merge == 3
+	*keep if 	_merge == 3
+	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
+	
+	*drop 		_merge
+	
+* merge manager 
+	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
+				using "$export1/dta_files_merge/manager_included.dta"
+	
+	*keep if 	_merge == 3 | country == "Mali"
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -550,7 +553,8 @@
 	display 	"$selbaseline"
 
 * collapse the data to a plot manager level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id manager_id_obs /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
+				manager_id_obs hh_id_obs /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
@@ -561,12 +565,12 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
+				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
 				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
-				by(plot_manager_id)
+				by(plot_manager_id wave)
 						
 		
 * replace invalid observations with missing values and drop flag variables 
@@ -619,9 +623,7 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	
 	drop if 	float(temp_weight_test) != float(total_wgt_survey)
-	*** 1,402 obs dropped 
-	*** if plots < 100, then 2,459 obs dropped 
-	*** if plots < 50, then 0 obs dropped
+	*** 1,918 obs dropped 
 	
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
@@ -634,8 +636,8 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index /// 
-				soil_fertility_index d_* indc_*) vce(bootstrap)
+				urban plot_owned farm_size hh_asset_index v02_rf2 v04_rf2 /// 
+				v05_rf2 v07_rf2 v10_rf2 nb_plot indc_*) vce(bootstrap)
 
 
 * describe survey design 
@@ -666,7 +668,7 @@
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
 				
-	estimates 	store E
+
 	*test 		$test
 	*local 		F1 = r(F)
 	*outreg2 	using "$export1/tables/model5/yield.tex",  /// 
@@ -674,24 +676,38 @@
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 
-
+	*areg 		ln_yield_cp $selbaseline_4_5 /// 
+				[pw = wgt_adj_surveypop],absorb(manager_id_obs)
+				
+	estimates 	store E
+	
+* keep only observations included in the regression
+	*keep if 	e(sample)
+	*keep 		wave country survey hh_id_obs manager_id_obs
+	
+* save for merge 
+	*save 		"$export1/dta_files_merge/manager_included.dta", replace
+	
 ***********************************************************************
-**# 7 - model 6 - cluster 
+**# h - model 6 - cluster 
 ***********************************************************************	
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 	
-* keep plots < 100 
-	*keep if		plot_area_GPS < 100 
-	
-* keep plots < 50 
-	*keep if		plot_area_GPS < 50 
-
 * merge hh 
-	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	keep if 	_merge == 3
+	*keep if 	_merge == 3
+	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
+	
+	*drop 		_merge
+	
+* merge manager 
+	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
+				using "$export1/dta_files_merge/manager_included.dta"
+	
+	*keep if 	_merge == 3 | country == "Mali"
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -795,7 +811,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
+				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -867,7 +883,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size ///
+				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -926,8 +942,8 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned v04_rf2 v05_rf2 v07_rf2 v10_rf2 hh_asset_index farm_size /// 
-				soil_fertility_index d_* indc_*) vce(bootstrap)
+				urban plot_owned hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 /// 
+				v10_rf2 farm_size indc_*) vce(bootstrap)
 				
 * describe survey design 
 	svydes 		ln_yield_cp, single generate(d)
@@ -959,16 +975,21 @@
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_chirps /// 
 				[pw = wgt_adj_surveypop],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 
-	estimates 	store F
+
 *	test 		$test
 *	local 		F1 = r(F)
 *	outreg2 	using "$export1/tables/model6/yield.tex",  /// 
 				keep(c.year  $inputs_cp $controls_cp ) /// 
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
-		
+				
+	
+	*areg 		ln_yield_cp $selbaseline_chirps /// 
+				[pw = wgt_adj_surveypop],absorb(ea_id_obs)
+				
+	estimates 	store F
 ***********************************************************************
-**# 8 - coefficient plot
+**# i - coefficient plot
 ***********************************************************************		
 
 * create the graph
