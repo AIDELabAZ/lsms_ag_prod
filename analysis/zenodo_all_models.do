@@ -1,13 +1,13 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 17 March 25
+* Edited on: 3 April 25
 * Edited by: rg
 * Stata v.18.0
 
 * does
 	* adapts our code using ZENODO dataset 
-	* uses full sample 
+	* uses tight sample
 	* drops mali before running models 4 and 5
 
 * assumes
@@ -36,6 +36,20 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear
+	
+* merge hh 
+	merge m:1 	country wave hh_id using "$export1/dta_files_merge/hh_included_zenodo.dta"
+
+	keep if 	_merge == 3
+	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
+	
+	drop 		_merge
+	
+* merge manager 
+	merge m:1 	country wave hh_id plot_manager_id /// 
+				using "$export1/dta_files_merge/manager_included_zenodo.dta"
+	
+	keep if 	_merge == 3 | country == "Mali"
 		
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
@@ -44,7 +58,7 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	
 	drop if 	float(temp_weight_test)!=float(total_wgt_survey)
-	* dropped 246
+	* dropped 0
 	
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
@@ -258,13 +272,21 @@
 				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 				
-				
+* keep only observations included in the regression
+	*keep if 	e(sample)
+	*keep 		wave country survey hh_id
+	
+* save for merge 
+	*save 		"$export1/dta_files_merge/hh_included_zenodo.dta", replace
+	
 ***********************************************************************
 **# 5 - model 4 - hh FE 
 ***********************************************************************
 
 * drop mali 
 	drop if 	country == "Mali"
+	
+	drop 		country_dummy3
 	
 * clear survey design settings 
 	svyset,		clear 
@@ -325,6 +347,19 @@
 * open dataset
 	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear
 
+* merge hh 
+	merge m:1 	country wave hh_id using "$export1/dta_files_merge/hh_included_zenodo.dta"
+
+	keep if 	_merge == 3
+	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
+	
+	drop 		_merge
+	
+* merge manager 
+	merge m:1 	country wave hh_id plot_manager_id /// 
+				using "$export1/dta_files_merge/manager_included_zenodo.dta"
+	
+	keep if 	_merge == 3 | country == "Mali"
 	
 * generate dummy for crops
 	levelsof 	main_crop, local(crop_levels)  
@@ -369,7 +404,7 @@
 	display 	"$selbaseline"
 
 * collapse the data to a plot-manager level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* main_crop cluster_id /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* main_crop cluster_id hh_id /// 
 				(max) female_manager formal_education_manager hh_size ea /// 
 				hh_electricity_access hh_shock lat_modified lon_modified /// 
 				total_wgt_survey strataid intercropped pw urban /// 
@@ -423,13 +458,15 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	
 	drop if 	float(temp_weight_test) != float(total_wgt_survey)
-	** 17,014 observations dropped
+	** 0 observations dropped
 	
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
 
 * drop mali 
 	drop if 	country == "Mali"
+	
+	drop 		country_dummy3
 	
 * clear survey design settings 
 	svyset,		clear 
@@ -440,7 +477,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned tot_precip_sd_season tot_precip_min_season /// 
-				soil_fertility_index country_dummy* indc_*) vce(bootstrap)
+				country_dummy* indc_*) vce(bootstrap)
 
 				
 * describe survey design 
@@ -458,9 +495,9 @@
 * generate bootstrap weights
 	bsweights 	bsw, n(-1) reps(500) seed(123)
 
-	global 		remove  country_dummy1 country_dummy2 country_dummy3 country_dummy4 country_dummy5 o.country_dummy6
+	*global 		remove  country_dummy1 country_dummy2 country_dummy3 country_dummy4 country_dummy5 o.country_dummy6
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
-	global 		sel : list global(selbaseline) - global(remove)
+	*global 		sel : list global(selbaseline) - global(remove)
 	display 	"$sel"
 
 * estimate model 5
@@ -480,7 +517,14 @@
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 
-
+* keep only observations included in the regression
+	*keep if 	e(sample)
+	*keep 		wave country survey hh_id plot_manager_id
+	
+* save for merge 
+	*save 		"$export1/dta_files_merge/manager_included_zenodo.dta", replace
+	
+	
 ***********************************************************************
 **# 7 - model 6 - cluster 
 ***********************************************************************	
@@ -488,6 +532,20 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear
+	
+* merge hh 
+	merge m:1 	country wave hh_id using "$export1/dta_files_merge/hh_included_zenodo.dta"
+
+	keep if 	_merge == 3
+	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
+	
+	drop 		_merge
+	
+* merge manager 
+	merge m:1 	country wave hh_id plot_manager_id /// 
+				using "$export1/dta_files_merge/manager_included_zenodo.dta"
+	
+	keep if 	_merge == 3 | country == "Mali"
 
 	
 * generate dummy for crops
@@ -644,7 +702,7 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	
 	drop if 	float(temp_weight_test) != float(total_wgt_survey)
-	*** dropped 784 
+	*** dropped 0 
 	
 	assert 		float(temp_weight_test) == float(total_wgt_survey)
 	
@@ -658,7 +716,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned tot_precip_sd_season tot_precip_min_season /// 
-				soil_fertility_index country_dummy* indc_*) vce(bootstrap)
+				country_dummy* indc_*) vce(bootstrap)
 
 				
 * describe survey design 
@@ -717,3 +775,69 @@
 				0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
 				-0.03 "-3" -0.04 "-4" -0.05 "-5" -0.06 "-6" , labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
+
+				
+***********************************************************************
+**# 9 - country-level results
+***********************************************************************
+	
+* open dataset
+	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear
+	
+* merge hh 
+	merge m:1 	country wave hh_id using "$export1/dta_files_merge/hh_included_zenodo.dta"
+
+	keep if 	_merge == 3
+	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
+	
+	drop 		_merge
+	
+* merge manager 
+	merge m:1 	country wave hh_id plot_manager_id /// 
+				using "$export1/dta_files_merge/manager_included_zenodo.dta"
+	
+	keep if 	_merge == 3 | country == "Mali"
+	
+* create weight adj
+	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
+	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
+	gen 		double wgt_adj_surveypop = scalar * pw 
+	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
+	assert 		float(temp_weight_test)==float(total_wgt_survey)
+	drop 		scalar temp_weight_test
+	
+	erase 		"$export1/tables/country_level/yield_country_zenodo.tex"
+	*erase 		"$export1/tables/country_level/yield_country_zenodo.txt"	
+
+	
+	eststo clear 
+	
+*loop by country 
+	foreach 	country in Ethiopia Malawi Mali Niger Nigeria Tanzania {
+	
+	svyset 		ea [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)	
+	
+	eststo: svy: 		reg ln_harvest_value_cp c.year if country=="`country'" 
+
+	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
+	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
+	*outreg2		using "$export1/tables/country_level/yield_country_zenodo.tex", /// 
+				keep(c.year country_dummy*) /// 
+				ctitle("Geovariables and weather controls") addstat(  Upper bound CI, /// 
+				`ub', Lower bound CI, `lb') addtext(Main crop FE, YES, country FE, YES)  append
+	}				
+
+	esttab  ///
+			using "$export1/tables/country_level/yield_country_zenodo.tex", replace r2 ///
+			title("Country level results") ///
+			nonumber mtitles("Ethiopia" "Malawi" "Mali" "Niger" "Nigeria" "Tanzania") ///
+			keep(year* ) ///
+			coeflabel (year "Annual Time Trend") /// 
+			star(* 0.10 * 0.05 ** 0.01) /// 
+			ci nonumber 
+
+	
+	
+
+				
+		
