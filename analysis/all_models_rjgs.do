@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 2 April 25
+* Edited on: 7 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -40,6 +40,14 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
+	
+* rename variable
+	rename 		agro_ecological_zone aez
+	
+	foreach country in Ethiopia Mali Malawi Niger Nigeria Tanzania{
+		tab aez wave if country == "`country'", missing
+	}
+	
 			
 * merge hh 
 	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"

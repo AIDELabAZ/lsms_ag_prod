@@ -35,7 +35,8 @@
 **********************************************************************
 
 * open dataset
-	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear
+	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear	
+	
 	
 * merge hh 
 	merge m:1 	country wave hh_id using "$export1/dta_files_merge/hh_included_zenodo.dta"
@@ -837,7 +838,17 @@
 			ci nonumber 
 
 	
-	
+***********************************************************************
+**#  - save data to get aez for tanzania wave 4 and 5
+***********************************************************************
 
+* open dataset
+	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear	
+	
+* keep necessary vars
+	keep 		wave lat_modified lon_modified agro_ecological_zone country 
+	
+* save 
+	save 		"$data/countries/aggregate/aez_zenodo_merge.dta", replace 	
 				
 		
