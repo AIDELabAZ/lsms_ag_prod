@@ -42,18 +42,18 @@
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 			
 * merge hh 
-	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	*keep if 	_merge == 3
+	keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	*drop 		_merge
+	drop 		_merge
 	
 * merge manager 
-	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	*keep if 	_merge == 3 | country == "Mali"
+	keep if 	_merge == 3 | country == "Mali"
 	
 		
 	drop if 	ea_id_obs == .
@@ -453,18 +453,18 @@
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 		
 * merge hh 
-	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	*keep if 	_merge == 3
+	keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	*drop 		_merge
+	drop 		_merge
 	
 * merge manager 
-	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	*keep if 	_merge == 3 | country == "Mali"
+	keep if 	_merge == 3 | country == "Mali"
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -696,18 +696,18 @@
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 	
 * merge hh 
-	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	*keep if 	_merge == 3
+	keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	*drop 		_merge
+	drop 		_merge
 	
 * merge manager 
-	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	*keep if 	_merge == 3 | country == "Mali"
+	keep if 	_merge == 3 | country == "Mali"
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -1004,14 +1004,15 @@
 				byopts(row(1)) keep(year) /// 
 				xlabel(none) /// 
 				yline(0, lcolor(black%50)) /// 
-				ylab(0.10 "10" 0.09 "9" 0.08 "8" 0.07 "7" 0.06 "6" 0.05 "5" /// 
-				0.04 "4" 0.03 "3" 0.02 "2" /// 
+				ylab(0.09 "9"  0.08 "8" 0.07 "7" 0.06 "6" 0.05 "5" 0.04 "4" /// 
+				0.03 "3" 0.02 "2" /// 
 				0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
 				-0.03 "-3" -0.04 "-4" -0.05 "-5" -0.06 "-6", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
 				
 
 
-
+* save for image 
+	graph 		export 	"$export1/figures/coefficients_plot.pdf", as(pdf) replace
 
 			
