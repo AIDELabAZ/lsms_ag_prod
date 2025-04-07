@@ -846,7 +846,15 @@
 	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear	
 	
 * keep necessary vars
-	keep 		wave lat_modified lon_modified agro_ecological_zone country 
+	keep 		lat_modified lon_modified agro_ecological_zone country 
+	
+	duplicates 	drop lat_modified lon_modified, force
+	
+	drop 		if agro_eco == ""
+	
+	drop		if lat_mod == . | lon_mod == .
+	
+	isid 		lat_mod lon_mod
 	
 * save 
 	save 		"$data/countries/aggregate/aez_zenodo_merge.dta", replace 	
