@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 7 April 25
+* Edited on: 8 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -43,25 +43,48 @@
 	
 * rename variable
 	rename 		agro_ecological_zone aez
-	
-	foreach country in Ethiopia Mali Malawi Niger Nigeria Tanzania{
-		tab aez wave if country == "`country'", missing
+		
+* generate dummy for aez
+
+	levelsof 	aez, local(aez_levels)
+
+	foreach 	aez_code in `aez_levels' {
+    
+
+		local 		aez_label : label (aez) `aez_code'
+    
+		local 		clean_label = lower("`aez_label'")
+		local 		clean_label = subinstr("`clean_label'", "/", "_", .)
+		local 		clean_label = subinstr("`clean_label'", "-", "_", .)
+		local 		clean_label = subinstr("`clean_label'", " ", "_", .)
+		local 		clean_label = subinstr("`clean_label'", "(", "", .)
+		local 		clean_label = subinstr("`clean_label'", ")", "", .)
+		local 		clean_label = subinstr("`clean_label'", ",", "", .)
+		local 		clean_label = subinstr("`clean_label'", ".", "", .)
+
+
+		if 			inrange(substr("`clean_label'", 1, 1), "0", "9") {
+        local 		clean_label = "aez_`clean_label'"
+			
+			}
+
+		gen 		dzone_`clean_label' = (aez == `aez_code')
+
 	}
-	
 			
 * merge hh 
-	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	keep if 	_merge == 3
+	*keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	drop 		_merge
+	*drop 		_merge
 	
 * merge manager 
-	merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	keep if 	_merge == 3 | country == "Mali"
+	*keep if 	_merge == 3 | country == "Mali"
 	
 		
 	drop if 	ea_id_obs == .
@@ -167,12 +190,9 @@
 	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plot
 	*** in this global they used miss_harvest_value_cp
 	
-	global 		geo  ln_dist_popcenter soil_fertility_index  hh_asset_index
+	global 		geo  ln_dist_popcenter soil_fertility_index  hh_asset_index	
 	*** included but we do not have it yet: i.agro_ecological_zone, ln_dist_road, ln_elevation
-	
-	*global 		FE i.Country i.crop 
-	*** instead of crop they use Main_crop
-	
+		
 	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
 	
 	global 		era5 v01_rf4 v02_rf4 v03_rf4 v04_rf4 v05_rf4 v06_rf4 v07_rf4 v08_rf4 v09_rf4 v10_rf4 v11_rf4 v12_rf4 v13_rf4 v14_rf4
@@ -200,7 +220,8 @@
 	
 	foreach 	product of local products {	
 		* lasso linear reg to selec vars 
-		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp ) $geo /// 
+		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp /// 
+					dzone_* ) $geo /// 
 					$`product', nolog rseed(9912) selection(plugin)
 					
 		lassocoef
@@ -302,7 +323,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -402,8 +423,9 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size hh_asset_index v02_rf2 v04_rf2 v05_rf2 /// 
-				v07_rf2 v10_rf2 nb_plot indc_*) vce(bootstrap)
+				urban plot_owned dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size /// 
+				nb_plot indc_*) /// 
+				vce(bootstrap)
 
 
 				
@@ -461,18 +483,49 @@
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 		
 * merge hh 
-	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	keep if 	_merge == 3
+	*keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	drop 		_merge
+	*drop 		_merge
 	
 * merge manager 
-	merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	keep if 	_merge == 3 | country == "Mali"
+	*keep if 	_merge == 3 | country == "Mali"
+	
+* rename variable
+	rename 		agro_ecological_zone aez
+		
+* generate dummy for aez
+
+	levelsof 	aez, local(aez_levels)
+
+	foreach 	aez_code in `aez_levels' {
+    
+
+		local 		aez_label : label (aez) `aez_code'
+    
+		local 		clean_label = lower("`aez_label'")
+		local 		clean_label = subinstr("`clean_label'", "/", "_", .)
+		local 		clean_label = subinstr("`clean_label'", "-", "_", .)
+		local 		clean_label = subinstr("`clean_label'", " ", "_", .)
+		local 		clean_label = subinstr("`clean_label'", "(", "", .)
+		local 		clean_label = subinstr("`clean_label'", ")", "", .)
+		local 		clean_label = subinstr("`clean_label'", ",", "", .)
+		local 		clean_label = subinstr("`clean_label'", ".", "", .)
+
+
+		if 			inrange(substr("`clean_label'", 1, 1), "0", "9") {
+        local 		clean_label = "aez_`clean_label'"
+			
+			}
+
+		gen 		dzone_`clean_label' = (aez == `aez_code')
+
+	}
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -573,7 +626,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -644,8 +697,9 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned farm_size hh_asset_index v02_rf2 v04_rf2 /// 
-				v05_rf2 v07_rf2 v10_rf2 nb_plot indc_*) vce(bootstrap)
+				urban plot_owned dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size /// 
+				nb_plot indc_*) /// 
+				vce(bootstrap)
 
 
 * describe survey design 
@@ -704,18 +758,49 @@
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 	
 * merge hh 
-	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	keep if 	_merge == 3
+	*keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	drop 		_merge
+	*drop 		_merge
 	
 * merge manager 
-	merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	keep if 	_merge == 3 | country == "Mali"
+	*keep if 	_merge == 3 | country == "Mali"
+	
+* rename variable
+	rename 		agro_ecological_zone aez
+		
+* generate dummy for aez
+
+	levelsof 	aez, local(aez_levels)
+
+	foreach 	aez_code in `aez_levels' {
+    
+
+		local 		aez_label : label (aez) `aez_code'
+    
+		local 		clean_label = lower("`aez_label'")
+		local 		clean_label = subinstr("`clean_label'", "/", "_", .)
+		local 		clean_label = subinstr("`clean_label'", "-", "_", .)
+		local 		clean_label = subinstr("`clean_label'", " ", "_", .)
+		local 		clean_label = subinstr("`clean_label'", "(", "", .)
+		local 		clean_label = subinstr("`clean_label'", ")", "", .)
+		local 		clean_label = subinstr("`clean_label'", ",", "", .)
+		local 		clean_label = subinstr("`clean_label'", ".", "", .)
+
+
+		if 			inrange(substr("`clean_label'", 1, 1), "0", "9") {
+        local 		clean_label = "aez_`clean_label'"
+			
+			}
+
+		gen 		dzone_`clean_label' = (aez == `aez_code')
+
+	}
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -819,7 +904,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -891,7 +976,7 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -950,8 +1035,9 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned hh_asset_index v02_rf2 v04_rf2 v05_rf2 v07_rf2 /// 
-				v10_rf2 farm_size indc_*) vce(bootstrap)
+				urban plot_owned dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size /// 
+				nb_plot indc_*) ///
+				vce(bootstrap)
 				
 * describe survey design 
 	svydes 		ln_yield_cp, single generate(d)
@@ -1018,7 +1104,7 @@
 				-0.03 "-3" -0.04 "-4" -0.05 "-5" -0.06 "-6", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
 				
-
+w
 
 * save for image 
 	graph 		export 	"$export1/figures/coefficients_plot.pdf", as(pdf) replace
