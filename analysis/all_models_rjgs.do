@@ -72,6 +72,7 @@
 
 	}
 			
+			
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
@@ -186,11 +187,11 @@
 * we include farm size 
 
 
-	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp 
+	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
 	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plot
 	*** in this global they used miss_harvest_value_cp
 	
-	global 		geo  ln_dist_popcenter soil_fertility_index  hh_asset_index	
+	global 		geo  ln_dist_popcenter soil_fertility_index 	
 	*** included but we do not have it yet: i.agro_ecological_zone, ln_dist_road, ln_elevation
 		
 	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
@@ -444,7 +445,7 @@
 * generate bootstrap weights
 	bsweights 	bsw, n(-1) reps(200) seed(123)
 
-	global 		remove  d_Mali
+	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
 	global 		selbaseline_4_5 : list global(selbaseline_chirps) - global(remove)
 	display 	"$selbaseline_4_5"
@@ -744,11 +745,11 @@
 	estimates 	store E
 	
 * keep only observations included in the regression
-	*keep if 	e(sample)
-	*keep 		wave country survey hh_id_obs manager_id_obs
+*	keep if 	e(sample)
+*	keep 		wave country survey hh_id_obs manager_id_obs
 	
 * save for merge 
-	*save 		"$export1/dta_files_merge/manager_included.dta", replace
+*	save 		"$export1/dta_files_merge/manager_included.dta", replace
 	
 ***********************************************************************
 **# h - model 6 - cluster 
