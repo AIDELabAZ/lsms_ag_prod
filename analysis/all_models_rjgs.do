@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 8 April 25
+* Edited on: 9 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -19,6 +19,7 @@
 	
 * notes:
 	* run time is on the scale of hours?
+	* elevation is missing tza 4,5 and niger 2
 	
 ***********************************************************************
 **# a - setup
@@ -180,7 +181,7 @@
 	gen 		ln_plot_area_GPS = asinh(plot_area_GPS)
 	gen			ln_fert_value_cp = asinh(fert_value_cp)
 	gen 		ln_dist_popcenter = asinh(dist_popcenter)
-	*gen 		ln_elevation = asinh(elevation)
+	gen 		ln_elevation = asinh(elevation)
 
 	
 * define input and control globals 
@@ -188,10 +189,10 @@
 
 
 	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
-	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plot
+	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots nb_seasonal_crop
 	*** in this global they used miss_harvest_value_cp
 	
-	global 		geo  ln_dist_popcenter soil_fertility_index 	
+	global 		geo  ln_dist_popcenter  	
 	*** included but we do not have it yet: i.agro_ecological_zone, ln_dist_road, ln_elevation
 		
 	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
@@ -248,7 +249,7 @@
 	display 	"$testbaseline_chirps"
 	display 	"$testbaseline_cpc"
 	display 	"$testbaseline_era5"
-	
+
 * estimate model 2
 	*erase 		"$export1/tables/model2/yield.tex"
 	*erase 		"$export1/tables/model2/yield.txt"
@@ -315,16 +316,17 @@
 * collapse the data to a hh level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
-				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
+				hh_electricity_access hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
-				ln_dist_popcenter ///
+				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS /// 
+				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index ag_asset_index /// 
+				v03_rf2 v04_rf2 v07_rf2 v10_rf2  ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -424,8 +426,8 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size /// 
-				nb_plot indc_*) /// 
+				urban plot_owned dzone_* hh_asset_index ag_asset_index /// 
+				v03_rf2 v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots nb_seasonal_crop indc_*) /// 
 				vce(bootstrap)
 
 
@@ -460,7 +462,7 @@
 	
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
-				
+	estimates 	store D
 
 *	test 		$test
 *	local 		F1 = r(F)
@@ -475,7 +477,7 @@
 	*areg 		ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id_obs)
 				
-	estimates 	store D
+
 ***********************************************************************
 **# g - model 5 - plot-manager
 ***********************************************************************		
@@ -560,6 +562,7 @@
 	
 	
 	gen 		ln_dist_popcenter = asinh(dist_popcenter)
+	gen			ln_elevation = asinh(elevation)
 	
 * generate dummies for each country 
 	foreach 	country in Ethiopia Mali Malawi Niger Nigeria Tanzania {
@@ -618,16 +621,17 @@
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
 				manager_id_obs hh_id_obs /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
-				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
+				hh_electricity_access hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
-				ln_dist_popcenter ///
+				ln_dist_popcenter ln_elevation farm_size nb_plots  ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS /// 
+				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index ag_asset_index /// 
+				v03_rf2 v04_rf2 v07_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -696,10 +700,10 @@
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
-				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
+				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size /// 
-				nb_plot indc_*) /// 
+				urban plot_owned dzone_* hh_asset_index ag_asset_index /// 
+				v03_rf2 v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots nb_seasonal_crop indc_*) /// 
 				vce(bootstrap)
 
 
@@ -731,7 +735,7 @@
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
 				
-
+	estimates 	store E
 	*test 		$test
 	*local 		F1 = r(F)
 	*outreg2 	using "$export1/tables/model5/yield.tex",  /// 
@@ -742,7 +746,7 @@
 	*areg 		ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(manager_id_obs)
 				
-	estimates 	store E
+
 	
 * keep only observations included in the regression
 *	keep if 	e(sample)
@@ -835,6 +839,7 @@
 	
 	
 	gen 		ln_dist_popcenter = asinh(dist_popcenter)
+	gen 		ln_elevation = asinh(elevation)
 	
 * generate dummies for each country 
 	foreach 	country in Ethiopia Mali Malawi Niger Nigeria Tanzania {
@@ -898,14 +903,15 @@
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
-				ln_dist_popcenter ///
+				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS /// 
+				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index ag_asset_index  /// 
+				v03_rf2 v04_rf2 v07_rf2 v10_rf2 /// 
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -965,19 +971,20 @@
 * to display lasso vars we can do this:
 	display 	"$selbaseline"
 
-* collapse the data to a plot manager level 
+* collapse the data to cluster level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop   /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
-				ln_dist_popcenter ///
+				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS /// 
+				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size nb_plot ///
+				(first) dzone_* hh_asset_index ag_asset_index /// 
+				v03_rf2 v04_rf2 v07_rf2 v10_rf2  ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1034,10 +1041,10 @@
 	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
-				irrigated intercropped crop_shock hh_shock livestock hh_size /// 
+				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned dzone_* hh_asset_index v03_rf2 v04_rf2 v10_rf2 farm_size /// 
-				nb_plot indc_*) ///
+				urban plot_owned dzone_* hh_asset_index ag_asset_index /// 
+				v03_rf2 v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots nb_seasonal_crop indc_*) ///
 				vce(bootstrap)
 				
 * describe survey design 
