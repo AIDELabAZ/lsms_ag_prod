@@ -103,11 +103,11 @@
 	* 55 changes
 	
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
-	egen 		hh_id = group(country wave hh_id_obs)
- 	egen 		plot_manager_id = group(country wave manager_id_obs)
-	egen 		plot_id = group(country wave plot_id_obs)
-	egen 		parcel_id = group(country wave parcel_id_obs)
-	egen 		cluster_id = group( country wave ea_id_obs)
+	egen 		hh_id = group(country hh_id_obs)
+ 	egen 		plot_manager_id = group(country manager_id_obs)
+	egen 		plot_id = group(country plot_id_obs)
+	egen 		parcel_id = group(country parcel_id_obs)
+	egen 		cluster_id = group(lat_mod lon_modified)
 	
 	
 * create total_wgt_survey varianble 
@@ -314,10 +314,11 @@
 	display 	"$selbaseline_chirps"
 
 * collapse the data to a hh level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
-				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs ///
+				ea_id_obs strataid pw /// 
+				(max) female_manager formal_education_manager hh_size /// 
 				hh_electricity_access hh_shock lat_modified lon_modified /// 
-				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
+				dist_popcenter total_wgt_survey  intercropped  urban /// 
 				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
@@ -461,7 +462,7 @@
 	
 	
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
-				[pw = wgt_adj_surveypop],absorb(hh_id_obs) // many reps fail due to collinearities in controls
+				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls
 	estimates 	store D
 
 *	test 		$test
@@ -831,11 +832,11 @@
 	gen			ln_yield_cp = asinh(yield_cp)
 	
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
-	egen 		hh_id = group(country wave hh_id_obs)
- 	egen 		plot_manager_id = group(country wave manager_id_obs)
-	egen 		plot_id = group(country wave plot_id_obs)
-	egen 		parcel_id = group(country wave parcel_id_obs)
-	egen 		cluster_id = group( country wave ea_id_obs)
+	egen 		hh_id = group(country hh_id_obs)
+ 	egen 		plot_manager_id = group(country manager_id_obs)
+	egen 		plot_id = group(country plot_id_obs)
+	egen 		parcel_id = group(country parcel_id_obs)
+	egen 		cluster_id = group(lat_modified lon_modified)
 	
 	
 	gen 		ln_dist_popcenter = asinh(dist_popcenter)
@@ -899,8 +900,8 @@
 	display 	"$selbaseline"
 
 * collapse the data to a hh level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs /// 
-				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id ea_id_obs hh_id_obs /// 
+				(max) female_manager formal_education_manager hh_size  /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ln_elevation farm_size nb_plots ///
@@ -972,24 +973,32 @@
 	display 	"$selbaseline"
 
 * collapse the data to cluster level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop   /// 
-				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop  ea_id_obs /// 
+				(max) female_manager formal_education_manager hh_size  /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS nb_seasonal_crop /// 
+				(sum) plot_area_GPS nb_seasonal_crop dzone_* /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index ag_asset_index /// 
+				(first) hh_asset_index ag_asset_index /// 
 				v03_rf2 v04_rf2 v07_rf2 v10_rf2  ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
 				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
-				by(cluster_id)
+				by(cluster_id wave)
+						
+* check if clusters cover multiple aez 
+	gen 		aez_multiple = 0 
+	foreach 	var of varlist dzone_* {
+		replace 	aez_multiple = aez_multiple + (`var' > 0)
+	}
+	
+	tab 		aez_multiple
 						
 		
 * replace invalid observations with missing values and drop flag variables 
@@ -1031,6 +1040,10 @@
 	gen 		double wgt_adj_surveypop = scalar * pw 
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	assert 		float(temp_weight_test) == float(total_wgt_survey)
+	
+	drop if 	float(temp_weight_test) != float(total_wgt_survey)
+	* 631 observations dropped 
+	
 	drop 		scalar temp_weight_test
 	
 * attach labels
@@ -1090,6 +1103,8 @@
 				[pw = wgt_adj_surveypop],absorb(ea_id_obs)
 				
 	estimates 	store F
+	
+	
 ***********************************************************************
 **# i - coefficient plot
 ***********************************************************************		
