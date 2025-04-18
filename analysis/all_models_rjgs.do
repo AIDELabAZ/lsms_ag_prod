@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 9 April 25
+* Edited on: 18 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -42,6 +42,10 @@
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 	
+* replace tza wave 1 and 2
+	replace 	seed_value_cp = seed_value_USD if country == "Tanzania" & /// 
+				(wave == 1 | wave == 2)
+	
 * rename variable
 	rename 		agro_ecological_zone aez
 		
@@ -75,18 +79,26 @@
 			
 			
 * merge hh 
-	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	*keep if 	_merge == 3
+	keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	*drop 		_merge
+	drop 		_merge
 	
 * merge manager 
-	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	*keep if 	_merge == 3 | country == "Mali"
+	keep if 	_merge == 3 | country == "Mali"
+	
+	drop 		_merge
+	
+* merge cluster 
+	merge m:1 	country wave lat_mod lon_modified /// 
+				using "$export1/dta_files_merge/cluster_included.dta"
+	
+	keep if 	_merge == 3 
 	
 		
 	drop if 	ea_id_obs == .
@@ -189,7 +201,7 @@
 
 
 	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
-	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots nb_seasonal_crop
+	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots 
 	*** in this global they used miss_harvest_value_cp
 	
 	global 		geo  ln_dist_popcenter  	
@@ -223,7 +235,7 @@
 	foreach 	product of local products {	
 		* lasso linear reg to selec vars 
 		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp /// 
-					dzone_* ) $geo /// 
+					) $geo /// 
 					$`product', nolog rseed(9912) selection(plugin)
 					
 		lassocoef
@@ -327,7 +339,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) dzone_* hh_asset_index ag_asset_index /// 
-				v03_rf2 v04_rf2 v07_rf2 v10_rf2  ///
+				v04_rf2 v07_rf2 v10_rf2  ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -427,8 +439,8 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned dzone_* hh_asset_index ag_asset_index /// 
-				v03_rf2 v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots nb_seasonal_crop indc_*) /// 
+				urban plot_owned hh_asset_index ag_asset_index /// 
+				v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots indc_*) /// 
 				vce(bootstrap)
 
 
@@ -485,6 +497,10 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
+	
+* replace tza wave 1 and 2
+	replace 	seed_value_cp = seed_value_USD if country == "Tanzania" & /// 
+				(wave == 1 | wave == 2)
 		
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
@@ -499,6 +515,14 @@
 				using "$export1/dta_files_merge/manager_included.dta"
 	
 	*keep if 	_merge == 3 | country == "Mali"
+	
+	*drop 		_merge
+	
+* merge cluster 
+	*merge m:1 	country wave lat_mod lon_modified /// 
+				using "$export1/dta_files_merge/cluster_included.dta"
+	
+	*keep if 	_merge == 3 
 	
 * rename variable
 	rename 		agro_ecological_zone aez
@@ -616,7 +640,7 @@
 				}
 				
 * to display lasso vars we can do this:
-	display 	"$selbaseline"
+	display 	"$selbaseline_4_5"
 
 * collapse the data to a plot manager level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
@@ -632,7 +656,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) dzone_* hh_asset_index ag_asset_index /// 
-				v03_rf2 v04_rf2 v07_rf2 v10_rf2 ///
+				v04_rf2 v07_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -690,7 +714,7 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	
 	drop if 	float(temp_weight_test) != float(total_wgt_survey)
-	*** 1,918 obs dropped 
+	*** 4,605 obs dropped 
 	
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
@@ -703,8 +727,8 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned dzone_* hh_asset_index ag_asset_index /// 
-				v03_rf2 v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots nb_seasonal_crop indc_*) /// 
+				urban plot_owned hh_asset_index ag_asset_index /// 
+				v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots indc_*) /// 
 				vce(bootstrap)
 
 
@@ -763,6 +787,10 @@
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 	
+* replace tza wave 1 and 2
+	replace 	seed_value_cp = seed_value_USD if country == "Tanzania" & /// 
+				(wave == 1 | wave == 2)
+	
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
@@ -776,6 +804,14 @@
 				using "$export1/dta_files_merge/manager_included.dta"
 	
 	*keep if 	_merge == 3 | country == "Mali"
+	
+	*drop		_merge
+	
+* merge cluster 
+	*merge m:1 	country wave lat_mod lon_modified /// 
+				using "$export1/dta_files_merge/cluster_included.dta"
+	
+	*keep if 	_merge == 3 
 	
 * rename variable
 	rename 		agro_ecological_zone aez
@@ -897,7 +933,7 @@
 				}
 				
 * to display lasso vars we can do this:
-	display 	"$selbaseline"
+	display 	"$selbaseline_4_5"
 
 * collapse the data to a hh level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id ea_id_obs hh_id_obs /// 
@@ -912,7 +948,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) dzone_* hh_asset_index ag_asset_index  /// 
-				v03_rf2 v04_rf2 v07_rf2 v10_rf2 /// 
+				v04_rf2 v07_rf2 v10_rf2 /// 
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -985,7 +1021,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) hh_asset_index ag_asset_index /// 
-				v03_rf2 v04_rf2 v07_rf2 v10_rf2  ///
+				v04_rf2 v07_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1039,10 +1075,12 @@
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
 	gen 		double wgt_adj_surveypop = scalar * pw 
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
-	assert 		float(temp_weight_test) == float(total_wgt_survey)
-	
 	drop if 	float(temp_weight_test) != float(total_wgt_survey)
 	* 631 observations dropped 
+	
+	assert 		float(temp_weight_test) == float(total_wgt_survey)
+	
+
 	
 	drop 		scalar temp_weight_test
 	
@@ -1056,8 +1094,8 @@
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned dzone_* hh_asset_index ag_asset_index /// 
-				v03_rf2 v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots nb_seasonal_crop indc_*) ///
+				urban plot_owned hh_asset_index ag_asset_index /// 
+				v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots indc_*) ///
 				vce(bootstrap)
 				
 * describe survey design 
@@ -1087,7 +1125,7 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $sel, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_chirps /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 
 
@@ -1103,6 +1141,13 @@
 				[pw = wgt_adj_surveypop],absorb(ea_id_obs)
 				
 	estimates 	store F
+	
+* keep only observations included in the regression
+	*keep if 	e(sample)
+	*keep 		wave country survey lat_mod lon_modified
+	
+* save for merge 
+	*save 		"$export1/dta_files_merge/cluster_included.dta", replace
 	
 	
 ***********************************************************************

@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 3 April 25
+* Edited on: 18 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -37,21 +37,7 @@
 * open dataset
 	use 		"$data/countries/aggregate/lsms_zenodo.dta", clear	
 	
-	
-* merge hh 
-	merge m:1 	country wave hh_id using "$export1/dta_files_merge/hh_included_zenodo.dta"
-
-	keep if 	_merge == 3
-	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
-	
-	drop 		_merge
-	
-* merge manager 
-	merge m:1 	country wave hh_id plot_manager_id /// 
-				using "$export1/dta_files_merge/manager_included_zenodo.dta"
-	
-	keep if 	_merge == 3 | country == "Mali"
-		
+			
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
@@ -64,6 +50,10 @@
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
 	
+* generate dummy variables for each country	
+	encode 		country, gen(Country)
+	
+	
 ***********************************************************************
 **# 2 - model 1: plot-level
 ***********************************************************************
@@ -71,16 +61,13 @@
 * run survey-weighted regression 
 	svyset 		ea [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
 	
-	svy: 		reg ln_harvest_value_cp c.year country_dummy*
+	svy: 		reg ln_harvest_value_cp c.year i.Country
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
 	estimates 	store A
 	
-	*outreg2		using "$export1/tables/model1/yield.tex", keep(c.year i.Country) /// 
-				ctitle("Geovariables and weather controls") addstat(  Upper bound CI, /// 
-				`ub', Lower bound CI, `lb') addtext(Main crop FE, YES, Country FE, YES)  replace
-				
+	
 	local 		r2 = e(r2_a)
 	di 			"`lb', `ub', `r2'"
 
@@ -89,15 +76,19 @@
 **# 3 - model 2: plot-level
 ***********************************************************************
 
-* generate log variables for inputs and controls 
-	rename 		plot_are plot_area_GPS
-	gen 		ln_plot_area_GPS = asinh(plot_area_GPS)
-	rename 		ln_inorganic_fert_value_con ln_fert_value_cp
-	rename 		inorganic_fert_value_con fert_value_cp
+	global inputs_cp ln_plot_area ln_labor_days_nonhired ln_seed_value_cp ln_hired_labor_value_constant ln_inorganic_fert_value_con  ag_asset_index
+	
+	global controls_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned miss_harvest_value_cp
+	
+	global 	geo ln_dist_road ln_dist_popcenter soil_fertility_index ln_elevation tot_precip_sd_season agro_ecological_zone temperature_sd_season temperature_min_season temperature_max_season temperature_mean_season 
+
+* encode main crop	
+	encode 		main_crop, gen(Main_crop)
+
 
 	label 		define yes_no 0 "No" 1 "Yes"
 * destring 
-	foreach var in 	used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock formal_education_manager female_manager hh_electricity_access urban plot_owned {
+	foreach var in 	miss_harvest_value_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock formal_education_manager female_manager hh_electricity_access urban plot_owned {
 		encode 		`var', gen(`var'_dummy)
 		replace 	`var'_dummy = 0 if `var'_dummy == 1
 		replace 	`var'_dummy = 1 if `var'_dummy == 2
@@ -107,86 +98,52 @@
 		
 	}
 	
-* define input and control globals 
-	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp ln_plot_area_GPS
-	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned 
-	*** in this global they used miss_harvest_value_cp
-	
-	global 		geo  ln_dist_popcenter soil_fertility_index   
-	*** included but we do not have it yet: i.agro_ecological_zone, ln_dist_road, ln_elevation
-	
-	*global 		FE i.Country i.crop 
-	*** instead of crop they use Main_crop
-	
-	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
-	
-	global 		weather_all tot_precip_sd_season tot_precip_min_season tot_precip_max_season precip_penalty tot_precip_cumul_season dry_spell_season wet_spell_season
-	* median rainy rainfall, variance of daily rainfall, skew of daily rainfall, no rain days, longest dry spell 
-	
 * generate dummy for crops
-	levelsof 	main_crop, local(crop_levels)  
+	levelsof 	Main_crop, local(crop_levels)  
 
 	foreach 	crop_code in `crop_levels' {
-		local 	clean_label = subinstr("`crop_code'", "/", "_", .)  
-		local 	clean_label = subinstr("`clean_label'", " ", "_", .) 
+		local 		crop_label : label crop `crop_code'
+		local 		clean_label = subinstr("`crop_label'", "/", "_", .)  
+		local 		clean_label = subinstr("`clean_label'", " ", "_", .) 
     
-		gen 	indc_`clean_label' = (main_crop == "`crop_code'")
-	}
-
-	
-* lasso linear regression to select variables
-	lasso		linear ln_harvest_value_cp (country_dummy* indc_* c.year $inputs_cp $controls_cp ) $geo $weather_all , nolog rseed(9912) selection(plugin) 
-	*** variables in parentheses are always included
-	*** vars out of parentheses are subject to selection by LASSO
-	lassocoef
-	
-	global		selbaseline `e(allvars_sel)'
-	*** these are all the variables
-	
-	global 		testbaseline `e(othervars_sel)'
-	*** these are the variables chosen that were subject to selection by LASSO
+		gen 		indc_`clean_label' = (Main_crop == `crop_code') 
+	}	
 	
 * estimate model 2
-	*erase 		"$export1/tables/model2/yield.tex"
-	*erase 		"$export1/tables/model2/yield.txt"
-	*** erase the files to avoid appending 6 columns every time we run the loop
+	svyset, clear
+	svyset 		ea [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
 	
-	svy: 		reg ln_harvest_value_cp $selbaseline 
+	svy: 		reg ln_harvest_value_cp year country_dummy* indc_* $inputs_cp $controls_cp $geo
 	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	di 			"`lb', `ub',"
 	
 	estimates 	store B
-*	test 		$testbaseline
-*	local 		F1 = r(F) 
-*	test 		$inputs_cp
-*	global 		F2 = r(F)
-*	outreg2 	using "$export1/tables/model2/yield.tex",  /// 
-				keep(c.year  $inputs_cp $controls_cp ) /// 
-				ctitle("Geovariables and weather controls") /// 
-				addstat(  Upper bound CI, `ub', Lower bound CI, `lb') /// 
-				addtext(Main crop FE, YES, Country FE, YES)  append
-*/
+
 
 
 ***********************************************************************
 **# 4 - model 3 - farm level
 ***********************************************************************
 
+* creating missing value indicators at plot level
+foreach var in harvest_value    total_labor_days total_family_labor_days total_hired_labor_days hired_labor_value   seed_value seed_kg inorganic_fertilizer_value     harvest_value_cp seed_value_cp hired_labor_value_constant inorganic_fert_value_con     {
+		replace `var'=`var'*plot_area
+}
+
 * we have to identify the main crop of the hh
 	bys 	hh_id wave main_crop: egen value_maincrop = total(harvest_value_cp)
 	bys 	hh_id wave (value_maincrop): gen main_crop2 = main_crop[_N]
 	drop 	main_crop 
 	rename 	main_crop2 main_crop
-
-
-* creating missing value indicators at plot level
-	foreach 	var of varlist harvest_value_cp total_labor_days seed_value_cp /// 
-				fert_value_cp plot_area_GPS {
-					gen 	mi_`var' = 1 if `var' == .
-				}
-				
+	
+	
+drop miss_*
+	foreach var of varlist harvest_value    harvest_transport_cost seed_value seed_kg  total_labor_days total_family_labor_days total_hired_labor_days hired_labor_value   plot_area harvest_value_cp seed_value_cp hired_labor_value_constant inorganic_fert_value_con    {
+		gen mi_`var'=1 if `var'==. 
+	}	
+	
 * to display lasso vars we can do this:
 	display 	"$selbaseline"
 
@@ -195,18 +152,28 @@
 				(max) female_manager formal_education_manager hh_size ea /// 
 				hh_electricity_access hh_shock lat_modified lon_modified /// 
 				total_wgt_survey strataid intercropped pw urban /// 
-				ln_dist_popcenter ///
+				ln_dist_road ln_dist_popcenter ln_elevation ///
 				soil_fertility_index country_dummy* indc_* ///
-				(sum) harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS /// 
+				(sum) harvest_value_cp ln_seed_value_cp /// 
+				ln_hired_labor_value_constant ln_inorganic_fert_value_con /// 
+				(sum) plot_area /// 
 				(max) organic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) tot_precip_sd_season tot_precip_min_season ///
+				(first) tot_precip_sd_season agro_ecological_zone temperature_sd_season temperature_min_season temperature_max_season temperature_mean_season  ///
 				(count) mi_* /// 
-				(count) n_harvest_value_cp = harvest_value_cp ///  
-				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
-				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
+				(count)n_harvest_value = harvest_value /// 
+				n_seed_value = seed_value /// 
+				n_seed_kg = seed_kg /// 
+				n_inorganic_fertilizer_value = inorganic_fertilizer_value /// 
+				n_total_labor_days = total_labor_days /// 
+				n_total_family_labor_days = total_family_labor_days /// 
+				n_total_hired_labor_days = total_hired_labor_days /// 
+				n_hired_labor_value = hired_labor_value n_plot_area=plot_area /// 
+				n_harvest_value_cp = harvest_value_cp n_seed_value_cp = seed_value_cp /// 
+				n_hired_labor_value_constant = hired_labor_value_constant /// 
+				n_inorganic_fert_value_con = inorganic_fert_value_con /// 
+				n_labor_days_nonhired = labor_days_nonhired, /// 
 				by(hh_id wave)
 						
 		
