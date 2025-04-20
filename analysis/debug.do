@@ -31,17 +31,35 @@
 **# b - random stuff 
 ***********************************************************************
 
-distinct ln_harvest_value_cp
-distinct year
-distinct country_dummy*
-distinct indc_*
-display $inputs
-display $inputs_cp
-display "$inputs_cp"
-distinct ln_plot_area ln_labor_days_nonhired ln_seed_value_cp ln_hired_labor_value_constant ln_inorganic_fert_value_con  ag_asset_index
-display "$controls_cp"
-distinct used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned 
-distinct miss_harvest_value_cp
-display "$geo"
-distinct ln_dist_road ln_dist_popcenter soil_fertility_index ln_elevation tot_precip_sd_season agro_ecological_zone temperature_sd_season temperature_min_season temperature_max_season temperature_mean_season
-reg ln_harvest_value_cp year country_dummy* indc_* $inputs_cp $controls_cp $geo
+*svy in model 2 bugs 
+* error is "no observations"
+
+/* 
+no observations
+an error occurred when svy executed regress
+r(2000); 
+*/ 
+
+
+*** NEED TO RUN PROJECT DO
+*** AND THEN SHOULD RUN ZENODO_ALL MODELS 
+
+	distinct 		ln_harvest_value_cp
+	distinct 		year
+	distinct 		country_dummy*
+	distinct 		indc_*
+	display 		"$inputs_cp"
+	distinct 		ln_plot_area ln_labor_days_nonhired ln_seed_value_cp ///
+						ln_hired_labor_value_constant ln_inorganic_fert_value_con  ag_asset_index
+	display 		"$controls_cp"
+	distinct		used_pesticides organic_fertilizer irrigated intercropped crop_shock ///
+						hh_shock livestock hh_size formal_education_manager female_manager ///
+						age_manager hh_electricity_access urban plot_owned miss_harvest_value_cp
+	display 		"$geo"
+	distinct 		ln_dist_road ln_dist_popcenter soil_fertility_index ln_elevation ///
+						tot_precip_sd_season agro_ecological_zone temperature_sd_season ///
+						temperature_min_season temperature_max_season temperature_mean_season
+	
+	reg ln_harvest_value_cp year country_dummy* indc_* $inputs_cp $controls_cp $geo
+	*** THIS DOES NOT RUN 
+	*** SO, issue is with data, not with model ...? 
