@@ -63,3 +63,17 @@ r(2000);
 	reg ln_harvest_value_cp year country_dummy* indc_* $inputs_cp $controls_cp $geo
 	*** THIS DOES NOT RUN 
 	*** SO, issue is with data, not with model ...? 
+	
+	*** ISSUE ONE IS LIVESTOCK 
+	* livestock
+	
+	*** ISSUE TWO IS AEZ
+	* agro_ecological_zone
+	
+	reg ln_harvest_value_cp year country_dummy* indc_* ln_plot_area ln_labor_days_nonhired ///
+			ln_seed_value_cp ln_hired_labor_value_constant ln_inorganic_fert_value_con ///
+			ag_asset_index used_pesticides organic_fertilizer irrigated intercropped ///
+			crop_shock hh_shock hh_size formal_education_manager female_manager ///
+			age_manager hh_electricity_access urban plot_owned miss_harvest_value_cp ln_dist_road ///
+			ln_dist_popcenter soil_fertility_index ln_elevation tot_precip_sd_season /// 
+			temperature_sd_season temperature_min_season temperature_max_season temperature_mean_season
