@@ -76,11 +76,14 @@
 **# 3 - model 2: plot-level
 ***********************************************************************
 
+* alj notes
+* removing aez and livestock 
+
 	global inputs_cp ln_plot_area ln_labor_days_nonhired ln_seed_value_cp ln_hired_labor_value_constant ln_inorganic_fert_value_con  ag_asset_index
 	
-	global controls_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock livestock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned miss_harvest_value_cp
+	global controls_cp used_pesticides organic_fertilizer irrigated intercropped crop_shock hh_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned miss_harvest_value_cp
 	
-	global 	geo ln_dist_road ln_dist_popcenter soil_fertility_index ln_elevation tot_precip_sd_season agro_ecological_zone temperature_sd_season temperature_min_season temperature_max_season temperature_mean_season 
+	global 	geo ln_dist_road ln_dist_popcenter soil_fertility_index ln_elevation tot_precip_sd_season temperature_sd_season temperature_min_season temperature_max_season temperature_mean_season 
 
 * encode main crop	
 	encode 		main_crop, gen(Main_crop)
