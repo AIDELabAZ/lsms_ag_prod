@@ -160,8 +160,10 @@
 	}
 	
 * run survey-weighted regression 
-	svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
-	
+	*svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
+	svyset 		ea_id_obs [pweight = pw], strata(strataid) singleunit(centered)
+
+
 	svy: 		reg ln_yield_cp c.year d_* 
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
@@ -389,7 +391,8 @@
 	lab var		crop "Main Crop group of hh"
 			
 	svyset, 	clear
-	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
+	*svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
+	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
 
 	
 * run model 3
@@ -434,7 +437,7 @@
 	
 	drop 		d_Mali
 	
-	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
+	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
@@ -442,8 +445,6 @@
 				urban plot_owned hh_asset_index ag_asset_index /// 
 				v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots indc_*) /// 
 				vce(bootstrap)
-
-
 				
 * describe survey design 
 	svydes 		ln_yield_cp, single generate(d)
@@ -472,9 +473,12 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $sel, fe
 	
+
+*	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls	
 	
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
-				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls
+				[pw = pw],absorb(hh_id) // many reps fail due to collinearities in controls
 	estimates 	store D
 
 *	test 		$test
@@ -722,7 +726,7 @@
 
 
 * survey design
-	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
+	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
@@ -755,8 +759,11 @@
 	*erase 		"$export1/tables/model5/yield.tex"
 	*erase 		"$export1/tables/model5/yield.txt"
 	
+	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+			[pw = wgt_adj_surveypop],absorb(manager_id_obs) 
+	
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
-				[pw = wgt_adj_surveypop],absorb(manager_id_obs) 
+				[pw = pw],absorb(manager_id_obs) 
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
 				
@@ -1125,9 +1132,12 @@
 	*xtset 		hh_id_obs wave	
 	*xtreg		ln_yield_USD $sel, fe
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+*	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+				[pw = pw],absorb(ea_id_obs) // many reps fail due to collinearities in controls
+				
 
 *	test 		$test
 *	local 		F1 = r(F)
