@@ -124,7 +124,7 @@
 	
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
-		
+		/*
 * create weight adj	
 	bys 		country wave : egen double sum_weight_wave_surveypop = sum(pw)
 	* new variable 
@@ -144,7 +144,7 @@
 	drop 	scalar temp_weight_test
 
 	drop 	sum_weight_wave_surveypop  
-	
+	*/
 ***********************************************************************
 **# c - model 1: plot-level
 ***********************************************************************
@@ -377,7 +377,7 @@
 					lab var ln_`var' "Natural log of `var'"
 				}
 					
-	
+	/*
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
@@ -385,7 +385,7 @@
 	bys 		country survey : egen double temp_weight_test = sum(wgt_adj_surveypop)
 	assert 		float(temp_weight_test) == float(total_wgt_survey)
 	drop 		scalar temp_weight_test
-	
+	*/
 * attach labels
 	lab 		values crop crop
 	lab var		crop "Main Crop group of hh"
@@ -710,7 +710,7 @@
 	*** 5,577 obs dropped
 	
 	drop 		d_Mali
-	
+	/*
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
@@ -722,7 +722,7 @@
 	
 	assert 		float(temp_weight_test)==float(total_wgt_survey)
 	drop 		scalar temp_weight_test
-	
+	*/
 
 
 * survey design
@@ -1076,7 +1076,7 @@
 	encode 		country, gen(Country)
 	tab			Country, gen(country_dummy)
 	
-	
+	/*
 * create weight adj
 	bys 		country survey : egen double sum_weight_wave_surveypop = sum(pw)
 	gen 		double scalar =  total_wgt_survey / sum_weight_wave_surveypop
@@ -1090,7 +1090,7 @@
 
 	
 	drop 		scalar temp_weight_test
-	
+	*/
 * attach labels
 	lab 		values crop crop
 	lab var		crop "Main Crop group - cluster"
