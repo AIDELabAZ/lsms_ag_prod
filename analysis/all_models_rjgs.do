@@ -1096,7 +1096,7 @@
 	lab var		crop "Main Crop group - cluster"
 				
 * survey design
-	svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered) /// 
+	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
