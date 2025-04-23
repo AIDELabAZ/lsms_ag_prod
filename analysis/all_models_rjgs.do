@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 18 April 25
+* Edited on: 23 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -20,6 +20,7 @@
 * notes:
 	* run time is on the scale of hours?
 	* elevation is missing tza 4,5 and niger 2
+	* currently running no weights
 	
 ***********************************************************************
 **# a - setup
@@ -79,26 +80,26 @@
 			
 			
 * merge hh 
-	merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
+	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
-	keep if 	_merge == 3
+	*keep if 	_merge == 3
 	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
 	
-	drop 		_merge
+	*drop 		_merge
 	
 * merge manager 
-	merge m:1 	country wave hh_id_obs manager_id_obs /// 
+	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
 				using "$export1/dta_files_merge/manager_included.dta"
 	
-	keep if 	_merge == 3 | country == "Mali"
+	*keep if 	_merge == 3 | country == "Mali"
 	
-	drop 		_merge
+	*drop 		_merge
 	
 * merge cluster 
-	merge m:1 	country wave lat_mod lon_modified /// 
+	*merge m:1 	country wave lat_mod lon_modified /// 
 				using "$export1/dta_files_merge/cluster_included.dta"
 	
-	keep if 	_merge == 3 
+	*keep if 	_merge == 3 
 	
 		
 	drop if 	ea_id_obs == .
@@ -159,12 +160,15 @@
 		replace	d_`country' = 0 if d_`country' == .
 	}
 	
+
+* no weights 
+	reg 		ln_yield_cp c.year d_* , vce(cluster cluster_id)
 * run survey-weighted regression 
 	*svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
-	svyset 		ea_id_obs [pweight = pw], strata(strataid) singleunit(centered)
+	*svyset 		ea_id_obs [pweight = pw], strata(strataid) singleunit(centered)
 
 
-	svy: 		reg ln_yield_cp c.year d_* 
+	*svy: 		reg ln_yield_cp c.year d_* 
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
@@ -207,9 +211,7 @@
 	*** in this global they used miss_harvest_value_cp
 	
 	global 		geo  ln_dist_popcenter  	
-	*** included but we do not have it yet: i.agro_ecological_zone, ln_dist_road, ln_elevation
 		
-	* check 0b. pre-analysis do file- lines 60 to 70 to see how they defined next global
 	
 	global 		era5 v01_rf4 v02_rf4 v03_rf4 v04_rf4 v05_rf4 v06_rf4 v07_rf4 v08_rf4 v09_rf4 v10_rf4 v11_rf4 v12_rf4 v13_rf4 v14_rf4
 	
@@ -251,7 +253,8 @@
 		*create a local to store globals 
 		local 		current_selbaseline = "selbaseline_`product'"
 		
-		svy: 		reg ln_yield_cp $`current_selbaseline'
+		reg 		ln_yield_cp $`current_selbaseline', vce(cluster cluster_id)
+		*svy: 		reg ln_yield_cp $`current_selbaseline'
 	
 		local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 		local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -269,7 +272,10 @@
 	*erase 		"$export1/tables/model2/yield.txt"
 	*** erase the files to avoid appending 6 columns every time we run the loop
 	
-	svy: 		reg ln_yield_cp $selbaseline_chirps
+
+
+	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster cluster_id)
+	*svy: 		reg ln_yield_cp $selbaseline_chirps
 	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -329,7 +335,7 @@
 
 * collapse the data to a hh level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id hh_id_obs ///
-				ea_id_obs strataid pw /// 
+				ea_id_obs strataid pw aez  /// 
 				(max) female_manager formal_education_manager hh_size /// 
 				hh_electricity_access hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey  intercropped  urban /// 
@@ -341,7 +347,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) dzone_* hh_asset_index ag_asset_index /// 
-				v04_rf2 v07_rf2 v10_rf2  ///
+				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -390,17 +396,19 @@
 	lab 		values crop crop
 	lab var		crop "Main Crop group of hh"
 			
-	svyset, 	clear
+	*svyset, 	clear
 	*svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
-	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
+	*svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
 
+	* no weights 
+	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster cluster_id)
 	
 * run model 3
 	*erase 		"$export1/tables/model3/yield.tex"
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_cp $selbaseline_chirps 
+	*svy: 		reg  ln_yield_cp $selbaseline_chirps 
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -443,7 +451,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots indc_*) /// 
+				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 				
 * describe survey design 
@@ -477,8 +485,11 @@
 *	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls	
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = pw],absorb(hh_id) // many reps fail due to collinearities in controls
+				
+	* no weights 
+	reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(hh_id) vce(cluster cluster_id)
 	estimates 	store D
 
 *	test 		$test
@@ -648,7 +659,7 @@
 
 * collapse the data to a plot manager level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
-				manager_id_obs hh_id_obs /// 
+				manager_id_obs hh_id_obs aez /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
@@ -660,7 +671,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) dzone_* hh_asset_index ag_asset_index /// 
-				v04_rf2 v07_rf2 v10_rf2 ///
+				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -732,7 +743,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots indc_*) /// 
+				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 
 
@@ -767,6 +778,8 @@
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
 				
+				
+	reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(manager_id_obs) vce(cluster cluster_id)
 	estimates 	store E
 	*test 		$test
 	*local 		F1 = r(F)
@@ -781,11 +794,11 @@
 
 	
 * keep only observations included in the regression
-*	keep if 	e(sample)
-*	keep 		wave country survey hh_id_obs manager_id_obs
+	*keep if 	e(sample)
+	*keep 		wave country survey hh_id_obs manager_id_obs
 	
 * save for merge 
-*	save 		"$export1/dta_files_merge/manager_included.dta", replace
+	*save 		"$export1/dta_files_merge/manager_included.dta", replace
 	
 ***********************************************************************
 **# h - model 6 - cluster 
@@ -943,7 +956,8 @@
 	display 	"$selbaseline_4_5"
 
 * collapse the data to a hh level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id ea_id_obs hh_id_obs /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
+				ea_id_obs hh_id_obs aez /// 
 				(max) female_manager formal_education_manager hh_size  /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
@@ -955,7 +969,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) dzone_* hh_asset_index ag_asset_index  /// 
-				v04_rf2 v07_rf2 v10_rf2 /// 
+				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 /// 
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1016,19 +1030,19 @@
 	display 	"$selbaseline"
 
 * collapse the data to cluster level 
-	collapse 	(first) country survey admin_1* admin_2* admin_3* crop  ea_id_obs /// 
-				(max) female_manager formal_education_manager hh_size  /// 
+	collapse 	(first) country survey admin_1* admin_2* admin_3* crop  ea_id_obs aez /// 
+				(max) female_manager formal_education_manager hh_size dzone_*  /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS nb_seasonal_crop dzone_* /// 
+				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(first) hh_asset_index ag_asset_index /// 
-				v04_rf2 v07_rf2 v10_rf2 ///
+				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1102,7 +1116,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf2 v07_rf2 v10_rf2 farm_size nb_plots indc_*) ///
+				v03_rf2 v10_rf2 farm_size nb_plots  aez crop) ///
 				vce(bootstrap)
 				
 * describe survey design 
@@ -1120,10 +1134,7 @@
 * generate bootstrap weights
 	bsweights 	bsw, n(-1) reps(200) seed(123)
 
-	*global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
-	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
-	*global 		sel : list global(selbaseline) - global(remove)
-	display 	"$sel"
+
 	
 * estimate model 4
 *	erase 		"$export1/tables/model4/yield.tex"
@@ -1137,7 +1148,9 @@
 
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = pw],absorb(ea_id_obs) // many reps fail due to collinearities in controls
-				
+	
+	* no weights 
+	reg			ln_yield_cp $selbaseline_4_5 , vce(cluster cluster_id)
 
 *	test 		$test
 *	local 		F1 = r(F)
