@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 23 April 25
+* Edited on: 24 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -20,7 +20,7 @@
 * notes:
 	* run time is on the scale of hours?
 	* elevation is missing tza 4,5 and niger 2
-	* currently running no weights
+	* if including tza 1 and 2 - change rf 04 to 03
 	
 ***********************************************************************
 **# a - setup
@@ -42,10 +42,7 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	
-* replace tza wave 1 and 2
-	replace 	seed_value_cp = seed_value_USD if country == "Tanzania" & /// 
-				(wave == 1 | wave == 2)
+	 drop if country == "Tanzania" & (wave == 1 | wave ==2 )
 	
 * rename variable
 	rename 		agro_ecological_zone aez
@@ -162,13 +159,13 @@
 	
 
 * no weights 
-	reg 		ln_yield_cp c.year d_* , vce(cluster cluster_id)
+	*reg 		ln_yield_cp c.year d_* , vce(cluster ea_id_obs)
 * run survey-weighted regression 
 	*svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
-	*svyset 		ea_id_obs [pweight = pw], strata(strataid) singleunit(centered)
+	svyset 		ea_id_obs [pweight = pw], strata(strataid) singleunit(centered)
 
 
-	*svy: 		reg ln_yield_cp c.year d_* 
+	svy: 		reg ln_yield_cp c.year d_* 
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
@@ -238,9 +235,8 @@
 	
 	foreach 	product of local products {	
 		* lasso linear reg to selec vars 
-		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp /// 
-					) $geo /// 
-					$`product', nolog rseed(9912) selection(plugin)
+		lasso 		linear ln_yield_cp (d_* indc_* c.year dzone_* $inputs_cp $controls_cp /// 
+					) $geo $`product', nolog rseed(9912) selection(plugin)
 					
 		lassocoef
 		
@@ -253,8 +249,8 @@
 		*create a local to store globals 
 		local 		current_selbaseline = "selbaseline_`product'"
 		
-		reg 		ln_yield_cp $`current_selbaseline', vce(cluster cluster_id)
-		*svy: 		reg ln_yield_cp $`current_selbaseline'
+		*reg 		ln_yield_cp $`current_selbaseline', vce(cluster cluster_id)
+		svy: 		reg ln_yield_cp $`current_selbaseline'
 	
 		local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 		local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -274,8 +270,8 @@
 	
 
 
-	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster cluster_id)
-	*svy: 		reg ln_yield_cp $selbaseline_chirps
+*	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster ea_id_obs)
+	svy: 		reg ln_yield_cp $selbaseline_chirps
 	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -346,8 +342,8 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index ag_asset_index /// 
-				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 ///
+				(max) dzone_* hh_asset_index ag_asset_index /// 
+				(first) v04_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -396,19 +392,19 @@
 	lab 		values crop crop
 	lab var		crop "Main Crop group of hh"
 			
-	*svyset, 	clear
+	svyset, 	clear
 	*svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
-	*svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
+	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
 
 	* no weights 
-	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster cluster_id)
+	*reg 		ln_yield_cp $selbaseline_chirps , vce(cluster cluster_id)
 	
 * run model 3
 	*erase 		"$export1/tables/model3/yield.tex"
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	*svy: 		reg  ln_yield_cp $selbaseline_chirps 
+	svy: 		reg  ln_yield_cp $selbaseline_chirps 
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -451,7 +447,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
+				v04_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 				
 * describe survey design 
@@ -478,18 +474,15 @@
 *	erase 		"$export1/tables/model4/yield.tex"
 *	erase 		"$export1/tables/model4/yield.txt"
 
-	*xtset 		hh_id_obs wave	
-	*xtreg		ln_yield_USD $sel, fe
 	
-
 *	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls	
 	
-	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = pw],absorb(hh_id) // many reps fail due to collinearities in controls
 				
 	* no weights 
-	reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(hh_id) vce(cluster cluster_id)
+	*reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(hh_id) vce(cluster cluster_id)
 	estimates 	store D
 
 *	test 		$test
@@ -512,11 +505,8 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	
-* replace tza wave 1 and 2
-	replace 	seed_value_cp = seed_value_USD if country == "Tanzania" & /// 
-				(wave == 1 | wave == 2)
-		
+
+	 drop if country == "Tanzania" & (wave == 1 | wave ==2 )
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
@@ -670,8 +660,8 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index ag_asset_index /// 
-				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 ///
+				(max) dzone_* hh_asset_index ag_asset_index /// 
+				(first) v04_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -743,7 +733,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
+				v04_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 
 
@@ -779,7 +769,7 @@
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
 				
 				
-	reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(manager_id_obs) vce(cluster cluster_id)
+	*reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(manager_id_obs) vce(cluster cluster_id)
 	estimates 	store E
 	*test 		$test
 	*local 		F1 = r(F)
@@ -806,10 +796,8 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
+	 drop if country == "Tanzania" & (wave == 1 | wave ==2 )
 	
-* replace tza wave 1 and 2
-	replace 	seed_value_cp = seed_value_USD if country == "Tanzania" & /// 
-				(wave == 1 | wave == 2)
 	
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
@@ -968,8 +956,8 @@
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
-				(first) dzone_* hh_asset_index ag_asset_index  /// 
-				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 /// 
+				(max) dzone_* hh_asset_index ag_asset_index  /// 
+				(first) v04_rf2 v10_rf2 /// 
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1027,22 +1015,23 @@
 				}
 				
 * to display lasso vars we can do this:
-	display 	"$selbaseline"
+	display 	"$selbaseline_4_5"
 
 * collapse the data to cluster level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop  ea_id_obs aez /// 
-				(max) female_manager formal_education_manager hh_size dzone_*  /// 
+				(mean) female_manager formal_education_manager   /// 
 				hh_electricity_access livestock hh_shock lat_modified lon_modified /// 
-				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
-				ln_dist_popcenter ln_elevation farm_size nb_plots ///
-				soil_fertility_index d_* indc_* ///
+				dist_popcenter total_wgt_survey strataid intercropped urban /// 
+				ln_dist_popcenter ln_elevation  ///
+				soil_fertility_index d_*  ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				(sum) plot_area_GPS nb_seasonal_crop /// 
-				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
+				(sum) plot_area_GPS nb_seasonal_crop dzone_* indc_* pw /// 
+				(mean) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
-				(mean) age_manager year ///
-				(first) hh_asset_index ag_asset_index /// 
-				v02_rf2 v04_rf2 v05_rf2 v07_rf2 v10_rf2 ///
+				(sum) farm_size nb_plots ///
+				(mean) age_manager year hh_size ///
+				(mean) hh_asset_index ag_asset_index /// 
+				(first) v04_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1056,8 +1045,57 @@
 	}
 	
 	tab 		aez_multiple
-						
-		
+	
+* for crops and aez - choose the most representative category 
+	
+	foreach 	prefix in dzone_ indc_ {
+   
+		* capture all variable names starting with the prefix
+		unab 	vars: `prefix'*
+    
+		* count the number of variables
+		local 	num_vars = wordcount("`vars'")
+    
+		* create a variable to store the maximum value in each set
+		egen 	maxval_`prefix' = rowmax(`vars')
+
+    * create indicator variables for each category in each set
+		forval 	i = 1/`num_vars' {
+				* get the variable name in position i
+				local 	varname = word("`vars'", `i')
+        
+				* create an indicator variable where the category has the maximum value
+				gen 	`prefix'ind_`i' = (`varname' == maxval_`prefix') if maxval_`prefix' > 0
+    }
+    
+		drop 	maxval_`prefix'
+}				
+
+* replace var 
+	replace 	dzone_tropic_warm_arid = dzone_ind_1
+	replace 	dzone_tropic_warm_semiarid = dzone_ind_2
+	replace 	dzone_tropic_warm_subhumid = dzone_ind_3
+	replace 	dzone_tropic_warm_humid = dzone_ind_4
+	replace 	dzone_tropic_cool_arid = dzone_ind_5
+	replace 	dzone_tropic_cool_semiarid = dzone_ind_6
+	replace 	dzone_tropic_cool_subhumid = dzone_ind_7
+	replace 	dzone_tropic_cool_humid = dzone_ind_8
+	
+	replace 	indc_Barley = indc_ind_1
+	replace 	indc_Beans_Peas_Lentils_Peanuts = indc_ind_2
+	replace 	indc_Maize = indc_ind_3
+	replace 	indc_Millet = indc_ind_4
+	replace 	indc_Nuts_Seeds = indc_ind_5
+	replace 	indc_Other = indc_ind_6
+	replace 	indc_Rice = indc_ind_7
+	replace 	indc_Sorghum = indc_ind_8
+	replace 	indc_Tubers_Roots = indc_ind_9
+	replace 	indc_Wheat = indc_ind_10
+	replace 	indc_Fruits = indc_ind_11
+	replace 	indc_Cash_Crops = indc_ind_12
+	
+	drop 		dzone_ind_* indc_ind_*
+	
 * replace invalid observations with missing values and drop flag variables 
 	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
@@ -1116,7 +1154,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 farm_size nb_plots  aez crop) ///
+				v04_rf2 v10_rf2 farm_size nb_plots  aez crop) ///
 				vce(bootstrap)
 				
 * describe survey design 
@@ -1150,7 +1188,7 @@
 				[pw = pw],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 	
 	* no weights 
-	reg			ln_yield_cp $selbaseline_4_5 , vce(cluster cluster_id)
+	*reg			ln_yield_cp $selbaseline_4_5 , vce(cluster cluster_id)
 
 *	test 		$test
 *	local 		F1 = r(F)
