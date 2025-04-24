@@ -42,7 +42,7 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	 drop if country == "Tanzania" & (wave == 1 | wave ==2 )
+	*drop if country == "Tanzania" & (wave == 1 | wave ==2 )
 	
 * rename variable
 	rename 		agro_ecological_zone aez
@@ -119,6 +119,9 @@
 	egen 		parcel_id = group(country parcel_id_obs)
 	egen 		cluster_id = group(lat_mod lon_modified)
 	
+
+* divide hh weight (pw) by number of plots 
+	gen 		pw_plot = pw / nb_plot
 	
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
@@ -162,7 +165,7 @@
 	*reg 		ln_yield_cp c.year d_* , vce(cluster ea_id_obs)
 * run survey-weighted regression 
 	*svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
-	svyset 		ea_id_obs [pweight = pw], strata(strataid) singleunit(centered)
+	svyset 		ea_id_obs [pweight = pw_plot], strata(strataid) singleunit(centered)
 
 
 	svy: 		reg ln_yield_cp c.year d_* 
@@ -343,7 +346,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index /// 
-				(first) v04_rf2 v10_rf2 ///
+				(first) v03_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -447,7 +450,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
+				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 				
 * describe survey design 
@@ -506,7 +509,8 @@
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
 
-	 drop if country == "Tanzania" & (wave == 1 | wave ==2 )
+	* drop if country == "Tanzania" & (wave == 1 | wave ==2 )
+	
 * merge hh 
 	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
 
@@ -584,11 +588,11 @@
 	gen			ln_yield_cp = asinh(yield_cp)
 	
 * generetar hh_id, plot_manager_id, plot_id, parcel_id, cluster_id
-	egen 		hh_id = group(country wave hh_id_obs)
- 	egen 		plot_manager_id = group(country wave manager_id_obs)
-	egen 		plot_id = group(country wave plot_id_obs)
-	egen 		parcel_id = group(country wave parcel_id_obs)
-	egen 		cluster_id = group( country wave ea_id_obs)
+	egen 		hh_id = group(country hh_id_obs)
+ 	egen 		plot_manager_id = group(country manager_id_obs)
+	egen 		plot_id = group(country plot_id_obs)
+	egen 		parcel_id = group(country parcel_id_obs)
+	egen 		cluster_id = group(lat_mod lon_modified)
 	
 	
 	gen 		ln_dist_popcenter = asinh(dist_popcenter)
@@ -611,6 +615,16 @@
     
 		gen 		indc_`clean_label' = (crop == `crop_code') 
 	}
+	
+* create manager count by hh 
+	bysort 		country hh_id wave manager_id_obs: gen flag = _n == 1
+	gen 		manager_unique = manager_id_obs if flag == 1
+	bysort 		country hh_id wave: egen nb_manager = count(manager_unique)
+	drop 		flag manager_unique
+	
+* adjust hh weight - number of managers
+	gen 		pw_manager = pw / nb_manager
+	
 	
 * create total_wgt_survey varianble 
 	bysort 		country wave (pw): egen total_wgt_survey = total(pw)
@@ -649,7 +663,7 @@
 
 * collapse the data to a plot manager level 
 	collapse 	(first) country survey admin_1* admin_2* admin_3* crop cluster_id /// 
-				manager_id_obs hh_id_obs aez /// 
+				manager_id_obs hh_id_obs aez pw_manager /// 
 				(max) female_manager formal_education_manager hh_size ea_id_obs /// 
 				hh_electricity_access hh_shock lat_modified lon_modified /// 
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
@@ -661,7 +675,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index /// 
-				(first) v04_rf2 v10_rf2 ///
+				(first) v03_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -727,13 +741,13 @@
 
 
 * survey design
-	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
+	svyset 		ea_id_obs [pweight=pw_manager], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
+				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 
 
@@ -764,7 +778,7 @@
 			[pw = wgt_adj_surveypop],absorb(manager_id_obs) 
 	
 	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
-				[pw = pw],absorb(manager_id_obs) 
+				[pw = pw_manager],absorb(manager_id_obs) 
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
 				
@@ -796,7 +810,7 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	 drop if country == "Tanzania" & (wave == 1 | wave ==2 )
+	*drop if country == "Tanzania" & (wave == 1 | wave ==2 )
 	
 	
 * merge hh 
@@ -880,8 +894,7 @@
  	egen 		plot_manager_id = group(country manager_id_obs)
 	egen 		plot_id = group(country plot_id_obs)
 	egen 		parcel_id = group(country parcel_id_obs)
-	egen 		cluster_id = group(lat_modified lon_modified)
-	
+	egen 		cluster_id = group(lat_mod lon_modified)
 	
 	gen 		ln_dist_popcenter = asinh(dist_popcenter)
 	gen 		ln_elevation = asinh(elevation)
@@ -957,7 +970,7 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index  /// 
-				(first) v04_rf2 v10_rf2 /// 
+				(first) v03_rf2 v10_rf2 /// 
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1031,7 +1044,7 @@
 				(sum) farm_size nb_plots ///
 				(mean) age_manager year hh_size ///
 				(mean) hh_asset_index ag_asset_index /// 
-				(first) v04_rf2 v10_rf2 ///
+				(first) v03_rf2 v10_rf2 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1154,7 +1167,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf2 v10_rf2 farm_size nb_plots  aez crop) ///
+				v03_rf2 v10_rf2 farm_size nb_plots  aez crop) ///
 				vce(bootstrap)
 				
 * describe survey design 
