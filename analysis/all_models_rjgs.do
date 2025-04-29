@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 24 April 25
+* Edited on: 29 April 25
 * Edited by: rg
 * Stata v.18.0
 
@@ -13,14 +13,14 @@
 		cannot be tracked over time
 		* model 2: loop running lasso for each rf product and saving /// 
 		selected vars 
+		* we use era5 temperature variables 
 
 * assumes
 	* access to replication data
 	
 * notes:
-	* run time is on the scale of hours?
-	* elevation is missing tza 4,5 and niger 2
-	* if including tza 1 and 2 - change rf 04 to 03
+	* run time?
+
 	
 ***********************************************************************
 **# a - setup
@@ -42,7 +42,6 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	*drop if country == "Tanzania" & (wave == 1 | wave ==2 )
 	
 * rename variable
 	rename 		agro_ecological_zone aez
@@ -207,17 +206,17 @@
 
 
 	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
-	global 		controls_cp used_pesticides organic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots 
+	global 		controls_cp used_pesticides organic_fertilizer inorganic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots 
 	*** in this global they used miss_harvest_value_cp
 	
 	global 		geo  ln_dist_popcenter  	
 		
 	
-	global 		era5 v01_rf4 v02_rf4 v03_rf4 v04_rf4 v05_rf4 v06_rf4 v07_rf4 v08_rf4 v09_rf4 v10_rf4 v11_rf4 v12_rf4 v13_rf4 v14_rf4
+	global 		era5 v01_rf4 v02_rf4 v03_rf4 v04_rf4 v05_rf4 v06_rf4 v07_rf4 v08_rf4 v09_rf4 v10_rf4 v11_rf4 v12_rf4 v13_rf4 v14_rf4 v15_rf8 v16_rf8 v17_rf8 v18_rf8 v19_rf8 v20_rf8 v21_rf8 v22_rf8 v23_rf8 v24_rf8 v25_rf8 v26_rf8 v27_rf8
 	
-	global  	chirps v01_rf2 v02_rf2 v03_rf2 v04_rf2 v05_rf2 v06_rf2 v07_rf2 v08_rf2 v09_rf2 v10_rf2 v11_rf2 v12_rf2 v13_rf2 v14_rf2
+	global  	chirps v01_rf2 v02_rf2 v03_rf2 v04_rf2 v05_rf2 v06_rf2 v07_rf2 v08_rf2 v09_rf2 v10_rf2 v11_rf2 v12_rf2 v13_rf2 v14_rf2 v16_rf8 v17_rf8 v18_rf8 v19_rf8 v20_rf8 v21_rf8 v22_rf8 v23_rf8 v24_rf8 v25_rf8 v26_rf8 v27_rf8
 	
-	global 		cpc v01_rf3 v02_rf3 v03_rf3 v04_rf3 v05_rf3 v06_rf3 v07_rf3 v08_rf3 v09_rf3 v10_rf3 v11_rf3 v12_rf3 v13_rf3 v14_rf3
+	global 		cpc v01_rf3 v02_rf3 v03_rf3 v04_rf3 v05_rf3 v06_rf3 v07_rf3 v08_rf3 v09_rf3 v10_rf3 v11_rf3 v12_rf3 v13_rf3 v14_rf3 v15_rf7 v16_rf8 v17_rf8 v18_rf8 v19_rf8 v20_rf8 v21_rf8 v22_rf8 v23_rf8 v24_rf8 v25_rf8 v26_rf8 v27_rf8
 
 	
 * generate dummy for crops
@@ -238,8 +237,8 @@
 	
 	foreach 	product of local products {	
 		* lasso linear reg to selec vars 
-		lasso 		linear ln_yield_cp (d_* indc_* c.year dzone_* $inputs_cp $controls_cp /// 
-					) $geo $`product', nolog rseed(9912) selection(plugin)
+		lasso 		linear ln_yield_cp (d_* indc_* c.year $inputs_cp $controls_cp /// 
+					dzone_*) $geo $`product', nolog rseed(9912) selection(plugin)
 					
 		lassocoef
 		
@@ -274,7 +273,7 @@
 
 
 *	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster ea_id_obs)
-	svy: 		reg ln_yield_cp $selbaseline_chirps
+	svy: 		reg ln_yield_cp $selbaseline_cpc
 	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -346,7 +345,8 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index /// 
-				(first) v03_rf2 v10_rf2 ///
+				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				v03_rf4 v04_rf4 v07_rf4 v10_rf4 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -407,7 +407,7 @@
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_cp $selbaseline_chirps 
+	svy: 		reg  ln_yield_cp $selbaseline_cpc
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -447,10 +447,11 @@
 	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
-				irrigated intercropped crop_shock hh_shock hh_size /// 
+				irrigated intercropped crop_shock hh_shock hh_size inorganic_fertilizer /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
+				v04_rf3 v06_rf3 v07_rf3 v10_rf3 v18_rf8 v22_rf8 /// 
+				farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 				
 * describe survey design 
@@ -470,7 +471,9 @@
 
 	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
 	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
-	global 		selbaseline_4_5 : list global(selbaseline_chirps) - global(remove)
+	global 		selbaseline_4_5_6_chirps : list global(selbaseline_chirps) - global(remove)
+	global 		selbaseline_4_5_6_era5 : list global(selbaseline_era5) - global(remove)
+	global 		selbaseline_4_5_6_cpc : list global(selbaseline_cpc) - global(remove)
 	display 	"$selbaseline_4_5"
 	
 * estimate model 4
@@ -481,7 +484,7 @@
 *	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls	
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_cpc /// 
 				[pw = pw],absorb(hh_id) // many reps fail due to collinearities in controls
 				
 	* no weights 
@@ -675,7 +678,8 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index /// 
-				(first) v03_rf2 v10_rf2 ///
+				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				v03_rf4 v04_rf4 v07_rf4 v10_rf4 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -747,7 +751,8 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 farm_size nb_plots crop aez) /// 
+				v04_rf3 v06_rf3 v07_rf3 v10_rf3 v18_rf8 v22_rf8 /// 
+				farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 
 
@@ -777,7 +782,7 @@
 	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 			[pw = wgt_adj_surveypop],absorb(manager_id_obs) 
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_cpc /// 
 				[pw = pw_manager],absorb(manager_id_obs) 
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -803,6 +808,7 @@
 	
 * save for merge 
 	*save 		"$export1/dta_files_merge/manager_included.dta", replace
+	
 	
 ***********************************************************************
 **# h - model 6 - cluster 
@@ -970,7 +976,8 @@
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index  /// 
-				(first) v03_rf2 v10_rf2 /// 
+				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				v03_rf4 v04_rf4 v07_rf4 v10_rf4 /// 
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1044,7 +1051,8 @@
 				(sum) farm_size nb_plots ///
 				(mean) age_manager year hh_size ///
 				(mean) hh_asset_index ag_asset_index /// 
-				(first) v03_rf2 v10_rf2 ///
+				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				v03_rf4 v04_rf4 v07_rf4 v10_rf4 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
@@ -1167,7 +1175,8 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 farm_size nb_plots  aez crop) ///
+				v04_rf3 v06_rf3 v07_rf3 v10_rf3 v18_rf8 v22_rf8 /// 
+				farm_size nb_plots crop aez) ///
 				vce(bootstrap)
 				
 * describe survey design 
@@ -1197,7 +1206,7 @@
 *	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
 				[pw = wgt_adj_surveypop],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_cpc /// 
 				[pw = pw],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 	
 	* no weights 
@@ -1246,7 +1255,7 @@
 				-0.03 "-3" -0.04 "-4" -0.05 "-5" -0.06 "-6", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
 				
-w
+wsss
 
 * save for image 
 	graph 		export 	"$export1/figures/coefficients_plot.pdf", as(pdf) replace
