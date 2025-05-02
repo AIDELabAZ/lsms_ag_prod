@@ -1,9 +1,9 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 29 April 25
+* Edited on: 1 May 25
 * Edited by: rg
-* Stata v.18.0
+* Stata v.18.0, mac
 
 * does
 	* runs all models using:
@@ -14,12 +14,14 @@
 		* model 2: loop running lasso for each rf product and saving /// 
 		selected vars 
 		* we use era5 temperature variables 
+		* main product - chirps
+		* pw adjusted at plot, manager, and cluster levels.
 
 * assumes
 	* access to replication data
 	
 * notes:
-	* run time?
+	* run time: 6 - 7 minutes
 
 	
 ***********************************************************************
@@ -74,38 +76,18 @@
 
 	}
 			
-			
-* merge hh 
-	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
-
-	*keep if 	_merge == 3
-	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
-	
-	*drop 		_merge
-	
-* merge manager 
-	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
-				using "$export1/dta_files_merge/manager_included.dta"
-	
-	*keep if 	_merge == 3 | country == "Mali"
-	
-	*drop 		_merge
-	
-* merge cluster 
-	*merge m:1 	country wave lat_mod lon_modified /// 
-				using "$export1/dta_files_merge/cluster_included.dta"
-	
-	*keep if 	_merge == 3 
-	
-		
+* merge with hh 
+	merge 		m:1 wave survey country hh_id_obs using ///
+				"$export1/dta_files_merge/hh_included.dta"
+				
+	drop if 	_merge == 1
+ 
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
 	
 * drop if main crop if missing
-	*drop if 	main_crop == "" 
-	*** main crop if their variable
 	drop if		crop == . 
-	*** crop is our vairalbe 
+	*** crop is our vairalbe, main_crop is theirs
 	*** 3,769 observations dropped
 	
 	replace 	crop_shock = . if crop_shock == .a
@@ -171,7 +153,8 @@
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
-	estimates 	store A
+	*estimates 	store A
+	eststo		model1
 	
 	*outreg2		using "$export1/tables/model1/yield.tex", keep(c.year i.Country) /// 
 				ctitle("Geovariables and weather controls") addstat(  Upper bound CI, /// 
@@ -273,13 +256,15 @@
 
 
 *	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster ea_id_obs)
-	svy: 		reg ln_yield_cp $selbaseline_cpc
+	svy: 		reg ln_yield_cp $selbaseline_chirps
 	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
 	di 			"`lb', `ub',"
 	
-	estimates 	store B
+	*estimates 	store B
+	eststo		model2	
+
 *	test 		$testbaseline
 *	local 		F1 = r(F) 
 *	test 		$inputs_cp
@@ -396,22 +381,21 @@
 	lab var		crop "Main Crop group of hh"
 			
 	svyset, 	clear
-	*svyset 		ea_id_obs [pweight=wgt_adj_surveypop], strata(strata) singleunit(centered)
+
 	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
 
-	* no weights 
-	*reg 		ln_yield_cp $selbaseline_chirps , vce(cluster cluster_id)
 	
 * run model 3
 	*erase 		"$export1/tables/model3/yield.tex"
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_cp $selbaseline_cpc
+	svy: 		reg  ln_yield_cp $selbaseline_chirps
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
-	estimates 	store C
+	*estimates 	store C
+	eststo		model3
 
 	*global 		remove   311bn.agro_ecological_zone 314bn.agro_ecological_zone 
 	*global 		test : list global(testbaseline) - global(remove)
@@ -450,7 +434,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size inorganic_fertilizer /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf3 v06_rf3 v07_rf3 v10_rf3 v18_rf8 v22_rf8 /// 
+				v10_rf2 v18_rf8 v22_rf8 /// 
 				farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 				
@@ -467,10 +451,10 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(200) seed(123)
+	bsweights 	bsw, n(-1) reps(500) seed(4352)
 
 	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
-	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
+
 	global 		selbaseline_4_5_6_chirps : list global(selbaseline_chirps) - global(remove)
 	global 		selbaseline_4_5_6_era5 : list global(selbaseline_era5) - global(remove)
 	global 		selbaseline_4_5_6_cpc : list global(selbaseline_cpc) - global(remove)
@@ -481,16 +465,14 @@
 *	erase 		"$export1/tables/model4/yield.txt"
 
 	
-*	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
-				[pw = wgt_adj_surveypop],absorb(hh_id) // many reps fail due to collinearities in controls	
-	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_cpc /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_chirps /// 
 				[pw = pw],absorb(hh_id) // many reps fail due to collinearities in controls
 				
 	* no weights 
 	*reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(hh_id) vce(cluster cluster_id)
-	estimates 	store D
-
+	*estimates 	store D
+	eststo		model4
+	
 *	test 		$test
 *	local 		F1 = r(F)
 *	outreg2 	using "$export1/tables/model4/yield.tex",  /// 
@@ -511,30 +493,6 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-
-	* drop if country == "Tanzania" & (wave == 1 | wave ==2 )
-	
-* merge hh 
-	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
-
-	*keep if 	_merge == 3
-	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
-	
-	*drop 		_merge
-	
-* merge manager 
-	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
-				using "$export1/dta_files_merge/manager_included.dta"
-	
-	*keep if 	_merge == 3 | country == "Mali"
-	
-	*drop 		_merge
-	
-* merge cluster 
-	*merge m:1 	country wave lat_mod lon_modified /// 
-				using "$export1/dta_files_merge/cluster_included.dta"
-	
-	*keep if 	_merge == 3 
 	
 * rename variable
 	rename 		agro_ecological_zone aez
@@ -566,6 +524,12 @@
 		gen 		dzone_`clean_label' = (aez == `aez_code')
 
 	}
+	
+* merge with hh 
+	merge 		m:1 wave survey country hh_id_obs using ///
+				"$export1/dta_files_merge/hh_included.dta"
+				
+	drop if 	_merge == 1
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -751,7 +715,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf3 v06_rf3 v07_rf3 v10_rf3 v18_rf8 v22_rf8 /// 
+				v10_rf2 v18_rf8 v22_rf8 /// 
 				farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 
@@ -769,27 +733,23 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(200) seed(123)
+	bsweights 	bsw, n(-1) reps(500) seed(4352)
 
-	*global 		remove  2.Country 3.Country 4.Country 5.Country 6.Country 
-	* included in main : 311bn.agro_ecological_zone 314bn.agro_ecological_zone 1.country_dummy3#c.tot_precip_cumulmonth_lag3H2
-	*global 		sel : list global(selbaseline) - global(remove)
 
 * estimate model 5
 	*erase 		"$export1/tables/model5/yield.tex"
 	*erase 		"$export1/tables/model5/yield.txt"
 	
-	*bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
-			[pw = wgt_adj_surveypop],absorb(manager_id_obs) 
-	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_cpc /// 
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_chirps /// 
 				[pw = pw_manager],absorb(manager_id_obs) 
 	*local lb 	= _b[year] - invttail(e(df_r),0.025)*_se[year]
 	*local ub 	= _b[year] + invttail(e(df_r),0.025)*_se[year]
 				
 				
 	*reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(manager_id_obs) vce(cluster cluster_id)
-	estimates 	store E
+	*estimates 	store E
+	eststo		model5	
+	
 	*test 		$test
 	*local 		F1 = r(F)
 	*outreg2 	using "$export1/tables/model5/yield.tex",  /// 
@@ -816,30 +776,6 @@
 
 * open dataset
 	use 		"$data/countries/aggregate/allrounds_final_weather_cp.dta", clear
-	*drop if country == "Tanzania" & (wave == 1 | wave ==2 )
-	
-	
-* merge hh 
-	*merge m:1 	country wave hh_id_obs using "$export1/dta_files_merge/hh_included.dta"
-
-	*keep if 	_merge == 3
-	* if we mute this merge and use full sample, lasso chooses same rf vars for each product
-	
-	*drop 		_merge
-	
-* merge manager 
-	*merge m:1 	country wave hh_id_obs manager_id_obs /// 
-				using "$export1/dta_files_merge/manager_included.dta"
-	
-	*keep if 	_merge == 3 | country == "Mali"
-	
-	*drop		_merge
-	
-* merge cluster 
-	*merge m:1 	country wave lat_mod lon_modified /// 
-				using "$export1/dta_files_merge/cluster_included.dta"
-	
-	*keep if 	_merge == 3 
 	
 * rename variable
 	rename 		agro_ecological_zone aez
@@ -871,6 +807,12 @@
 		gen 		dzone_`clean_label' = (aez == `aez_code')
 
 	}
+	
+* merge with hh 
+	merge 		m:1 wave survey country hh_id_obs using ///
+				"$export1/dta_files_merge/hh_included.dta"
+				
+	drop if 	_merge == 1
 		
 	drop if 	ea_id_obs == .
 	drop if 	pw == .
@@ -1051,7 +993,7 @@
 				(sum) farm_size nb_plots ///
 				(mean) age_manager year hh_size ///
 				(mean) hh_asset_index ag_asset_index /// 
-				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				(mean) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
 				v03_rf4 v04_rf4 v07_rf4 v10_rf4 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
@@ -1175,7 +1117,7 @@
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v04_rf3 v06_rf3 v07_rf3 v10_rf3 v18_rf8 v22_rf8 /// 
+				v10_rf2 v18_rf8 v22_rf8 /// 
 				farm_size nb_plots crop aez) ///
 				vce(bootstrap)
 				
@@ -1192,7 +1134,7 @@
 	drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(200) seed(123)
+	bsweights 	bsw, n(-1) reps(500) seed(4352)
 
 
 	
@@ -1200,17 +1142,10 @@
 *	erase 		"$export1/tables/model4/yield.tex"
 *	erase 		"$export1/tables/model4/yield.txt"
 
-	*xtset 		hh_id_obs wave	
-	*xtreg		ln_yield_USD $sel, fe
-	
-*	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5 /// 
-				[pw = wgt_adj_surveypop],absorb(ea_id_obs) // many reps fail due to collinearities in controls
 
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_cpc /// 
-				[pw = pw],absorb(ea_id_obs) // many reps fail due to collinearities in controls
+	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_chirps /// 
+				[pw = pw],absorb(cluster_id) // many reps fail due to collinearities in controls
 	
-	* no weights 
-	*reg			ln_yield_cp $selbaseline_4_5 , vce(cluster cluster_id)
 
 *	test 		$test
 *	local 		F1 = r(F)
@@ -1219,11 +1154,8 @@
 				ctitle("Geovariables and weather controls - FE")  /// 
 				addtext(Main crop FE, YES, Country FE, YES)  append
 				
-	
-	*areg 		ln_yield_cp $selbaseline_chirps /// 
-				[pw = wgt_adj_surveypop],absorb(ea_id_obs)
-				
-	estimates 	store F
+	*estimates 	store F
+	eststo		model6	
 	
 * keep only observations included in the regression
 	*keep if 	e(sample)
@@ -1240,24 +1172,59 @@
 * create the graph
 	set			scheme s1color
 	
-	coefplot 	(A, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 1) ||  /// 
-				(B, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 2) ||  /// 
-				(C, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 3) ||  /// 
-				(D, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 4) || /// 
-				(E, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 5) || ///
-				(F, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 6) /// 
+	coefplot 	(model1, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 1) || /// 
+				(model2, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 2) || /// 
+				(model3, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 3) || /// 
+				(model4, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 4) || /// 
+				(model5, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 5) || ///
+				(model6, mcolor(navy) ciopts(color(navy) recast(rcap))), bylabel(Model 6) /// 
 				byopts(row(1)) keep(year) /// 
 				xlabel(none) /// 
 				yline(0, lcolor(black%50)) /// 
-				ylab(0.09 "9"  0.08 "8" 0.07 "7" 0.06 "6" 0.05 "5" 0.04 "4" /// 
-				0.03 "3" 0.02 "2" /// 
-				0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
-				-0.03 "-3" -0.04 "-4" -0.05 "-5" -0.06 "-6", labsize(small) grid) /// 
+				ylab( 0.03 "3" 0.02 "2" 0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
+				-0.03 "-3" -0.04 "-4" -0.05 "-5", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
-				
-wsss
+
 
 * save for image 
 	graph 		export 	"$export1/figures/coefficients_plot.pdf", as(pdf) replace
 
-			
+		
+* regression table 
+	esttab 		model1 model2 model3 model4 model5 model6 /// 
+				using "$export1/tables/reg_results.tex", /// 
+				replace ar2 se b(4) nogaps modelwidth(12) varwidth(45) /// 
+				nocons nobaselevels interaction(" x ") compress label nonumbers /// 
+				title("Regression Results") /// 
+				nonumber mtitle("Model 1" "Model 2" "Model 3" "Model 4" /// 
+				"Model 5" "Model 6") /// 
+				order(year ln_fert_value_cp ln_seed_value_cp ln_total_labor_days /// 
+				inorganic_fertilizer used_pesticides organic_fertilizer hh_size hh_shock /// 
+				hh_electricity_access farm_size nb_plots irrigated intercropped /// 
+				female_manager age_manager formal_education_manager) /// 
+				coeflabel(year "Annual Time Trend" /// 
+                      ln_fert_value_cp "Log Fertilizer Value" /// 
+                      ln_seed_value_cp "Log Seed Value" /// 
+                      ln_total_labor_days "Log Total Labor Days" /// 
+                      inorganic_fertilizer "Inorganic Fertilizer (Yes/No)" ///
+					  used_pesticides "Pesticide Use (Yes/No)" ///
+					  organic_fertilizer "Organic Fertilizer (Yes/No)" /// 
+					  hh_size "Household Size" ///
+					  hh_shock "Household Shock" /// 
+					  hh_electricity_access "Household Electricity Access" /// 
+					  farm_size "Farm Size" /// 
+					  nb_plots "Number of Plots" /// 
+					  irrigated "Irrigated (Yes/No)" /// 
+					  intercropped "Intercropped (Yes/No)" /// 
+					  female_manager "Is the plot manager a female? (Yes/No)" /// 
+					  age_manager "Manager Age" /// 
+					  formal_education_manager "Manager Formal Education (Yes/No)") /// 
+				keep(year ln_fert_value_cp ln_seed_value_cp ln_total_labor_days /// 
+				inorganic_fertilizer used_pesticides organic_fertilizer hh_size hh_shock /// 
+				hh_electricity_access farm_size nb_plots irrigated intercropped /// 
+				female_manager age_manager formal_education_manager ) /// 
+				star(* 0.10 ** 0.05 *** 0.01)
+
+nijnjinijnb
+
+eststo	clear
