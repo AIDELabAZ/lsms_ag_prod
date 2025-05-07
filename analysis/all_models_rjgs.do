@@ -1,7 +1,7 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 1 May 25
+* Edited on: 7 May 25
 * Edited by: rg
 * Stata v.18.0, mac
 
@@ -1193,20 +1193,19 @@
 * regression table 
 	esttab 		model1 model2 model3 model4 model5 model6 /// 
 				using "$export1/tables/reg_results.tex", /// 
-				replace ar2 se b(4) nogaps modelwidth(12) varwidth(45) /// 
+				replace r2 se b(4) nogaps modelwidth(12) varwidth(45) /// 
 				nocons nobaselevels interaction(" x ") compress label nonumbers /// 
 				title("Regression Results") /// 
 				nonumber mtitle("Model 1" "Model 2" "Model 3" "Model 4" /// 
 				"Model 5" "Model 6") /// 
 				order(year ln_fert_value_cp ln_seed_value_cp ln_total_labor_days /// 
-				inorganic_fertilizer used_pesticides organic_fertilizer hh_size hh_shock /// 
+				used_pesticides organic_fertilizer hh_size hh_shock /// 
 				hh_electricity_access farm_size nb_plots irrigated intercropped /// 
 				female_manager age_manager formal_education_manager) /// 
 				coeflabel(year "Annual Time Trend" /// 
                       ln_fert_value_cp "Log Fertilizer Value" /// 
                       ln_seed_value_cp "Log Seed Value" /// 
                       ln_total_labor_days "Log Total Labor Days" /// 
-                      inorganic_fertilizer "Inorganic Fertilizer (Yes/No)" ///
 					  used_pesticides "Pesticide Use (Yes/No)" ///
 					  organic_fertilizer "Organic Fertilizer (Yes/No)" /// 
 					  hh_size "Household Size" ///
@@ -1220,7 +1219,7 @@
 					  age_manager "Manager Age" /// 
 					  formal_education_manager "Manager Formal Education (Yes/No)") /// 
 				keep(year ln_fert_value_cp ln_seed_value_cp ln_total_labor_days /// 
-				inorganic_fertilizer used_pesticides organic_fertilizer hh_size hh_shock /// 
+				used_pesticides organic_fertilizer hh_size hh_shock /// 
 				hh_electricity_access farm_size nb_plots irrigated intercropped /// 
 				female_manager age_manager formal_education_manager ) /// 
 				star(* 0.10 ** 0.05 *** 0.01)
