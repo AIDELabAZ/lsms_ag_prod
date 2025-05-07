@@ -276,7 +276,14 @@
 				addtext(Main crop FE, YES, Country FE, YES)  append
 */
 
+* keep plots included in model 2 for summary statistics 
+	keep if		e(sample)
 
+
+* save file 	
+	save 		"$export1/dta_files_merge/plots_summary_stats", replace
+	
+	
 ***********************************************************************
 **# e - model 3 - farm level
 ***********************************************************************
