@@ -277,11 +277,11 @@
 */
 
 * keep plots included in model 2 for summary statistics 
-	keep if		e(sample)
+	*keep if		e(sample)
 
 
 * save file 	
-	save 		"$export1/dta_files_merge/plots_summary_stats", replace
+	*save 		"$export1/dta_files_merge/plots_summary_stats", replace
 	
 	
 ***********************************************************************
@@ -1206,8 +1206,8 @@
 				nonumber mtitle("Model 1" "Model 2" "Model 3" "Model 4" /// 
 				"Model 5" "Model 6") /// 
 				order(year ln_fert_value_cp ln_seed_value_cp ln_total_labor_days /// 
-				used_pesticides organic_fertilizer hh_size hh_shock /// 
-				hh_electricity_access farm_size nb_plots irrigated intercropped /// 
+				used_pesticides organic_fertilizer irrigated intercropped  hh_size hh_shock /// 
+				hh_electricity_access farm_size nb_plots /// 
 				female_manager age_manager formal_education_manager) /// 
 				coeflabel(year "Annual Time Trend" /// 
                       ln_fert_value_cp "Log Fertilizer Value" /// 
