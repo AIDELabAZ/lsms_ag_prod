@@ -197,7 +197,7 @@
 	
 	global 		era5 v01_rf4 v02_rf4 v03_rf4 v04_rf4 v05_rf4 v06_rf4 v07_rf4 v08_rf4 v09_rf4 v10_rf4 v11_rf4 v12_rf4 v13_rf4 v14_rf4 v15_rf8 v16_rf8 v17_rf8 v18_rf8 v19_rf8 v20_rf8 v21_rf8 v22_rf8 v23_rf8 v24_rf8 v25_rf8 v26_rf8 v27_rf8
 	
-	global  	chirps v01_rf2 v02_rf2 v03_rf2 v04_rf2 v05_rf2 v06_rf2 v07_rf2 v08_rf2 v09_rf2 v10_rf2 v11_rf2 v12_rf2 v13_rf2 v14_rf2 v16_rf8 v17_rf8 v18_rf8 v19_rf8 v20_rf8 v21_rf8 v22_rf8 v23_rf8 v24_rf8 v25_rf8 v26_rf8 v27_rf8
+	global  	chirps v01_rf2 v02_rf2 v03_rf2 v04_rf2 v05_rf2 v06_rf2 v07_rf2 v08_rf2 v09_rf2 v10_rf2 v11_rf2 v12_rf2 v13_rf2 v14_rf2 v15_rf8 v16_rf8 v17_rf8 v18_rf8 v19_rf8 v20_rf8 v21_rf8 v22_rf8 v23_rf8 v24_rf8 v25_rf8 v26_rf8 v27_rf8
 	
 	global 		cpc v01_rf3 v02_rf3 v03_rf3 v04_rf3 v05_rf3 v06_rf3 v07_rf3 v08_rf3 v09_rf3 v10_rf3 v11_rf3 v12_rf3 v13_rf3 v14_rf3 v15_rf7 v16_rf8 v17_rf8 v18_rf8 v19_rf8 v20_rf8 v21_rf8 v22_rf8 v23_rf8 v24_rf8 v25_rf8 v26_rf8 v27_rf8
 

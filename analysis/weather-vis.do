@@ -188,7 +188,7 @@ twoway  (kdensity v05_rf2 if country == "Tanzania", color(gray%30) recast(area))
 					"$export1/figures/density_rf/tanzania_density_rf.gph", ///
 					rows(2) cols(3) iscale(.5) title("Total Season Rainfall Density by Country") commonscheme
 					
-	graph 			export "$export1/figures/density_rf/all_countries_density_rf", as(pdf) replace
+	graph 			export "$export1/figures/density_rf/all_countries_density_rf.pdf", as(pdf) replace
 					
 					
 ***********************************************************************
