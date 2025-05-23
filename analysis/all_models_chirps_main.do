@@ -465,7 +465,7 @@
 	global 		selbaseline_4_5_6_chirps : list global(selbaseline_chirps) - global(remove)
 	global 		selbaseline_4_5_6_era5 : list global(selbaseline_era5) - global(remove)
 	global 		selbaseline_4_5_6_cpc : list global(selbaseline_cpc) - global(remove)
-	display 	"$selbaseline_4_5"
+	display 	"$selbaseline_4_5_6_chirps"
 	
 * estimate model 4
 *	erase 		"$export1/tables/model4/yield.tex"
@@ -1231,6 +1231,5 @@
 				female_manager age_manager formal_education_manager ) /// 
 				star(* 0.10 ** 0.05 *** 0.01)
 
-nijnjinijnb
 
-eststo	clear
+
