@@ -1,14 +1,21 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 10 June 25
+* Edited on: 7 May 25
 * Edited by: rg
 * Stata v.18.0, mac
 
 * does
 	* runs all models using:
-		* same as main files
-		* we break down labor into hired and family
+		* scaled inputs 
+		* includes farm size and nb_plot as controls
+		* drops Mali before running models 4 and 5 becase hh and managers /// 
+		cannot be tracked over time
+		* model 2: loop running lasso for each rf product and saving /// 
+		selected vars 
+		* we use era5 temperature variables 
+		* main product - chirps
+		* pw adjusted at plot, manager, and cluster levels.
 
 * assumes
 	* access to replication data
@@ -71,7 +78,7 @@
 			
 * merge with hh 
 	merge 		m:1 wave survey country hh_id_obs using ///
-				"$export1/dta_files_merge/hh_included_labor.dta"
+				"$export1/dta_files_merge/hh_included.dta"
 				
 	drop if 	_merge == 1
  
@@ -139,10 +146,9 @@
 	*reg 		ln_yield_cp c.year d_* , vce(cluster ea_id_obs)
 * run survey-weighted regression 
 	*svyset 		ea_id_obs [pweight = wgt_adj_surveypop], strata(strataid) singleunit(centered)
-	svyset 		ea_id_obs [pweight = pw_plot], strata(strataid) singleunit(centered)
 
 
-	svy: 		reg ln_yield_cp c.year d_* 
+	reg 		ln_yield_cp c.year d_*, vce(cluster ea_id_obs)
 	
 	local 		lb = _b[year] - invttail(e(df_r), 0.025) * _se[year]
 	local 		ub = _b[year] + invttail(e(df_r), 0.025) * _se[year]
@@ -170,8 +176,6 @@
 
 * generate log variables for inputs and controls 
 	gen 		ln_total_labor_days = asinh(total_labor_days)
-	gen 		ln_total_hired_labor = asinh(total_hired_labor_days)
-	gen 		ln_total_family_labor = asinh(total_family_labor_days)
 	gen 		ln_seed_value_cp = asinh(seed_value_cp)	
 	gen 		ln_plot_area_GPS = asinh(plot_area_GPS)
 	gen			ln_fert_value_cp = asinh(fert_value_cp)
@@ -183,7 +187,7 @@
 * we include farm size 
 
 
-	global 		inputs_cp ln_total_hired_labor ln_total_family_labor ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
+	global 		inputs_cp ln_total_labor_days ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
 	global 		controls_cp used_pesticides organic_fertilizer inorganic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots 
 	*** in this global they used miss_harvest_value_cp
 	
@@ -229,8 +233,7 @@
 		*create a local to store globals 
 		local 		current_selbaseline = "selbaseline_`product'"
 		
-		*reg 		ln_yield_cp $`current_selbaseline', vce(cluster cluster_id)
-		svy: 		reg ln_yield_cp $`current_selbaseline'
+		reg 		ln_yield_cp $`current_selbaseline', vce(cluster ea_id_obs)
 	
 		local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 		local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -251,7 +254,8 @@
 
 
 *	reg 		ln_yield_cp $selbaseline_chirps , vce(cluster ea_id_obs)
-	svy: 		reg ln_yield_cp $selbaseline_chirps
+	reg 		ln_yield_cp $selbaseline_chirps, vce(cluster ea_id_obs)
+	estat vif 	
 	
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -310,8 +314,7 @@
 
 
 * creating missing value indicators at plot level
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
 					gen 	mi_`var' = 1 if `var' == .
 				}
@@ -328,26 +331,23 @@
 				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
 				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
-				total_family_labor_days total_hired_labor_days /// 
 				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index /// 
-				(first) v03_rf2 v10_rf2 v12_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
 				v03_rf4 v04_rf4 v07_rf4 v10_rf4 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
-				n_total_labor_days = total_labor_days n_total_family_labor_days = /// 
-				total_family_labor_days n_total_hired_labor_days = ///
-				total_hired_labor_days n_plot_area_GPS = plot_area_GPS, /// 
+				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(hh_id wave)
 						
 		
 * replace invalid observations with missing values and drop flag variables 
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp fert_value_cp plot_area_GPS {
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
+				fert_value_cp plot_area_GPS {
 					replace 	`var' = . if n_`var' == 0
 					drop 		n_`var'
 				}
@@ -356,8 +356,8 @@
 
 
 * flag variables with plots containing one or more missing observations
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp fert_value_cp plot_area_GPS  {
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
+				fert_value_cp plot_area_GPS  {
 					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
 					replace miss_`var' = 0 if mi_`var' == 0 
 					label var miss_`var' "Flag: Does `var' contain one or more missing values at the plot level?"
@@ -367,8 +367,8 @@
 
 				
 * generate new variables containing ln of the original variable
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp fert_value_cp plot_area_GPS  {
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
+				fert_value_cp plot_area_GPS  {
 					gen		ln_`var' = asinh(`var')
 					lab var ln_`var' "Natural log of `var'"
 				}
@@ -386,17 +386,13 @@
 	lab 		values crop crop
 	lab var		crop "Main Crop group of hh"
 			
-	svyset, 	clear
-
-	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered)
-
 	
 * run model 3
 	*erase 		"$export1/tables/model3/yield.tex"
 	*erase 		"$export1/tables/model3/yield.txt"
 	
 
-	svy: 		reg  ln_yield_cp $selbaseline_chirps
+	reg  		ln_yield_cp $selbaseline_chirps, vce(cluster ea_id_obs)
 
 	local 		lb = _b[year] - invttail(e(df_r),0.025)*_se[year]
 	local 		ub = _b[year] + invttail(e(df_r),0.025)*_se[year]
@@ -419,7 +415,7 @@
 	*keep 		wave country survey hh_id_obs
 	
 * save for merge 
-	*save 		"$export1/dta_files_merge/hh_included_labor.dta", replace
+	*save 		"$export1/dta_files_merge/hh_included.dta", replace
 	
 
 ***********************************************************************
@@ -427,38 +423,27 @@
 ***********************************************************************
 
 * clear survey design settings 
-	svyset,		clear 
+	*svyset,		clear 
 	
 * drop Mali bc hh and managers cannot be tracked 
 	drop if 	country == "Mali"
 	
 	drop 		d_Mali
-	
-	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
-				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
-				irrigated intercropped crop_shock hh_shock hh_size inorganic_fertilizer /// 
-				formal_education_manager female_manager age_manager hh_electricity_access /// 
-				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 v12_rf2 v22_rf8 /// 
-				farm_size nb_plots crop aez) /// 
-				vce(bootstrap)
-				
+					
 * describe survey design 
-	svydes 		ln_yield_cp, single generate(d)
+	*svydes 		ln_yield_cp, single generate(d)
 	
 * determine how many ea exist
-	bysort		strataid (ea_id_obs): gen ID = sum(ea_id_obs != ea_id_obs[_n - 1])
+	*bysort		strataid (ea_id_obs): gen ID = sum(ea_id_obs != ea_id_obs[_n - 1])
 	
 * determine max number of ea per strata
-	bysort		strataid: egen count_ea = max(ID)
+	*bysort		strataid: egen count_ea = max(ID)
 	
 * drop singletons (singleton strta can cause errors in variance estimation)
-	drop if 	count_ea < 2 // drop singletons 
+	*drop if 	count_ea < 2 // drop singletons 
 	
 * generate bootstrap weights
-	bsweights 	bsw, n(-1) reps(500) seed(4352)
+	*bsweights 	bsw, n(-1) reps(500) seed(4352)
 
 	global 		remove  d_Ethiopia d_Mali d_Malawi d_Niger d_Nigeria o.d_Tanzania
 
@@ -472,8 +457,9 @@
 *	erase 		"$export1/tables/model4/yield.txt"
 
 	
-	bs4rw, 		rw(bsw*)  : areg ln_yield_cp $selbaseline_4_5_6_chirps /// 
-				[pw = pw],absorb(hh_id) // many reps fail due to collinearities in controls
+	areg 	ln_yield_cp $selbaseline_4_5_6_chirps , absorb(hh_id) vce(cluster ea_id_obs) /// 
+ // many reps fail due to collinearities in controls
+	estat vif 
 				
 	* no weights 
 	*reghdfe 	ln_yield_cp $selbaseline_4_5 , absorb(hh_id) vce(cluster cluster_id)
@@ -534,7 +520,7 @@
 	
 * merge with hh 
 	merge 		m:1 wave survey country hh_id_obs using ///
-				"$export1/dta_files_merge/hh_included_labor.dta"
+				"$export1/dta_files_merge/hh_included.dta"
 				
 	drop if 	_merge == 1
 		
@@ -627,8 +613,7 @@
 	
 
 * creating missing value indicators at plot level
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
 					gen 	mi_`var' = 1 if `var' == .
 				}
@@ -644,28 +629,23 @@
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ln_elevation farm_size nb_plots  ///
 				soil_fertility_index d_* indc_* ///
-				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp /// 
-				total_family_labor_days /// 
-				total_hired_labor_days /// 
+				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
 				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index /// 
-				(first) v03_rf2 v10_rf2 v12_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
 				v03_rf4 v04_rf4 v07_rf4 v10_rf4 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
-				n_total_labor_days = total_labor_days n_total_family_labor_days = /// 
-				total_family_labor_days n_total_hired_labor_days = ///
-				total_hired_labor_days n_plot_area_GPS = plot_area_GPS, /// 
+				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(plot_manager_id wave)
 						
 		
 * replace invalid observations with missing values and drop flag variables 
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
 					replace 	`var' = . if n_`var' == 0
 					drop 		n_`var'
@@ -675,8 +655,7 @@
 
 
 * flag variables with plots containing one or more missing observations
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS  {
 					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
 					replace miss_`var' = 0 if mi_`var' == 0 
@@ -687,8 +666,7 @@
 
 				
 * generate new variables containing ln of the original variable
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS  {
 					gen		ln_`var' = asinh(`var')
 					lab var ln_`var' "Natural log of `var'"
@@ -725,13 +703,12 @@
 
 * survey design
 	svyset 		ea_id_obs [pweight=pw_manager], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
+				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 v12_rf2 v22_rf8 /// 
+				v10_rf2 v18_rf8 v22_rf8 /// 
 				farm_size nb_plots crop aez) /// 
 				vce(bootstrap)
 
@@ -826,7 +803,7 @@
 	
 * merge with hh 
 	merge 		m:1 wave survey country hh_id_obs using ///
-				"$export1/dta_files_merge/hh_included_labor.dta"
+				"$export1/dta_files_merge/hh_included.dta"
 				
 	drop if 	_merge == 1
 		
@@ -912,8 +889,7 @@
 
 
 * creating missing value indicators at plot level
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
 					gen 	mi_`var' = 1 if `var' == .
 				}
@@ -929,28 +905,23 @@
 				dist_popcenter total_wgt_survey strataid intercropped pw urban /// 
 				ln_dist_popcenter ln_elevation farm_size nb_plots ///
 				soil_fertility_index d_* indc_* ///
-				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp /// 
-				total_family_labor_days total_labor_days /// 
-				total_hired_labor_days /// 
+				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
 				(sum) plot_area_GPS nb_seasonal_crop /// 
 				(max) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(mean) age_manager year ///
 				(max) dzone_* hh_asset_index ag_asset_index  /// 
-				(first) v03_rf2 v10_rf2 v12_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				(first) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
 				v03_rf4 v04_rf4 v07_rf4 v10_rf4 /// 
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
-				n_total_labor_days = total_labor_days n_total_family_labor_days = /// 
-				total_family_labor_days n_total_hired_labor_days = ///
-				total_hired_labor_days n_plot_area_GPS = plot_area_GPS, /// 
+				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(hh_id wave)
 						
 		
 * replace invalid observations with missing values and drop flag variables 
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
 					replace 	`var' = . if n_`var' == 0
 					drop 		n_`var'
@@ -960,8 +931,7 @@
 
 
 * flag variables with plots containing one or more missing observations
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS  {
 					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
 					replace miss_`var' = 0 if mi_`var' == 0 
@@ -994,8 +964,7 @@
 	lab var		crop "Main Crop group - cluster"
 
 * creating missing value indicators at plot level
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
 					gen 	mi_`var' = 1 if `var' == .
 				}
@@ -1010,23 +979,19 @@
 				dist_popcenter total_wgt_survey strataid intercropped urban /// 
 				ln_dist_popcenter ln_elevation  ///
 				soil_fertility_index d_*  ///
-				(sum) yield_cp harvest_value_cp seed_value_cp /// 
-				fert_value_cp total_family_labor_days total_labor_days /// 
-				total_hired_labor_days /// 
+				(sum) yield_cp harvest_value_cp seed_value_cp fert_value_cp total_labor_days /// 
 				(sum) plot_area_GPS nb_seasonal_crop dzone_* indc_* pw /// 
 				(mean) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
 				(sum) farm_size nb_plots ///
 				(mean) age_manager year hh_size ///
 				(mean) hh_asset_index ag_asset_index /// 
-				(mean) v03_rf2 v10_rf2 v12_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
+				(mean) v10_rf2 v18_rf8 v22_rf8 v04_rf3 v06_rf3 v07_rf3 v10_rf3 /// 
 				v03_rf4 v04_rf4 v07_rf4 v10_rf4 ///
 				(count) mi_* /// 
 				(count) n_yield_cp = yield_cp n_harvest_value_cp = harvest_value_cp ///  
 				n_seed_value_cp = seed_value_cp n_fert_value_cp = fert_value_cp /// 
-				n_total_labor_days = total_labor_days n_total_family_labor_days = /// 
-				total_family_labor_days n_total_hired_labor_days = ///
-				total_hired_labor_days n_plot_area_GPS = plot_area_GPS, /// 
+				n_total_labor_days = total_labor_days n_plot_area_GPS = plot_area_GPS, /// 
 				by(cluster_id wave)
 						
 * check if clusters cover multiple aez 
@@ -1088,8 +1053,7 @@
 	drop 		dzone_ind_* indc_ind_*
 	
 * replace invalid observations with missing values and drop flag variables 
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS {
 					replace 	`var' = . if n_`var' == 0
 					drop 		n_`var'
@@ -1099,8 +1063,7 @@
 
 
 * flag variables with plots containing one or more missing observations
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS  {
 					gen		miss_`var' = 1 if mi_`var' >= 1 | `var' == .
 					replace miss_`var' = 0 if mi_`var' == 0 
@@ -1111,8 +1074,7 @@
 
 				
 * generate new variables containing ln of the original variable
-	foreach 	var of varlist yield_cp harvest_value_cp total_family_labor_days /// 
-				total_hired_labor_days seed_value_cp /// 
+	foreach 	var of varlist yield_cp harvest_value_cp total_labor_days seed_value_cp /// 
 				fert_value_cp plot_area_GPS  {
 					gen		ln_`var' = asinh(`var')
 					lab var ln_`var' "Natural log of `var'"
@@ -1143,13 +1105,12 @@
 				
 * survey design
 	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
+				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
-				v03_rf2 v10_rf2 v12_rf2 v22_rf8 /// 
+				v10_rf2 v18_rf8 v22_rf8 /// 
 				farm_size nb_plots crop aez) ///
 				vce(bootstrap)
 				
@@ -1213,18 +1174,18 @@
 				byopts(row(1)) keep(year) /// 
 				xlabel(none) /// 
 				yline(0, lcolor(black%50)) /// 
-				ylab( 0.05 "5" 0.04 "4" 0.03 "3" 0.02 "2" 0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
-				-0.03 "-3" -0.04 "-4", labsize(small) grid) /// 
+				ylab( 0.03 "3" 0.02 "2" 0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
+				-0.03 "-3" -0.04 "-4" -0.05 "-5", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
 
 
 * save for image 
-	graph 		export 	"$export1/figures/coefficients_plot_labor.pdf", as(pdf) replace
+	graph 		export 	"$export1/figures/coefficients_plot.pdf", as(pdf) replace
 
-		ewrwererrwrew
+		
 * regression table 
 	esttab 		model1 model2 model3 model4 model5 model6 /// 
-				using "$export1/tables/reg_results_labor.tex", /// 
+				using "$export1/tables/reg_results.tex", /// 
 				replace r2 se b(4) nogaps modelwidth(12) varwidth(45) /// 
 				nocons nobaselevels interaction(" x ") compress label nonumbers /// 
 				title("Regression Results") /// 

@@ -723,7 +723,7 @@
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
 				urban plot_owned hh_asset_index ag_asset_index /// 
 				v10_rf2 v18_rf8 v22_rf8 plot_area_GPS /// 
-				farm_size nb_plots crop aez) /// 
+				farm_size nb_plots crop aez ) /// 
 				vce(bootstrap)
 
 
@@ -1194,7 +1194,7 @@
 
 
 * save for image 
-	graph 		export 	"$export1/figures/coefficients_plot.pdf", as(pdf) replace
+	graph 		export 	"$export1/figures/coefficients_plot_area_rhs.pdf", as(pdf) replace
 
 		
 * regression table 

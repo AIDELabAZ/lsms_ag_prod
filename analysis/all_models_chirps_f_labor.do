@@ -1,14 +1,14 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 10 June 25
+* Edited on: 11 June 25
 * Edited by: rg
 * Stata v.18.0, mac
 
 * does
 	* runs all models using:
 		* same as main files
-		* we break down labor into hired and family
+		* we only include family labor
 
 * assumes
 	* access to replication data
@@ -16,7 +16,9 @@
 * notes:
 	* run time: 6 - 7 minutes
 
-	
+
+
+
 ***********************************************************************
 **# a - setup
 ***********************************************************************
@@ -183,7 +185,7 @@
 * we include farm size 
 
 
-	global 		inputs_cp ln_total_hired_labor ln_total_family_labor ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
+	global 		inputs_cp ln_total_family_labor ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
 	global 		controls_cp used_pesticides organic_fertilizer inorganic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots 
 	*** in this global they used miss_harvest_value_cp
 	
@@ -435,8 +437,7 @@
 	drop 		d_Mali
 	
 	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
+				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor ///  
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size inorganic_fertilizer /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
@@ -725,8 +726,7 @@
 
 * survey design
 	svyset 		ea_id_obs [pweight=pw_manager], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
+				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor ///  
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
@@ -1011,8 +1011,7 @@
 				ln_dist_popcenter ln_elevation  ///
 				soil_fertility_index d_*  ///
 				(sum) yield_cp harvest_value_cp seed_value_cp /// 
-				fert_value_cp total_family_labor_days total_labor_days /// 
-				total_hired_labor_days /// 
+				fert_value_cp total_family_labor_days total_hired_labor_days total_labor_days /// 
 				(sum) plot_area_GPS nb_seasonal_crop dzone_* indc_* pw /// 
 				(mean) organic_fertilizer inorganic_fertilizer used_pesticides crop_shock /// 
 				plot_owned irrigated /// 
@@ -1144,7 +1143,6 @@
 * survey design
 	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
 				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
@@ -1214,12 +1212,12 @@
 				xlabel(none) /// 
 				yline(0, lcolor(black%50)) /// 
 				ylab( 0.05 "5" 0.04 "4" 0.03 "3" 0.02 "2" 0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" /// 
-				-0.03 "-3" -0.04 "-4", labsize(small) grid) /// 
+				-0.03 "-3" -0.04 "-4" -0.05 "-5", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
 
 
 * save for image 
-	graph 		export 	"$export1/figures/coefficients_plot_labor.pdf", as(pdf) replace
+	graph 		export 	"$export1/figures/coefficients_plot_labor_fam.pdf", as(pdf) replace
 
 		ewrwererrwrew
 * regression table 
