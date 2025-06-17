@@ -1225,7 +1225,7 @@
 		ewrwererrwrew
 * regression table 
 	esttab 		model1 model2 model3 model4 model5 model6 /// 
-				using "$export1/tables/reg_results_labor.tex", /// 
+				using "$export1/tables/reg_results_labor_mss.tex", /// 
 				replace r2 se b(4) nogaps modelwidth(12) varwidth(45) /// 
 				nocons nobaselevels interaction(" x ") compress label nonumbers /// 
 				title("Regression Results") /// 

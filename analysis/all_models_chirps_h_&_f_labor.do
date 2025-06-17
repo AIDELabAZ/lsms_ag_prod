@@ -170,8 +170,8 @@
 
 * generate log variables for inputs and controls 
 	gen 		ln_total_labor_days = asinh(total_labor_days)
-	gen 		ln_total_hired_labor = asinh(total_hired_labor_days)
-	gen 		ln_total_family_labor = asinh(total_family_labor_days)
+	gen 		ln_total_hired_labor_days = asinh(total_hired_labor_days)
+	gen 		ln_total_family_labor_days = asinh(total_family_labor_days)
 	gen 		ln_seed_value_cp = asinh(seed_value_cp)	
 	gen 		ln_plot_area_GPS = asinh(plot_area_GPS)
 	gen			ln_fert_value_cp = asinh(fert_value_cp)
@@ -183,7 +183,7 @@
 * we include farm size 
 
 
-	global 		inputs_cp ln_total_hired_labor ln_total_family_labor ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
+	global 		inputs_cp ln_total_hired_labor_days ln_total_family_labor_days ln_seed_value_cp  ln_fert_value_cp hh_asset_index ag_asset_index
 	global 		controls_cp used_pesticides organic_fertilizer inorganic_fertilizer irrigated intercropped hh_shock crop_shock hh_size formal_education_manager female_manager age_manager hh_electricity_access urban plot_owned farm_size nb_plots 
 	*** in this global they used miss_harvest_value_cp
 	
@@ -435,8 +435,8 @@
 	drop 		d_Mali
 	
 	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
+				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor_days /// 
+				ln_total_hired_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size inorganic_fertilizer /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
@@ -1143,8 +1143,8 @@
 				
 * survey design
 	svyset 		ea_id_obs [pweight=pw], strata(strata) singleunit(centered) /// 
-				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor /// 
-				ln_total_hired_labor /// 
+				bsrweight(ln_yield_cp year ln_plot_area_GPS ln_total_family_labor_days /// 
+				ln_total_hired_labor_days /// 
 				ln_fert_value_cp ln_seed_value_cp used_pesticides organic_fertilizer /// 
 				irrigated intercropped crop_shock hh_shock hh_size /// 
 				formal_education_manager female_manager age_manager hh_electricity_access /// 
@@ -1230,14 +1230,16 @@
 				title("Regression Results") /// 
 				nonumber mtitle("Model 1" "Model 2" "Model 3" "Model 4" /// 
 				"Model 5" "Model 6") /// 
-				order(year ln_fert_value_cp ln_seed_value_cp ln_total_labor_days /// 
+				order(year ln_fert_value_cp ln_seed_value_cp ln_total_hired_labor_days /// 
+				ln_total_family_labor_days /// 
 				used_pesticides organic_fertilizer irrigated intercropped  hh_size hh_shock /// 
 				hh_electricity_access farm_size nb_plots /// 
 				female_manager age_manager formal_education_manager) /// 
 				coeflabel(year "Annual Time Trend" /// 
                       ln_fert_value_cp "Log Fertilizer Value" /// 
                       ln_seed_value_cp "Log Seed Value" /// 
-                      ln_total_labor_days "Log Total Labor Days" /// 
+                      ln_total_hired_labor_days "Log Hired Labor Days" /// 
+					  ln_total_family_labor_days "Log Family Labor Days" ///
 					  used_pesticides "Pesticide Use (Yes/No)" ///
 					  organic_fertilizer "Organic Fertilizer (Yes/No)" /// 
 					  hh_size "Household Size" ///
@@ -1250,7 +1252,8 @@
 					  female_manager "Is the plot manager a female? (Yes/No)" /// 
 					  age_manager "Manager Age" /// 
 					  formal_education_manager "Manager Formal Education (Yes/No)") /// 
-				keep(year ln_fert_value_cp ln_seed_value_cp ln_total_labor_days /// 
+				keep(year ln_fert_value_cp ln_seed_value_cp ln_total_hired_labor_days  /// 
+				ln_total_family_labor_days /// 
 				used_pesticides organic_fertilizer hh_size hh_shock /// 
 				hh_electricity_access farm_size nb_plots irrigated intercropped /// 
 				female_manager age_manager formal_education_manager ) /// 
