@@ -4,8 +4,8 @@ This repository acts as the mother ship for a number of other repositories that 
 
 - Michler, J.D., Josephson, A., Kilic, T., and Murray, S. (2021). "[Estimating the Impact of Weather on Agriculture][4]." World Bank Policy Research Working Paper, No. 9867.
 - Michler, J.D., Josephson, A., Kilic, T., and Murray, S. (2022). "[Privacy Protection, Measurement Error, and the Integration of Remote Sensing and Socioeconomic Survey Data][5]." *Journal of Development Economics 158*: 102927.
-- Josephson, A., Michler, J.D., Kilic, T., and Murray, S. (2024). "[The Mismeasure of Weather: Using Remotely Sensed Weather in Economic Contexts][6]."
-- Agme, C., Josephson, A., Michler, J.D., Kilic, T., and Murray, S. (2024). "[Variable Selection in Economic Applications of Remotely Sensed Weather Data: Evidence from the LSMS-ISA][7]."
+- Josephson, A., Michler, J.D., Kilic, T., and Murray, S. (2025). "[The Mismeasure of Weather: Using Remotely Sensed Weather in Economic Contexts][6]." *Journal of Development Economics 178*: 103553.
+- Agme, C., Josephson, A., Michler, J.D., Kilic, T., and Murray, S. (2025). "[Variable Selection in Economic Applications of Remotely Sensed Weather Data: Evidence from the LSMS-ISA][7]."
 
 <span style="color:blue">Because the weather data contains confidential information, it is not publically available. This means the weather code will not function, as that data is held by the World Bank. Contact Drs. Jeffrey D. Michler or Anna Josephson and they can share an intermediate - de-identified - version of the weather data for use in replicating the results.</span>
 
