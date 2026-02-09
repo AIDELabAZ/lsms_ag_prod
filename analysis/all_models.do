@@ -1,9 +1,9 @@
 * Project: LSMS_ag_prod 
 * Created on: Jan 2025
 * Created by: rg
-* Edited on: 17 March 25
-* Edited by: rg
-* Stata v.18.0
+* Edited on: 8 feb 2026
+* Edited by: alj
+* Stata v.19.0
 
 * does
 	* reads in and conducts replication of Wollburg et al.
