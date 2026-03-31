@@ -1,9 +1,9 @@
 * Project: LSMS_ag_prod
 * Created on: Sep 2024
 * Created by: rg
-* Edited on: 20 Sep 2024
-* Edited by: rg
-* Stata v.18, mac
+* Edited on: 30 march 2026
+* Edited by: alj
+* Stata v.19 
 
 * does
 	* establishes an identical workspace between users
@@ -42,8 +42,8 @@ if `"`c(username)'"' == "jdmichler" {
     }
 if `"`c(username)'"' == "aljos" {
         global 		code  	"C:/Users/aljos/git/weather_and_agriculture/lsms_ag_prod"
-		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/lsms_base"
-		global 		output	"C:/Users/aljos/OneDrive - University of Arizona/ag_prod" 
+		global 		data	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/weather_and_agriculture/lsms_base"
+		global 		output	"C:/Users/aljos/OneDrive - University of Arizona/weather_and_agriculture/lsms_ag_prod_data" 
 		
     }	
 if `"`c(username)'"' == "rodrigoguerra" {
