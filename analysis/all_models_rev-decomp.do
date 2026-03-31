@@ -1,3 +1,5 @@
+*** BEGIN *** 
+
 * Project: LSMS_ag_prod 
 * Created on: 30 march 2026
 * Created by: alj
@@ -1257,4 +1259,5 @@ end
 				ylab(0.10 "10" 0.09 "9" 0.08 "8" 0.07 "7" 0.06 "6" 0.05 "5" 0.04 "4" 0.03 "3" 0.02 "2" /// 
 				0.01 "1" 0 "0" -0.01 "-1" -0.02 "-2" -0.03 "-3" -0.04 "-4", labsize(small) grid) /// 
 				ytitle(Annual productivity change (%)) vertical xsize(5)
-				
+
+*** END ***
