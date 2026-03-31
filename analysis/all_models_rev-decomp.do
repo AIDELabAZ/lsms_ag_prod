@@ -3,7 +3,7 @@
 * Project: LSMS_ag_prod 
 * Created on: 30 march 2026
 * Created by: alj
-* Edited on: 30 march 2026
+* Edited on: 31 march 2026
 * Edited by: alj
 * Stata v.19.0
 
@@ -18,8 +18,6 @@
 	
 * notes:
 	* run time is on the scale of hours - (if reps > 4000)
-	* look at replication file 0.a weight adjustments - constant price. do ///
-	and find out why they use nb_plot
 	
 ***********************************************************************
 **# 0 - setup
