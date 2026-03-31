@@ -370,12 +370,11 @@ di "------------------------------------------------------------"
 	
 * export tables 
 
-* -----------------------------------------------
-
-cap which esttab
-if _rc ssc install estout, replace
-
-use "$decomp", clear
+/*
+	cap which esttab
+	if _rc ssc install estout, replace
+	
+	use "$decomp", clear
 
 * Helper: compute weighted means and midpoint decomposition for one outcome pair
 cap program drop _one_decomp
@@ -576,9 +575,9 @@ end
 	file close gh	
 	
 	restore
+*/
 
 * image will be made in python 	
-	
 	
 ***********************************************************************
 **# 5 - model 3 - farm level
