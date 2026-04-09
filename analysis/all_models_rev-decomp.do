@@ -3,7 +3,7 @@
 * Project: LSMS_ag_prod 
 * Created on: 30 march 2026
 * Created by: alj
-* Edited on: 31 march 2026
+* Edited on: 9 april 2026
 * Edited by: alj
 * Stata v.19.0
 
@@ -17,7 +17,7 @@
 	* access to replication data
 	
 * notes:
-	* run time is on the scale of hours - (if reps > 4000)
+	* run time is on the scale of hours - (if reps > 4000) ...  
 	
 ***********************************************************************
 **# 0 - setup
@@ -332,6 +332,7 @@
 	}
 
 * PRINT PRINT PRINT 
+*** redo format?? i don't like the "------------------------------------------------------------"
 
 di "------------------------------------------------------------"
 di "HH decomposition (Balanced households; Early vs Late)"
