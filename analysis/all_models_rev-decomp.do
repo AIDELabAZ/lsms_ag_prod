@@ -277,16 +277,16 @@
 	reshape 	wide y_hh_pt Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt w_hh, i(hh_panel) j(period)
 	
 * need to balance ... 
-	drop if missing(y_hh_pt0) | missing(y_hh_pt1)
+	drop 		if missing(y_hh_pt0) | missing(y_hh_pt1)
 
 *re-normalize 
-	quietly summarize w_hh0
-	scalar w0sum = r(sum)
-	quietly summarize w_hh1
-	scalar w1sum = r(sum)
+	quietly 	summarize w_hh0
+	scalar 		w0sum = r(sum)
+	quietly 	summarize w_hh1
+	scalar 		w1sum = r(sum)
 
-	replace w_hh0 = w_hh0 / w0sum
-	replace w_hh1 = w_hh1 / w1sum
+	replace 	w_hh0 = w_hh0 / w0sum
+	replace 	w_hh1 = w_hh1 / w1sum
 
 * means?? 
 	quietly summarize y_hh_pt0 [aw = w_hh0]
