@@ -333,6 +333,7 @@
 
 * PRINT PRINT PRINT 
 *** redo format?? i don't like the "------------------------------------------------------------"
+* no spacing, need to print as it is
 
 di "------------------------------------------------------------"
 di "HH decomposition (Balanced households; Early vs Late)"
@@ -365,126 +366,127 @@ di "  within: " %9.4f WITHIN_Lhir_hh_pt " between: " %9.4f BETWEEN_Lhir_hh_pt //
 di "------------------------------------------------------------"
 
 * save 
-	cap mkdir "$export1/dta_files_merge"
+	cap 		mkdir "$export1/dta_files_merge"
 	
-	save "$export1/dta_files_merge/decomp_hh_early_late_BALANCED.dta", replace
+	save 		"$export1/dta_files_merge/decomp_hh_early_late_BALANCED.dta", replace
 	
 * export tables 
 *** need to fix, not working!!?!?
 
-/*
-	cap which esttab
+cap which esttab
 	if _rc ssc install estout, replace
 	
 	use "$decomp", clear
 
-cap program drop _one_decomp
-program define _one_decomp, rclass
-    version 18
-    syntax varlist(min=2 max=2) , W0(name) W1(name)
-    tokenize `varlist'
-    local v0 `1'
-    local v1 `2'
+	cap program drop _one_decomp
+	program define _one_decomp, rclass
+		version 19
+		syntax varlist(min=2 max=2) , W0(name) W1(name)
+		tokenize `varlist'
+		local v0 `1'
+		local v1 `2'
 
-    tempvar w0n w1n wbar dvi vbar dwi within_i between_i
+	tempvar w0n w1n wbar dvi vbar dwi within_i between_i
 
-    * normalize weights within this sample for each period
-    gen double `w0n' = `w0'
-    gen double `w1n' = `w1'
-    quietly summarize `w0n'
-    replace `w0n' = `w0n' / r(sum)
-    quietly summarize `w1n'
-    replace `w1n' = `w1n' / r(sum)
+* normalize weights within this sample for each period
+    gen 		double `w0n' = `w0'
+    gen 		double `w1n' = `w1'
+    quietly 	summarize `w0n'
+    replace 	`w0n' = `w0n' / r(sum)
+    quietly 	summarize `w1n'
+    replace 	`w1n' = `w1n' / r(sum)
 
-    * weighted means
-    gen double __tmp0 = `w0n' * `v0'
-    gen double __tmp1 = `w1n' * `v1'
-    quietly summarize __tmp0
-    return scalar mean0 = r(sum)
-    quietly summarize __tmp1
-    return scalar mean1 = r(sum)
-    return scalar d = return(mean1) - return(mean0)
+* weighted means
+    gen 		double __tmp0 = `w0n' * `v0'
+    gen 		double __tmp1 = `w1n' * `v1'
+    quietly	 	summarize __tmp0
+    return 		scalar mean0 = r(sum)
+    quietly 	summarize __tmp1
+    return 		scalar mean1 = r(sum)
+    return 		scalar d = return(mean1) - return(mean0)
 
-    * midpoint (Shapley) within/between
-    gen double `wbar' = 0.5*(`w0n' + `w1n')
-    gen double `dvi'  = (`v1' - `v0')
-    gen double `vbar' = 0.5*(`v0' + `v1')
-    gen double `dwi'  = (`w1n' - `w0n')
+* midpoint within/between
+    gen 		double `wbar' = 0.5*(`w0n' + `w1n')
+    gen 		double `dvi'  = (`v1' - `v0')
+    gen 		double `vbar' = 0.5*(`v0' + `v1')
+    gen 		double `dwi'  = (`w1n' - `w0n')
 
-    gen double `within_i'  = `wbar' * `dvi'
-    gen double `between_i' = `vbar' * `dwi'
+    gen 		double `within_i'  = `wbar' * `dvi'
+    gen 		double `between_i' = `vbar' * `dwi'
 
-    quietly summarize `within_i'
-    return scalar within = r(sum)
-    quietly summarize `between_i'
-    return scalar between = r(sum)
+    quietly 	summarize `within_i'
+    return 		scalar within = r(sum)
+    quietly 	summarize `between_i'
+    return 		scalar between = r(sum)
 
-    drop __tmp0 __tmp1 `w0n' `w1n' `wbar' `dvi' `vbar' `dwi' `within_i' `between_i'
+    drop 		__tmp0 __tmp1 `w0n' `w1n' `wbar' `dvi' `vbar' `dwi' `within_i' `between_i'
+
 end
 
+/*
 
 * export table 
 
-	tempname P
+tempname P
 	postfile `P' str20 outcome ///
 		double early late delta within between within_pct ///
 		using "`c(tmpdir)'/decomp_main_tmp.dta", replace
 
-* pooled results (weights already in file; we renormalize inside program)
-	quietly _one_decomp y_hh_pt0 y_hh_pt1, w0(w_hh0) w1(w_hh1)
-	scalar Y0 = r(mean0)
-	scalar Y1 = r(mean1)
-	scalar dY = r(d)
-	scalar Wy = r(within)
-	scalar By = r(between)
-	scalar Wpct = 100*Wy/dY
-	post `P' ("Productivity") (Y0) (Y1) (dY) (Wy) (By) (Wpct)
+* pooled results 
+	quietly 	_one_decomp y_hh_pt0 y_hh_pt1, w0(w_hh0) w1(w_hh1)
+	scalar 		Y0 = r(mean0)
+	scalar 		Y1 = r(mean1)
+	scalar 		dY = r(d)
+	scalar 		Wy = r(within)
+	scalar 		By = r(between)
+	scalar 		Wpct = 100*Wy/dY
+	post 		`P' ("Productivity") (Y0) (Y1) (dY) (Wy) (By) (Wpct)
 
-	quietly _one_decomp Ltot_hh_pt0 Ltot_hh_pt1, w0(w_hh0) w1(w_hh1)
-	scalar A0 = r(mean0)
-	scalar A1 = r(mean1)
-	scalar dA = r(d)
-	scalar WA = r(within)
-	scalar BA = r(between)
-	scalar Wpct = 100*WA/dA
-	post `P' ("Total labor") (A0) (A1) (dA) (WA) (BA) (Wpct)
+	quietly 	_one_decomp Ltot_hh_pt0 Ltot_hh_pt1, w0(w_hh0) w1(w_hh1)
+	scalar 		A0 = r(mean0)
+	scalar 		A1 = r(mean1)
+	scalar 		dA = r(d)
+	scalar 		WA = r(within)
+	scalar 		BA = r(between)
+	scalar 		Wpct = 100*WA/dA
+	post 		`P' ("Total labor") (A0) (A1) (dA) (WA) (BA) (Wpct)
 
-	quietly _one_decomp Lfam_hh_pt0 Lfam_hh_pt1, w0(w_hh0) w1(w_hh1)
-	scalar F0 = r(mean0)
-	scalar F1 = r(mean1)
-	scalar dF = r(d)
-	scalar WF = r(within)
-	scalar BF = r(between)
-	scalar Wpct = 100*WF/dF
-	post `P' ("Family labor") (F0) (F1) (dF) (WF) (BF) (Wpct)
+	quietly 	_one_decomp Lfam_hh_pt0 Lfam_hh_pt1, w0(w_hh0) w1(w_hh1)
+	scalar 		F0 = r(mean0)
+	scalar 		F1 = r(mean1)
+	scalar 		dF = r(d)
+	scalar 		WF = r(within)
+	scalar 		BF = r(between)
+	scalar 		Wpct = 100*WF/dF
+	post 		`P' ("Family labor") (F0) (F1) (dF) (WF) (BF) (Wpct)
 
-	quietly _one_decomp Lhir_hh_pt0 Lhir_hh_pt1, w0(w_hh0) w1(w_hh1)
-	scalar H0 = r(mean0)
-	scalar H1 = r(mean1)
-	scalar dH = r(d)
-	scalar WH = r(within)
-	scalar BH = r(between)
-	scalar Wpct = 100*WH/dH
-	post `P' ("Hired labor") (H0) (H1) (dH) (WH) (BH) (Wpct)
+	quietly 	_one_decomp Lhir_hh_pt0 Lhir_hh_pt1, w0(w_hh0) w1(w_hh1)
+	scalar 		H0 = r(mean0)
+	scalar 		H1 = r(mean1)
+	scalar 		dH = r(d)
+	scalar 		WH = r(within)
+	scalar 		BH = r(between)
+	scalar 		Wpct = 100*WH/dH
+	post 		`P' ("Hired labor") (H0) (H1) (dH) (WH) (BH) (Wpct)
 
-	postclose `P'
+postclose `P'
 
-	use "`c(tmpdir)'/decomp_main_tmp.dta", clear
+	use 		"`c(tmpdir)'/decomp_main_tmp.dta", clear
 
-	format early late delta within between %9.2f
-	format within_pct %9.1f
+	format 		early late delta within between %9.2f
+	format 		within_pct %9.1f
 
-	cap erase "$export1/decomp_main.tex"
-	file open fh using "$export1/decomp_main.tex", write replace
-	file write fh "\begin{table}[htbp]" _n ///
-				"\centering" _n ///
-				"\caption{Within--between decomposition of productivity and labor intensity}" _n ///
-				"\label{tab:decomp_main}" _n ///
-				"\small" _n ///
-				"\begin{tabular}{lrrrrrr}" _n ///
-				"\toprule" _n ///
-				" & \multicolumn{1}{c}{Early} & \multicolumn{1}{c}{Late} & \multicolumn{1}{c}{\$\Delta\$} & \multicolumn{1}{c}{Within} & \multicolumn{1}{c}{Between} & \multicolumn{1}{c}{Within (\%\$\Delta\$)} \\" _n ///
-              "\midrule" _n
+	cap 		erase "$export1/decomp_main.tex"
+	file 		open fh using "$export1/decomp_main.tex", write replace
+	file 		write fh "\begin{table}[htbp]" _n ///
+						"\centering" _n ///
+						"\caption{Within--between decomposition of productivity and labor intensity}" _n ///
+						"\label{tab:decomp_main}" _n ///
+						"\small" _n ///
+						"\begin{tabular}{lrrrrrr}" _n ///
+						"\toprule" _n ///
+						" & \multicolumn{1}{c}{Early} & \multicolumn{1}{c}{Late} & \multicolumn{1}{c}{\$\Delta\$} & \multicolumn{1}{c}{Within} & \multicolumn{1}{c}{Between} & \multicolumn{1}{c}{Within (\%\$\Delta\$)} \\" _n ///
+						"\midrule" _n
 
 	quietly {
 		forvalues i=1/`=_N' {
