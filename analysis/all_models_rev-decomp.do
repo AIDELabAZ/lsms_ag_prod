@@ -289,13 +289,13 @@
 	replace 	w_hh1 = w_hh1 / w1sum
 
 * means?? 
-	quietly summarize y_hh_pt0 [aw = w_hh0]
-	scalar Y0 = r(mean)
-	quietly summarize y_hh_pt1 [aw = w_hh1]
-	scalar Y1 = r(mean)
-	scalar dY = Y1 - Y0
+	quietly 	summarize y_hh_pt0 [aw = w_hh0]
+	scalar 		Y0 = r(mean)
+	quietly 	summarize y_hh_pt1 [aw = w_hh1]
+	scalar 		Y1 = r(mean)
+	scalar 		dY = Y1 - Y0
 
-	foreach v in Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt {
+	foreach 	v in Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt {
 		quietly summarize `v'0 [aw = w_hh0]
 		scalar `v'_0 = r(mean)
 		quietly summarize `v'1 [aw = w_hh1]
@@ -304,18 +304,18 @@
 	}
 
 * within/between decomposition 
-	gen wbar = (w_hh0 + w_hh1)/2
-	gen ybar = (y_hh_pt0 + y_hh_pt1)/2	
-	gen dy   = (y_hh_pt1 - y_hh_pt0)	
-	gen dw   = (w_hh1 - w_hh0)
+	gen 		wbar = (w_hh0 + w_hh1)/2
+	gen 		ybar = (y_hh_pt0 + y_hh_pt1)/2	
+	gen 		dy   = (y_hh_pt1 - y_hh_pt0)	
+	gen 		dw   = (w_hh1 - w_hh0)
 
-	gen within_y  = wbar * dy
-	gen between_y = ybar * dw
+	gen 		within_y  = wbar * dy
+	gen 		between_y = ybar * dw
 
-	quietly summarize within_y
-	scalar WITHIN_Y = r(sum)
-	quietly summarize between_y
-	scalar BETWEEN_Y = r(sum)
+	quietly 	summarize within_y
+	scalar 		WITHIN_Y = r(sum)
+	quietly 	summarize between_y
+	scalar 		BETWEEN_Y = r(sum)
 
 * and now labor
 	foreach v in Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt {
@@ -370,6 +370,7 @@ di "------------------------------------------------------------"
 	save "$export1/dta_files_merge/decomp_hh_early_late_BALANCED.dta", replace
 	
 * export tables 
+*** need to fix, not working!!?!?
 
 /*
 	cap which esttab
@@ -377,7 +378,6 @@ di "------------------------------------------------------------"
 	
 	use "$decomp", clear
 
-* Helper: compute weighted means and midpoint decomposition for one outcome pair
 cap program drop _one_decomp
 program define _one_decomp, rclass
     version 18
@@ -579,6 +579,7 @@ end
 */
 
 * image will be made in python 	
+*** saved 
 	
 ***********************************************************************
 **# 5 - model 3 - farm level
