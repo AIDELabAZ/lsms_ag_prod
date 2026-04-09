@@ -250,31 +250,31 @@
 
 * labor intensity measures 
 * area-weight household-period labor intensity
-	gen Ltot_plot_w = w_plot_hh * labor_tot_ha_asinh
-	gen Lfam_plot_w = w_plot_hh * labor_fam_ha_asinh
-	gen Lhir_plot_w = w_plot_hh * labor_hir_ha_asinh
+	gen 		Ltot_plot_w = w_plot_hh * labor_tot_ha_asinh
+	gen 		Lfam_plot_w = w_plot_hh * labor_fam_ha_asinh
+	gen 		Lhir_plot_w = w_plot_hh * labor_hir_ha_asinh
 
-	bysort hh_panel period: egen Ltot_hh_pt = total(Ltot_plot_w)
-	bysort hh_panel period: egen Lfam_hh_pt = total(Lfam_plot_w)
-	bysort hh_panel period: egen Lhir_hh_pt = total(Lhir_plot_w)
+	bysort 		hh_panel period: egen Ltot_hh_pt = total(Ltot_plot_w)
+	bysort 		hh_panel period: egen Lfam_hh_pt = total(Lfam_plot_w)
+	bysort 		hh_panel period: egen Lhir_hh_pt = total(Lhir_plot_w)
 
 * collapse to ONE record per household-period
 	preserve
-	keep country hh_panel period wgt_adj_surveypop y_hh_pt ///
-     Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt
+	keep 		country hh_panel period wgt_adj_surveypop y_hh_pt ///
+					Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt
 
 * aggregate hh.
-	collapse (mean) wgt_adj_surveypop ///
-         (mean) y_hh_pt Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt, ///
-         by(hh_panel country period)
+	collapse 	(mean) wgt_adj_surveypop ///
+					(mean) y_hh_pt Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt, ///
+					by(hh_panel country period)
 
 * normalize
-	bysort period: egen wsum = total(wgt_adj_surveypop)
-	gen w_hh = wgt_adj_surveypop / wsum
+	bysort 		period: egen wsum = total(wgt_adj_surveypop)
+	gen 		w_hh = wgt_adj_surveypop / wsum
 
 * reshape to wide early/late 
-	keep hh_panel country period w_hh y_hh_pt Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt
-	reshape wide y_hh_pt Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt w_hh, i(hh_panel) j(period)
+	keep 		hh_panel country period w_hh y_hh_pt Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt
+	reshape 	wide y_hh_pt Ltot_hh_pt Lfam_hh_pt Lhir_hh_pt w_hh, i(hh_panel) j(period)
 	
 * need to balance ... 
 	drop if missing(y_hh_pt0) | missing(y_hh_pt1)
